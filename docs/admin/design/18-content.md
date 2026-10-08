@@ -46,7 +46,7 @@ H1 `Контент`. Вкладка `Сторінки`. Primary `Додати с
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, toggles and buttons. Do not redesign them. Sidebar current item: “Контент”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, toggles and buttons. Do not redesign them. Sidebar current item: “Контент”.
 
 H1 “Контент”. Tabs: “Банери”, “Сторінки” (current), “Бейджі”, “Головна”. Primary “Додати сторінку”.
 

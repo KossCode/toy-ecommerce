@@ -74,7 +74,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tables, mapping rows, chips and buttons. Do not redesign them. Sidebar current item: “Характеристики”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tables, mapping rows, chips and buttons. Do not redesign them. Sidebar current item: “Характеристики”.
 
 Header: H1 “Характеристики”, meta “24 характеристики”, primary “Додати характеристику”, secondary “Оновити довідники”.
 Thin status line: “Rozetka: оновлено 07.10, 06:00” · “Epicentr: оновлено 07.10, 06:00” · “Prom: файл від 01.10, Олена” and quiet button “Завантажити файл Prom”.

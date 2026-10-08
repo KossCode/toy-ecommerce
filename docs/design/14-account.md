@@ -28,9 +28,9 @@
 
 | Номер | Дата | Статус | Сумма |
 | --- | --- | --- | --- |
-| ЛП-10482 | 6 жовтня 2026 | Збираємо | 4 090 грн |
-| ЛП-10411 | 22 вересня 2026 | Доставлено | 649 грн |
-| ЛП-10302 | 3 серпня 2026 | Скасовано | 890 грн |
+| TM-10482 | 6 жовтня 2026 | Збираємо | 4 090 грн |
+| TM-10411 | 22 вересня 2026 | Доставлено | 649 грн |
+| TM-10302 | 3 серпня 2026 | Скасовано | 890 грн |
 
 Статус цветом и текстом. `Збираємо` — нейтральный. `Доставлено` — success. `Скасовано` — нейтральный, не красный крик: отмена не ошибка оплаты.
 
@@ -51,16 +51,16 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Customer account, orders section. Use the storefront visual system, not the admin system: warm background, same header, same type and buttons. Slightly denser than the homepage, still calm.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Customer account, orders section. Use the storefront visual system, not the admin system: warm background, same header, same type and buttons. Slightly denser than the homepage, still calm.
 
 Store header with “Кабінет” as the current item.
 
 Left column about 240px: “Марина Коваль”, “maryna@example.com”. Nav: “Замовлення” current, “Обране”, “Адреси”, “Дані профілю”. Link at the bottom “Вийти”.
 
 Right: H1 “Замовлення”. Three bordered rows, not a dense admin table:
-“ЛП-10482”, “6 жовтня 2026”, status “Збираємо”, “4 090 грн”, button “Деталі”.
-“ЛП-10411”, “22 вересня 2026”, status “Доставлено”, “649 грн”, “Деталі”.
-“ЛП-10302”, “3 серпня 2026”, status “Скасовано”, “890 грн”, “Деталі”.
+“TM-10482”, “6 жовтня 2026”, status “Збираємо”, “4 090 грн”, button “Деталі”.
+“TM-10411”, “22 вересня 2026”, status “Доставлено”, “649 грн”, “Деталі”.
+“TM-10302”, “3 серпня 2026”, status “Скасовано”, “890 грн”, “Деталі”.
 
 Status is text plus a quiet color. Cancelled is not an alarm red. No loyalty points, no badges, no password form. All copy in Ukrainian exactly as written.
 ```

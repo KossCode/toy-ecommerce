@@ -4,7 +4,7 @@
 
 ## Порядок
 
-Шапка: только `Лапка` и `Повернутись до кошика`. Телефон `0 800 33 12 12` мелкой строкой под знаком, чтобы поддержка не исчезла.
+Шапка: только `Trio Mio` и `Повернутись до кошика`. Телефон `0 800 33 12 12` мелкой строкой под знаком, чтобы поддержка не исчезла.
 
 H1 `Оформлення замовлення`
 `Можна без реєстрації.` ссылка `Увійти`
@@ -25,9 +25,9 @@ H1 `Оформлення замовлення`
 ## STITCH PROMPT
 
 ```text
-Design ONE mobile screen at 390px for the Ukrainian toy store “Лапка”. Checkout, single column, same form as the accepted desktop checkout. Not a stepper. Optimized for one hand.
+Design ONE mobile screen at 390px for the Ukrainian toy store “Trio Mio”. Checkout, single column, same form as the accepted desktop checkout. Not a stepper. Optimized for one hand.
 
-Header: wordmark “Лапка”, small phone “0 800 33 12 12”, link “Повернутись до кошика”.
+Header: wordmark “Trio Mio”, small phone “0 800 33 12 12”, link “Повернутись до кошика”.
 H1 “Оформлення замовлення”. “Можна без реєстрації.” Link “Увійти”.
 
 Collapsed summary row: “Ваше замовлення, 3 шт.” and “4 090 грн”, with a “Деталі” disclosure closed. Do not expand it.

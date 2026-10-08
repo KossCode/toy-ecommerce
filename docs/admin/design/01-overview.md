@@ -33,10 +33,10 @@ H1 `Огляд`, мета `Сьогодні, 7 жовтня 2026`. Действ�
 
 | Номер | Канал | Клієнт | Що зробити | Сума |
 | --- | --- | --- | --- | --- |
-| ЛП-10482 | Epicentr | — | Підтвердити за 1 год 20 хв | 2 050 грн |
-| ЛП-10481 | Rozetka | Марина Коваль | Підтвердити за 21 год | 2 050 грн |
-| ЛП-10479 | Prom | Оксана Бондар | Створити накладну | 1 798 грн |
-| ЛП-10478 | Epicentr | Андрій Ткаченко | Створити накладну | 2 050 грн |
+| TM-10482 | Epicentr | — | Підтвердити за 1 год 20 хв | 2 050 грн |
+| TM-10481 | Rozetka | Марина Коваль | Підтвердити за 21 год | 2 050 грн |
+| TM-10479 | Prom | Оксана Бондар | Створити накладну | 1 798 грн |
+| TM-10478 | Epicentr | Андрій Ткаченко | Створити накладну | 2 050 грн |
 
 У первых двух в последней колонке строки — quiet-кнопка `Підтвердити`, у двух следующих — `Накладна`. Прочерк у Epicentr — покупатель скрыт до подтверждения. Под таблицей тихая ссылка `Усі замовлення`.
 
@@ -63,14 +63,14 @@ H1 `Огляд`, мета `Сьогодні, 7 жовтня 2026`. Действ�
 
 ## Приёмка
 
-- Самое срочное — ЛП-10482 с Epicentr — видно первым, без прокрутки.
+- Самое срочное — TM-10482 с Epicentr — видно первым, без прокрутки.
 - Из каждого блока понятно следующее действие.
 - Красный только у ошибки Epicentr.
 
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, metric cards, tables, chips, channel tags and buttons. Do not redesign them. Sidebar current item: “Огляд”. The “Замовлення” nav item shows counter 2.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, metric cards, tables, chips, channel tags and buttons. Do not redesign them. Sidebar current item: “Огляд”. The “Замовлення” nav item shows counter 2.
 
 H1 “Огляд”, meta “Сьогодні, 7 жовтня 2026”. No header actions.
 
@@ -83,10 +83,10 @@ Four metric cards in a row, each clickable:
 Below, two columns, left wider.
 
 Left panel “Потрібно зробити”, table columns “Номер”, “Канал”, “Клієнт”, “Що зробити”, “Сума”, plus an action column:
-- “ЛП-10482” “Epicentr” “—” “Підтвердити за 1 год 20 хв” (warning, clock icon) “2 050 грн”, quiet button “Підтвердити”
-- “ЛП-10481” “Rozetka” “Марина Коваль” “Підтвердити за 21 год” (quiet text) “2 050 грн”, quiet button “Підтвердити”
-- “ЛП-10479” “Prom” “Оксана Бондар” “Створити накладну” “1 798 грн”, quiet button “Накладна”
-- “ЛП-10478” “Epicentr” “Андрій Ткаченко” “Створити накладну” “2 050 грн”, quiet button “Накладна”
+- “TM-10482” “Epicentr” “—” “Підтвердити за 1 год 20 хв” (warning, clock icon) “2 050 грн”, quiet button “Підтвердити”
+- “TM-10481” “Rozetka” “Марина Коваль” “Підтвердити за 21 год” (quiet text) “2 050 грн”, quiet button “Підтвердити”
+- “TM-10479” “Prom” “Оксана Бондар” “Створити накладну” “1 798 грн”, quiet button “Накладна”
+- “TM-10478” “Epicentr” “Андрій Ткаченко” “Створити накладну” “2 050 грн”, quiet button “Накладна”
 Link “Усі замовлення”.
 
 Right column, two stacked panels.

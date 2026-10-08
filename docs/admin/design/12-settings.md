@@ -14,7 +14,7 @@
 
 `Користувачі` · `Нова Пошта` · `Склад` · `Сповіщення`
 
-- **Нова Пошта:** ключ API, отправитель `Лапка`, телефон отправителя, город и отделение отправки `Київ, Відділення №1`, платник доставки по умолчанию `Отримувач`. Отдельным промптом не рисовать.
+- **Нова Пошта:** ключ API, отправитель `Trio Mio`, телефон отправителя, город и отделение отправки `Київ, Відділення №1`, платник доставки по умолчанию `Отримувач`. Отдельным промптом не рисовать.
 - **Склад:** порог «Закінчується» по умолчанию `5`. Страховой запас — отложенное решение, поле не рисовать.
 
 ## Макет A: Користувачі
@@ -27,9 +27,9 @@ H1 `Налаштування`. Вкладка `Користувачі`. Primary 
 
 | Ім’я | Email | Роль | Останній вхід |
 | --- | --- | --- | --- |
-| Олена | olena@lapka.ua | Власник | сьогодні, 09:02 |
-| Денис | denys@lapka.ua | Менеджер замовлень | сьогодні, 08:30 |
-| Ірина | iryna@lapka.ua | Контент-менеджер | вчора, 18:15 |
+| Олена | olena@triomio.ua | Власник | сьогодні, 09:02 |
+| Денис | denys@triomio.ua | Менеджер замовлень | сьогодні, 08:30 |
+| Ірина | iryna@triomio.ua | Контент-менеджер | вчора, 18:15 |
 
 Справа панель `Ролі`, по строке на роль:
 
@@ -46,7 +46,7 @@ H1 `Налаштування`. Вкладка `Користувачі`. Primary 
 Панель `Нові замовлення`:
 
 - Toggle `У браузері` включён
-- Toggle `У Telegram` включён, поле `Чат` `Лапка — замовлення`, quiet `Надіслати тест`
+- Toggle `У Telegram` включён, поле `Чат` `Trio Mio — замовлення`, quiet `Надіслати тест`
 - Подпись: `Epicentr скасовує замовлення, не підтверджене за 2 години. Сповіщення приходить одразу.`
 
 Панель `Нагадування`:
@@ -71,14 +71,14 @@ H1 `Налаштування`. Вкладка `Користувачі`. Primary 
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, panels and buttons. Do not redesign them. Sidebar current item: “Налаштування” (pinned at the bottom of the sidebar).
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, panels and buttons. Do not redesign them. Sidebar current item: “Налаштування” (pinned at the bottom of the sidebar).
 
 H1 “Налаштування”. Tabs: “Користувачі” (current), “Нова Пошта”, “Склад”, “Сповіщення”. Primary button “Запросити користувача”.
 
 Table columns “Ім’я”, “Email”, “Роль”, “Останній вхід”:
-- “Олена”, “olena@lapka.ua”, “Власник”, “сьогодні, 09:02”
-- “Денис”, “denys@lapka.ua”, “Менеджер замовлень”, “сьогодні, 08:30”
-- “Ірина”, “iryna@lapka.ua”, “Контент-менеджер”, “вчора, 18:15”
+- “Олена”, “olena@triomio.ua”, “Власник”, “сьогодні, 09:02”
+- “Денис”, “denys@triomio.ua”, “Менеджер замовлень”, “сьогодні, 08:30”
+- “Ірина”, “iryna@triomio.ua”, “Контент-менеджер”, “вчора, 18:15”
 
 Right panel “Ролі”:
 - “Власник” — “усе, включно з налаштуваннями та цінами”
@@ -94,7 +94,7 @@ No avatars, no theme settings. All visible copy in Ukrainian exactly as written.
 ```text
 Edit this screen: switch to tab “Сповіщення”. Keep the shell and header.
 
-Panel “Нові замовлення”: toggle “У браузері” on; toggle “У Telegram” on with field “Чат” “Лапка — замовлення” and quiet button “Надіслати тест”; caption “Epicentr скасовує замовлення, не підтверджене за 2 години. Сповіщення приходить одразу.”
+Panel “Нові замовлення”: toggle “У браузері” on; toggle “У Telegram” on with field “Чат” “Trio Mio — замовлення” and quiet button “Надіслати тест”; caption “Epicentr скасовує замовлення, не підтверджене за 2 години. Сповіщення приходить одразу.”
 Panel “Нагадування”: toggle “Нагадати, якщо замовлення Epicentr не підтверджене за 1 годину” on; toggle “Нагадати, якщо замовлення Rozetka не підтверджене за 12 годин” on.
 Panel “Помилки інтеграцій”: toggle “Повідомляти в Telegram” on.
 

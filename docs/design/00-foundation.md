@@ -4,19 +4,21 @@
 
 После принятия сюда дописываются фактические hex, шрифт и радиус. Пока секция «Зафиксировано» пустая специально: бриф не закрывает визуальное решение раньше времени.
 
-## Рабочее название
+## Название и логотип
 
-**Лапка**
+**Trio Mio** — окончательное название магазина. Логотип и правила его использования — [`../brand/README.md`](../brand/README.md).
 
-Короткий словесный знак, без персонажа, без лапы-мультяшки, без рукописного логотипа. Знак — простой геометрический марк рядом со словом, либо одно слово в выбранном гротеске. Подзаголовок в шапке не нужен. В подвале одна строка: «Іграшки та товари для дітей».
+Логотип — готовый файл. В макетах Stitch знак «TRIO♥MIO» описывается словами и рисуется приблизительно, в реализации в шапке и подвале стоит `logo-wordmark.svg`. Планеты-персонажи живут только в полном логотипе, интерфейс их не повторяет: остальные правила этого листа про отсутствие мультяшности в хроме остаются.
 
-Замена названия: поменять его здесь и в промптах. Тон и структура не зависят от имени.
+Подзаголовок в шапке не нужен. В подвале одна строка: «Іграшки та товари для дітей».
+
+Принятые фундамент и главная сгенерированы ещё с рабочим названием «Лапка» и коралловой палитрой. Палитра логотипа — пастельная. Совместить их — отдельное решение, когда витрина вернётся в работу ([`../brand/README.md`](../brand/README.md), «Открытые вопросы»).
 
 Плейсхолдеры, которые нельзя выдавать за реальные реквизиты:
 
 - телефон: `0 800 33 12 12`
-- почта: `privit@lapka.ua`
-- домен: `lapka.ua`
+- почта: `privit@triomio.ua`
+- домен: `triomio.ua`
 - продавец в подвале: `ФОП [Прізвище Ім’я По батькові]`, `ІПН: [номер]`
 
 ## Что взять у HandmadeShop
@@ -93,7 +95,7 @@ Stitch выбирает точные значения на этом листе. 
 | H3 | Доставка по Україні | Блок |
 | Product title | Конструктор LEGO City «Пожежна частина» | 2 строки, легко сканируется |
 | Body | Короткий опис для батьків | 16px и не меньше на мобильном |
-| Secondary | Артикул LP-10018 | Мета |
+| Secondary | Артикул TM-10018 | Мета |
 | Price | 1 890 грн | Крупнее названия на карточке, тёмный |
 | Old price | 2 290 грн | Зачёркнутая, вторичная |
 | Button | До кошика | Средний вес, не кричащий капс |
@@ -147,7 +149,7 @@ Stitch выбирает точные значения на этом листе. 
 Слева направо в одной строке под служебной полосой:
 
 1. Кнопка `Каталог` — primary, с иконкой сетки.
-2. Словесный знак `Лапка`.
+2. Словесный знак `Trio Mio`.
 3. Поле поиска на всю оставшуюся ширину. Плейсхолдер: `Шукати іграшку, бренд або вік`. Кнопка поиска внутри поля.
 4. `Кабінет`
 5. `Обране` с числом, на листе показать `2`
@@ -167,7 +169,7 @@ Stitch выбирает точные значения на этом листе. 
 
 Правило для будущих мобильных экранов, на листе фундамента достаточно схемы шириной 390 рядом с десктопной шапкой:
 
-- строка: меню, `Лапка`, кошик с числом
+- строка: меню, `Trio Mio`, кошик с числом
 - под ней всегда видимое поле поиска на всю ширину
 - служебная полоса может остаться одной короткой строкой или спрятаться, если не помещается вместе с поиском. Поиск важнее слогана доставки. Если полоса спрятана, обещание доставки стоит в блоке доверия и в подвале.
 
@@ -175,12 +177,12 @@ Stitch выбирает точные значения на этом листе. 
 
 Четыре колонки на десктопе, на мобильном — стопка.
 
-1. `Лапка`. «Іграшки та товари для дітей». Строка: «Доставка по Україні».
+1. `Trio Mio`. «Іграшки та товари для дітей». Строка: «Доставка по Україні».
 2. `Інформація`: Про магазин, Доставка і оплата, Повернення, Контакти, Публічна оферта, Політика конфіденційності.
 3. `Каталог`: восемь категорий из образца.
 4. `Контакти`: телефон, почта, «Щодня 9:00–20:00», Telegram.
 
-Нижняя строка: `© 2026 Лапка`, плейсхолдер ФОП, подпись способов оплаты словами: `Картка · Apple Pay · Google Pay · Під час отримання`.
+Нижняя строка: `© 2026 Trio Mio`, плейсхолдер ФОП, подпись способов оплаты словами: `Картка · Apple Pay · Google Pay · Під час отримання`.
 
 ### Карточка товара
 
@@ -192,7 +194,7 @@ Stitch выбирает точные значения на этом листе. 
 4. Статус наличия текстом.
 5. Кнопка на всю ширину.
 
-Кнопка зависит от статуса — см. `sample-catalog.md`. На листе нарисовать четыре карточки: LP-10018, LP-10077, LP-10103, LP-10120. Это четыре коммерческих состояния.
+Кнопка зависит от статуса — см. `sample-catalog.md`. На листе нарисовать четыре карточки: TM-10018, TM-10077, TM-10103, TM-10120. Это четыре коммерческих состояния.
 
 Возраст на карточке — подпись `6–12 років`, только если помогает выбрать. Не дублировать категорию, бренд, рейтинг и артикул на карточке.
 
@@ -257,9 +259,9 @@ Stitch выбирает точные значения на этом листе. 
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop artboard, 1440px wide, titled “Лапка — foundation”. This is a design-system sheet for a Ukrainian children’s retail store, not a homepage and not a marketing landing page.
+Design ONE desktop artboard, 1440px wide, titled “Trio Mio — foundation”. This is a design-system sheet for a Ukrainian children’s retail store, not a homepage and not a marketing landing page.
 
-Brand: wordmark “Лапка”. No cartoon mascot, no paw character, no script logo, no yarn, no handmade aesthetic.
+Brand: “Trio Mio”. Wherever the logo appears, draw the wordmark “TRIO♥MIO”: rounded bold capitals, each letter in a soft pastel (yellow, teal, lavender, blue, mint), a small coral heart between TRIO and MIO. It will be replaced by the real logo file. No other mascots or characters in the UI, no script lettering, no yarn, no handmade aesthetic.
 
 Audience: adults buying for children. Products may be colorful. The UI must stay calm, warm, modern, and trustworthy. Highly readable Cyrillic. No kindergarten look, no candy colors, no gradients, no glassmorphism, no heavy shadows, no giant hero.
 
@@ -280,20 +282,20 @@ Choose the visual system yourself inside these bounds, put the chosen values on 
 Show on the sheet, with Ukrainian labels exactly as written:
 
 1. Color tokens with role names and the hex you chose.
-2. Type scale using the Ukrainian samples: “Іграшки та товари для дітей”, “Конструктори”, “Популярні категорії”, “Доставка по Україні”, product title “Конструктор LEGO City «Пожежна частина»”, body, secondary “Артикул LP-10018”, price “1 890 грн”, old price “2 290 грн”, button “До кошика”, caption “Вік: 6–12 років”, badge “−18%”.
+2. Type scale using the Ukrainian samples: “Іграшки та товари для дітей”, “Конструктори”, “Популярні категорії”, “Доставка по Україні”, product title “Конструктор LEGO City «Пожежна частина»”, body, secondary “Артикул TM-10018”, price “1 890 грн”, old price “2 290 грн”, button “До кошика”, caption “Вік: 6–12 років”, badge “−18%”.
 3. Button states: primary, secondary, quiet; default, hover, focus, disabled, loading. Labels “До кошика”, “Схожі товари”, “Скинути”.
 4. Input, select, checkbox, radio, quantity stepper, search field. Placeholder “Шукати іграшку, бренд або вік”. Error example under a field: “Вкажіть номер телефону”. Focus ring visible.
 5. Badges “−18%”, “Хіт”, “Новинка”. Stock labels with icon AND text: “В наявності”, “Закінчується”, “Немає в наявності”, “Очікується”. Do not use red for out-of-stock.
 6. Four product cards, same component:
-   - LP-10018 in stock, prices 1 890 грн and 2 290 грн, badge Хіт and −18%, age “6–12 років”, button “До кошика”.
-   - LP-10077 “Настільна гра «Сімейний квіз»”, 649 грн, status “Закінчується”.
-   - LP-10103 “Лялька «Мія з рюкзаком», 32 см”, 890 грн and 1 150 грн, button disabled “Немає в наявності”.
-   - LP-10120 “Дерев’яний пазл Cubika «Лісова стежка», 48 дет.”, 420 грн, status “Очікується”, button “Повідомити про наявність”.
+   - TM-10018 in stock, prices 1 890 грн and 2 290 грн, badge Хіт and −18%, age “6–12 років”, button “До кошика”.
+   - TM-10077 “Настільна гра «Сімейний квіз»”, 649 грн, status “Закінчується”.
+   - TM-10103 “Лялька «Мія з рюкзаком», 32 см”, 890 грн and 1 150 грн, button disabled “Немає в наявності”.
+   - TM-10120 “Дерев’яний пазл Cubika «Лісова стежка», 48 дет.”, 420 грн, status “Очікується”, button “Повідомити про наявність”.
    Card order: photo, max two badges, favorite heart, 2-line title, price, stock text, full-width button. No rating, no SKU, no second “view” button.
-7. Desktop header: utility bar “Безкоштовна доставка від 2 000 грн” and phone “0 800 33 12 12”; then Catalog button “Каталог”, wordmark “Лапка”, wide search, “Кабінет”, “Обране” with 2, “Кошик” with 1. Second nav row only: “Новинки”, “Акції”, “Бренди”, “Подарунки”.
+7. Desktop header: utility bar “Безкоштовна доставка від 2 000 грн” and phone “0 800 33 12 12”; then Catalog button “Каталог”, wordmark “Trio Mio”, wide search, “Кабінет”, “Обране” with 2, “Кошик” with 1. Second nav row only: “Новинки”, “Акції”, “Бренди”, “Подарунки”.
 8. Catalog panel open on “Конструктори”, with subcategories “LEGO”, “Дерев’яні конструктори”, “Магнітні конструктори”, “Блоки для малюків”. Not a full-screen dump of every category.
-9. A 390px-wide mobile header diagram: menu, “Лапка”, cart; search field always visible underneath.
-10. Footer with four columns: brand line “Іграшки та товари для дітей”; “Інформація”; “Каталог”; “Контакти” with “Щодня 9:00–20:00”. Bottom line “© 2026 Лапка” and “Картка · Apple Pay · Google Pay · Під час отримання”.
+9. A 390px-wide mobile header diagram: menu, “Trio Mio”, cart; search field always visible underneath.
+10. Footer with four columns: brand line “Іграшки та товари для дітей”; “Інформація”; “Каталог”; “Контакти” with “Щодня 9:00–20:00”. Bottom line “© 2026 Trio Mio” and “Картка · Apple Pay · Google Pay · Під час отримання”.
 11. Small specimens: breadcrumbs “Головна / Конструктори / LEGO”; pagination; tabs “Опис · Характеристики · Відгуки”; one skeleton product card; toast “Додано в кошик”; empty panel “У кошику ще немає товарів” with button “До каталогу”; error panel “Не вдалося завантажити сторінку” with button “Повторити”.
 
 Product photography areas: plain light background, no decorative frames, no cartoon children, no stickers.

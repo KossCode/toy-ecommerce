@@ -13,9 +13,9 @@ H1 `Обране`
 
 Сетка карточек из фундамента, 4 колонки на desktop, три товара:
 
-1. LP-10018, в наличии, можно `До кошика`
-2. LP-10042, в наличии, `До кошика`
-3. LP-10103, нет в наличии, кнопка неактивна `Немає в наявності`
+1. TM-10018, в наличии, можно `До кошика`
+2. TM-10042, в наличии, `До кошика`
+3. TM-10103, нет в наличии, кнопка неактивна `Немає в наявності`
 
 Сердце на этих карточках в состоянии «уже в обраном»: кнопка называется `Прибрати з обраного`. Отдельной ссылки «перенести в кошик» нет: это и есть `До кошика`.
 
@@ -29,12 +29,12 @@ H1 `Обране`
 Текст: `Зберігайте товари, щоб порівняти їх пізніше. Натисніть серце на картці товару.`
 Primary: `Переглянути новинки`
 
-Рядом четыре обычные карточки под заголовком `Зараз купують`: LP-10018, LP-10042, LP-10188, LP-10204. Пустое состояние ведёт обратно к товарам.
+Рядом четыре обычные карточки под заголовком `Зараз купують`: TM-10018, TM-10042, TM-10188, TM-10204. Пустое состояние ведёт обратно к товарам.
 
 ## STITCH PROMPT A
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Wishlist page. Same header, footer, and product card as the accepted store. Header “Обране” count is 3.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Wishlist page. Same header, footer, and product card as the accepted store. Header “Обране” count is 3.
 
 H1 “Обране”. “3 товари”.
 
@@ -49,7 +49,7 @@ No quantity steppers and no order total. All copy in Ukrainian exactly as writte
 ## STITCH PROMPT B
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка”. Empty wishlist, same header and footer. “Обране” count is 0.
+Design ONE desktop screen at 1440px for “Trio Mio”. Empty wishlist, same header and footer. “Обране” count is 0.
 
 Title “В обраному порожньо”.
 Text “Зберігайте товари, щоб порівняти їх пізніше. Натисніть серце на картці товару.”

@@ -10,7 +10,7 @@
 
 Служебную полосу не показывать: на 390 она спорит с поиском. Обещание доставки остаётся в блоке доверия.
 
-Строка: кнопка меню (имя `Меню`), знак `Лапка`, `Кошик` с числом `1`.
+Строка: кнопка меню (имя `Меню`), знак `Trio Mio`, `Кошик` с числом `1`.
 Под строкой поле поиска на всю ширину, плейсхолдер `Шукати іграшку, бренд або вік`.
 
 Меню на этом кадре закрыто. Его содержимое не рисовать отдельным экраном, пока не попросят. Внутри будет тот же список: `Каталог`, `Новинки`, `Акції`, `Бренди`, `Подарунки`, затем категории, затем `Кабінет` и `Обране`.
@@ -24,7 +24,7 @@
 5. Тонкая полоса `Акція тижня на конструктори` и ссылка `Дивитись акції`.
 6. `Нові надходження`. Горизонтальный скролл карточек, ширина карточки около 70% экрана, чтобы было видно, что ряд продолжается. Стрелки не обязательны.
 7. `Бренди`. Перенос в две строки.
-8. `Чому батьки обирають Лапку`. Четыре ячейки стопкой.
+8. `Чому батьки обирають Trio Mio`. Четыре ячейки стопкой.
 9. Подвал стопкой: сначала контакты и телефон, потом информация, потом каталог.
 
 Карточка в две колонки не теряет цену и статус. Если не влезает возраст — возраст уходит первым, цена и кнопка остаются.
@@ -32,9 +32,9 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE mobile screen at 390px wide for the Ukrainian toy store “Лапка”. Mobile homepage. It must look like the accepted desktop homepage after a reflow, not like a new brand. Same colors, type, radius, product card, and category tile.
+Design ONE mobile screen at 390px wide for the Ukrainian toy store “Trio Mio”. Mobile homepage. It must look like the accepted desktop homepage after a reflow, not like a new brand. Same colors, type, radius, product card, and category tile.
 
-Header: icon button “Меню”, wordmark “Лапка”, cart icon with count 1. Under that, a full-width search field, placeholder “Шукати іграшку, бренд або вік”. No utility bar. Menu is closed.
+Header: icon button “Меню”, wordmark “Trio Mio”, cart icon with count 1. Under that, a full-width search field, placeholder “Шукати іграшку, бренд або вік”. No utility bar. Menu is closed.
 
 Then, in order:
 1. One promo card about 200px tall, not a full-screen hero: “Нова колекція”, “Іграшки, які легко обрати”, button “До каталогу”. Below it, two compact text rows “Акції” and “Новинки”.
@@ -44,12 +44,12 @@ Then, in order:
 5. Slim strip “Акція тижня на конструктори” with “Дивитись акції”.
 6. “Нові надходження” as a horizontal scroll. Include “Машинка інерційна Hot Wheels” 349 грн and “Розвивальний килимок «Луг»” 1 450 грн.
 7. “Бренди”: LEGO, Barbie, Hot Wheels, Cubika, Тигрес, Viga Toys.
-8. “Чому батьки обирають Лапку” stacked:
+8. “Чому батьки обирають Trio Mio” stacked:
    “Доставка” — “Нова Пошта, Укрпошта або кур’єр. Безкоштовно від 2 000 грн.”
    “Оплата” — “Картка, Apple Pay, Google Pay або під час отримання.”
    “Повернення” — “14 днів, якщо товар не підійшов.”
    “Підтримка” — “Щодня 9:00–20:00. Телефон і Telegram.”
-9. Stacked footer. Phone “0 800 33 12 12”, “Щодня 9:00–20:00”, then information links and catalog links. “© 2026 Лапка”.
+9. Stacked footer. Phone “0 800 33 12 12”, “Щодня 9:00–20:00”, then information links and catalog links. “© 2026 Trio Mio”.
 
 Large type, 16px body minimum, generous tap targets. No hamburger-only search. No cartoon UI. All copy in Ukrainian exactly as written.
 ```

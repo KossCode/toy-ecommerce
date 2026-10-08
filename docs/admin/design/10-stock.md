@@ -25,8 +25,8 @@
 | Колонка | Пример |
 | --- | --- |
 | Дата | `07.10, 10:02` |
-| Товар | `Конструктор LEGO City «Пожежна частина»`, под ним `LP-10018` |
-| Подія | `Резерв`, под ним ссылка `ЛП-10482 · Epicentr` |
+| Товар | `Конструктор LEGO City «Пожежна частина»`, под ним `TM-10018` |
+| Подія | `Резерв`, под ним ссылка `TM-10482 · Epicentr` |
 | Зміна | `−1` или `+10`, вправо; плюс — success, минус — обычный текст |
 | Залишок | `13 доступно` |
 | Хто | `Система` или `Олена` |
@@ -39,7 +39,7 @@
 
 Тот же экран, справа боковая панель `Змінити залишок`:
 
-- `Товар` — поиск, выбран `Конструктор LEGO City «Пожежна частина» · LP-10018`
+- `Товар` — поиск, выбран `Конструктор LEGO City «Пожежна частина» · TM-10018`
 - Строка: `На складі 16 · резерв 3 · доступно 13`
 - Сегментный выбор `Прихід` (выбран) · `Списання` · `Інвентаризація`
 - `Кількість` `5` шт.
@@ -66,7 +66,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, filter row, tables, tabs and buttons. Do not redesign them. Sidebar current item: “Наявність”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, filter row, tables, tabs and buttons. Do not redesign them. Sidebar current item: “Наявність”.
 
 Header: H1 “Наявність”, meta “248 товарів · 12 закінчуються · 9 немає”, primary “Змінити залишок”.
 Tabs: “Журнал” (current), “Закінчуються 12”, “Немає в наявності 9”.
@@ -74,13 +74,13 @@ Filter row: search “Назва або артикул”, selects “Подія
 Caption above the table: “Доступно = на складі − резерв. Резерв знімається, коли замовлення відправлено або скасовано.”
 
 Table columns “Дата”, “Товар” (name, SKU below), “Подія” (event, link below), “Зміна” (right-aligned; plus in success color), “Залишок”, “Хто”:
-- “07.10, 10:02”, “Конструктор LEGO City «Пожежна частина»” “LP-10018”, “Резерв” “ЛП-10482 · Epicentr”, “−1”, “13 доступно”, “Система”
-- “07.10, 09:15”, same product, “Резерв” “ЛП-10481 · Rozetka”, “−1”, “14 доступно”, “Система”
-- “07.10, 08:50”, “Настільна гра «Сімейний квіз»” “LP-10077”, “Відправлено” “ЛП-10480 · Prom”, “−1”, “3”, “Система”
-- “06.10, 19:12”, “Конструктор LEGO City «Пожежна частина»” “LP-10018”, “Резерв” “ЛП-10478 · Epicentr”, “−1”, “15 доступно”, “Система”
+- “07.10, 10:02”, “Конструктор LEGO City «Пожежна частина»” “TM-10018”, “Резерв” “TM-10482 · Epicentr”, “−1”, “13 доступно”, “Система”
+- “07.10, 09:15”, same product, “Резерв” “TM-10481 · Rozetka”, “−1”, “14 доступно”, “Система”
+- “07.10, 08:50”, “Настільна гра «Сімейний квіз»” “TM-10077”, “Відправлено” “TM-10480 · Prom”, “−1”, “3”, “Система”
+- “06.10, 19:12”, “Конструктор LEGO City «Пожежна частина»” “TM-10018”, “Резерв” “TM-10478 · Epicentr”, “−1”, “15 доступно”, “Система”
 - “06.10, 18:40”, same product, “Прихід” “Поставка від постачальника”, “+10”, “16”, “Олена”
-- “06.10, 16:20”, “Набір для творчості «Акварельний ранок»” “LP-10155”, “Скасування” “ЛП-10477 · Rozetka”, “+2”, “23”, “Система”
-- “06.10, 11:05”, “Розвивальний килимок «Луг»” “LP-10204”, “Ручна правка” “Інвентаризація”, “−1”, “7”, “Олена”
+- “06.10, 16:20”, “Набір для творчості «Акварельний ранок»” “TM-10155”, “Скасування” “TM-10477 · Rozetka”, “+2”, “23”, “Система”
+- “06.10, 11:05”, “Розвивальний килимок «Луг»” “TM-10204”, “Ручна правка” “Інвентаризація”, “−1”, “7”, “Олена”
 
 All visible copy in Ukrainian exactly as written.
 ```
@@ -91,7 +91,7 @@ All visible copy in Ukrainian exactly as written.
 Edit this screen: open the right side panel, 480px, titled “Змінити залишок”. Keep the table behind it.
 
 Fields:
-- “Товар” search with selected “Конструктор LEGO City «Пожежна частина» · LP-10018”
+- “Товар” search with selected “Конструктор LEGO City «Пожежна частина» · TM-10018”
 - Info line: “На складі 16 · резерв 3 · доступно 13”
 - Segmented control “Прихід” (selected), “Списання”, “Інвентаризація”
 - “Кількість” “5” suffix “шт.”

@@ -1,4 +1,4 @@
-# CRM «Лапка»: разделы
+# CRM «Trio Mio»: разделы
 
 Админка магазина и единственный источник данных для Rozetka, Epicentr, Prom и будущего сайта. Порядок работ — [`../ROADMAP.md`](../ROADMAP.md). Как данные уходят на площадки — [`../integrations/README.md`](../integrations/README.md).
 

@@ -41,7 +41,7 @@
 
 Справа панель `Попередній перегляд`:
 
-- `Конструктор LEGO City «Пожежна частина» · LP-10018`
+- `Конструктор LEGO City «Пожежна частина» · TM-10018`
 - `Rozetka` `2 050 грн` → `1 850 грн`, зачёркнутая `2 480 грн`
 - `Prom` `1 890 грн` → `1 700 грн`, зачёркнутая `2 290 грн`
 - Ссылка `Усі 64 товари`
@@ -58,7 +58,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, chips, channel tags and buttons. Do not redesign them. Sidebar current item: “Акції”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, chips, channel tags and buttons. Do not redesign them. Sidebar current item: “Акції”.
 
 Header: H1 “Акції”, meta “3 акції”, primary “Створити акцію”.
 Tabs: “Усі 3” (current), “Діють 1”, “Заплановані 1”, “Завершені 0”.
@@ -84,7 +84,7 @@ Left form:
 - “Знижка” segmented control “−%” (selected), “−сума”; field “10” suffix “%”
 - “Округлення” select “До найближчих 10 грн”
 - “Канали” checkboxes “Rozetka” checked, “Prom” checked, “Epicentr” unchecked, “Сайт” disabled with caption “з’явиться разом із сайтом”
-Right panel “Попередній перегляд”: “Конструктор LEGO City «Пожежна частина» · LP-10018”; “Rozetka” “2 050 грн” → “1 850 грн”, struck “2 480 грн”; “Prom” “1 890 грн” → “1 700 грн”, struck “2 290 грн”; link “Усі 64 товари”.
+Right panel “Попередній перегляд”: “Конструктор LEGO City «Пожежна частина» · TM-10018”; “Rozetka” “2 050 грн” → “1 850 грн”, struck “2 480 грн”; “Prom” “1 890 грн” → “1 700 грн”, struck “2 290 грн”; link “Усі 64 товари”.
 Info note below: “Prom: знижка з фіду діє до 45 днів. Ця акція — 11 днів.”
 Footer: primary “Зберегти акцію”, secondary “Скасувати”.
 

@@ -23,7 +23,8 @@ Stitch выбирает точные значения в этих граница
 - **Sidebar.** Светлая с явной границей справа или тёмная нейтральная. Не коралловая.
 - **Text.** Почти чёрный нейтральный. Вторичный — заметно тише, но читаемый.
 - **Border.** Тонкая нейтральная линия 1px. Панели держатся границей, не тенью.
-- **Primary.** Цвет главного действия. Спокойный глубокий тил или чернильно-синий. Можно взять secondary витрины `#2D6A64`. Коралл витрины `#D95D39` — только в словесном знаке, не на кнопках.
+- **Primary.** Цвет главного действия. Спокойный глубокий тил или чернильно-синий. Можно взять secondary витрины `#2D6A64`: он родственен бирюзовой R логотипа, но достаточно тёмный для белого текста.
+- **Логотип.** Пастельные цвета логотипа ([`../../brand/README.md`](../../brand/README.md)) живут только в самом знаке. Для кнопок, текста и статусов они слишком светлые.
 - **Success** `#2E7D47`, **Warning** `#B87212`, **Error** `#C53929` — как на витрине.
 - **Info.** Отдельный спокойный синий или тил для статуса «Нове» и информационных плашек.
 - **Neutral status.** Серый для «Скасовано», «Вимкнено», «Немає в наявності».
@@ -43,7 +44,7 @@ Manrope, как на витрине.
 | H2 | Склад замовлення | Панель |
 | Body | Подзвоніть, будь ласка, перед відправкою | 14px |
 | Table | Конструктор LEGO City «Пожежна частина» | 14px, одна строка с многоточием |
-| Secondary | Артикул LP-10018 | 12–13px |
+| Secondary | Артикул TM-10018 | 12–13px |
 | Number | 2 050 грн | Табличные цифры, выравнивание вправо в колонках сумм |
 | Metric | 214 | Крупная цифра показателя |
 | Label | Номер на площадці | Подпись поля |
@@ -63,7 +64,7 @@ Lucide, как на витрине. 16–20px. Иконка не заменяе�
 
 ### Оболочка
 
-- Колонка навигации 240px. Сверху `Лапка` мелко, под ним `CRM`. Пункты по списку из [`README.md`](README.md), разделитель перед `Клієнти`, `Налаштування` внизу колонки. Текущий пункт выделен фоном и полосой слева.
+- Колонка навигации 240px. Сверху знак `logo-wordmark.svg` высотой около 24px, под ним `CRM` вторичным текстом. Пункты по списку из [`README.md`](README.md), разделитель перед `Клієнти`, `Налаштування` внизу колонки. Текущий пункт выделен фоном и полосой слева.
 - У пункта `Замовлення` счётчик `2` — неподтверждённые заказы. Других счётчиков в навигации нет.
 - Верхняя полоса: поиск `Пошук замовлення або артикула`, справа `Олена` и `Вийти`.
 
@@ -73,7 +74,7 @@ H1, под ним строка мета, справа одно primary-дейс�
 
 ### Хлебные крошки
 
-`Замовлення / ЛП-10481`. Только на внутренних страницах.
+`Замовлення / TM-10481`. Только на внутренних страницах.
 
 ### Фильтры над таблицей
 
@@ -137,12 +138,12 @@ Primary, secondary, quiet, destructive. Destructive красный только 
 
 ### История
 
-Вертикальная лента: время, событие, автор. `07.10, 09:16` · `Зарезервовано 1 шт. LP-10018` · `Система`.
+Вертикальная лента: время, событие, автор. `07.10, 09:16` · `Зарезервовано 1 шт. TM-10018` · `Система`.
 
 ### Боковая панель, модалка, тост
 
 - Боковая панель справа 480px: заголовок, поля, внизу закреплены `Зберегти` и `Скасувати`.
-- Модалка подтверждения: `Скасувати замовлення ЛП-10481?`, поле `Причина`, кнопки `Скасувати замовлення` (destructive) и `Залишити`.
+- Модалка подтверждения: `Скасувати замовлення TM-10481?`, поле `Причина`, кнопки `Скасувати замовлення` (destructive) и `Залишити`.
 - Тост: `Замовлення підтверджено. Статус надіслано на Rozetka.`
 
 ### Состояния
@@ -166,24 +167,24 @@ Primary, secondary, quiet, destructive. Destructive красный только 
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop artboard, 1440px wide, titled “Лапка CRM — foundation”. A design-system sheet for the back office of a Ukrainian toy store that sells on the marketplaces Rozetka, Epicentr and Prom. Not a dashboard, not a marketing page.
+Design ONE desktop artboard, 1440px wide, titled “Trio Mio CRM — foundation”. A design-system sheet for the back office of a Ukrainian toy store that sells on the marketplaces Rozetka, Epicentr and Prom. Not a dashboard, not a marketing page.
 
 This is a work tool used all day: calm, dense, predictable. Same font as the storefront, Manrope, but a different product: cool light-gray background, white panels, 1px neutral borders, radius about 8px, 14px table text, rows about 40px. No warm paper background, no illustrations, no shadows on panels, no gradients, no glass.
 
 Choose exact values inside these bounds and print them on the sheet:
 - Background: cool light gray. Surface: white. Border: thin neutral gray. Text: near-black neutral, secondary text quieter but readable.
-- Primary action color: calm deep teal or ink blue; #2D6A64 is acceptable. The storefront coral #D95D39 appears only in the wordmark, never on buttons.
+- Primary action color: calm deep teal or ink blue; #2D6A64 is acceptable. The pastel logo colors appear only inside the logo, never on buttons, text or status chips.
 - Success #2E7D47, Warning #B87212, Error #C53929. Info: a calm blue or teal for “Нове”. Neutral gray for cancelled/disabled/out of stock. Visible 2px focus ring.
 - Red is only for errors and confirming destructive actions. Never for out of stock, cancelled, or deadlines.
 - Spacing scale 4, 8, 12, 16, 24, 32. Lucide-like outline icons, 16–20px.
 
 Show on the sheet, Ukrainian copy exactly as written:
 
-1. Color tokens with role names and hex. Type scale samples: H1 “Замовлення”, H2 “Склад замовлення”, body “Подзвоніть, будь ласка, перед відправкою”, table text “Конструктор LEGO City «Пожежна частина»”, secondary “Артикул LP-10018”, number “2 050 грн”, metric “214”, label “Номер на площадці”.
-2. App shell: left sidebar 240px with small wordmark “Лапка” and label “CRM”; items “Огляд”, “Замовлення” with counter 2, “Товари”, “Категорії”, “Бренди”, “Характеристики”, “Наявність”, “Ціни”, “Інтеграції”; thin divider; “Клієнти”, “Акції”, “Аналітика”, “Контент”; “Налаштування” pinned at the bottom. Current item highlighted with a background and a left bar. Top bar: search “Пошук замовлення або артикула”, “Олена”, button “Вийти”.
-3. Page header: H1 “Товари”, meta “248 товарів”, primary “Додати товар”, secondary “Імпорт”. Breadcrumbs “Замовлення / ЛП-10481”.
+1. Color tokens with role names and hex. Type scale samples: H1 “Замовлення”, H2 “Склад замовлення”, body “Подзвоніть, будь ласка, перед відправкою”, table text “Конструктор LEGO City «Пожежна частина»”, secondary “Артикул TM-10018”, number “2 050 грн”, metric “214”, label “Номер на площадці”.
+2. App shell: left sidebar 240px with a small logo wordmark about 24px tall — “TRIO♥MIO” in rounded bold capitals, letters in soft pastel yellow, teal, lavender, blue and mint, a small coral heart between TRIO and MIO (it will be replaced by the real logo file) — and under it the label “CRM” in secondary text; items “Огляд”, “Замовлення” with counter 2, “Товари”, “Категорії”, “Бренди”, “Характеристики”, “Наявність”, “Ціни”, “Інтеграції”; thin divider; “Клієнти”, “Акції”, “Аналітика”, “Контент”; “Налаштування” pinned at the bottom. Current item highlighted with a background and a left bar. Top bar: search “Пошук замовлення або артикула”, “Олена”, button “Вийти”.
+3. Page header: H1 “Товари”, meta “248 товарів”, primary “Додати товар”, secondary “Імпорт”. Breadcrumbs “Замовлення / TM-10481”.
 4. Filter row: search, selects “Канал”, “Статус”, “Період”, link “Скинути”; removable chips “Rozetka”, “Нове”.
-5. A compact table with columns “Номер”, “Канал”, “Клієнт”, “Статус”, “Сума”: row “ЛП-10481”, “Rozetka”, “Марина Коваль”, “Нове”, “2 050 грн”; row “ЛП-10480”, “Prom”, “Ігор Мельник”, “Відправлено”, “649 грн”. Checkbox column, one sortable header, right-aligned sums, pagination “1–50 з 214”. A bulk action bar “Вибрано 3”, “Змінити статус”, “Експорт”.
+5. A compact table with columns “Номер”, “Канал”, “Клієнт”, “Статус”, “Сума”: row “TM-10481”, “Rozetka”, “Марина Коваль”, “Нове”, “2 050 грн”; row “TM-10480”, “Prom”, “Ігор Мельник”, “Відправлено”, “649 грн”. Checkbox column, one sortable header, right-aligned sums, pagination “1–50 з 214”. A bulk action bar “Вибрано 3”, “Змінити статус”, “Експорт”.
 6. Status chips with soft backgrounds and text: orders “Нове”, “Підтверджено”, “Відправлено”, “Доставлено”, “Скасовано”, “Повернення”; marketplace listing “Активний”, “На модерації”, “Не готовий: 2 поля”, “Вимкнено”, “Помилка модерації”; stock with icon and text “В наявності”, “Закінчується”, “Немає в наявності”, “Очікується”.
 7. Channel tags as small neutral text tags: “Rozetka”, “Epicentr”, “Prom”, “Сайт”. No marketplace logos or brand colors.
 8. Deadline text with a clock icon in warning color: “підтвердити за 1 год 20 хв”; and a quiet one without color: “підтвердити за 21 год”.
@@ -193,8 +194,8 @@ Show on the sheet, Ukrainian copy exactly as written:
 12. Tabs “Основне”, “Характеристики”, “Ціни і наявність”, “Майданчики”, “Історія”. Key-value panel: “Канал” “Rozetka”, “Номер на площадці” “891204557”, “Створено” “7 жовтня 2026, 09:15”.
 13. Mapping row, three states: “Матеріал: Пластик” → “Epicentr: Пластмаса” mapped; “Серія: City” → empty select “Оберіть значення” in warning state; “Hot Wheels” → “Немає в довіднику”.
 14. Price breakdown line: “1 890 грн” → “+8%” → “2 041,20” → “вгору до 10” → “2 050 грн”, caption “Бренд LEGO”.
-15. History timeline: “07.10, 09:15” “Створено на Rozetka”; “07.10, 09:16” “Зарезервовано 1 шт. LP-10018” “Система”.
-16. Right side panel 480px with sticky “Зберегти” and “Скасувати”. Confirm modal “Скасувати замовлення ЛП-10481?” with field “Причина”, destructive button “Скасувати замовлення” and “Залишити”. Toast “Замовлення підтверджено. Статус надіслано на Rozetka.”
+15. History timeline: “07.10, 09:15” “Створено на Rozetka”; “07.10, 09:16” “Зарезервовано 1 шт. TM-10018” “Система”.
+16. Right side panel 480px with sticky “Зберегти” and “Скасувати”. Confirm modal “Скасувати замовлення TM-10481?” with field “Причина”, destructive button “Скасувати замовлення” and “Залишити”. Toast “Замовлення підтверджено. Статус надіслано на Rozetka.”
 17. Empty table “Замовлень за цей період немає.” with “Скинути фільтри”; error panel “Не вдалося завантажити дані.” with “Повторити”; table skeleton of five gray rows.
 
 All visible copy in Ukrainian exactly as written. Do not design full pages on this sheet.

@@ -54,12 +54,12 @@
 
 Шесть карточек, компонент из фундамента. В образце мало конструкторов, поэтому в сетке стоят товары разных категорий с настоящими именами из `sample-catalog.md`. Новые названия не выдумывать. Порядок:
 
-1. LP-10018 — в наличии, скидка, хіт
-2. LP-10042 — в наличии, без скидки
-3. LP-10077 — закінчується
-4. LP-10103 — нет в наличии, кнопка неактивна
-5. LP-10120 — очікується
-6. LP-10155 — новинка, в наличии
+1. TM-10018 — в наличии, скидка, хіт
+2. TM-10042 — в наличии, без скидки
+3. TM-10077 — закінчується
+4. TM-10103 — нет в наличии, кнопка неактивна
+5. TM-10120 — очікується
+6. TM-10155 — новинка, в наличии
 
 Смешение категорий на демо-сетке допустимо и подписано реальными именами. Не выдумывать седьмой товар.
 
@@ -101,7 +101,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Category listing only. Match the accepted foundation and homepage exactly: same header, footer, colors, type, radius, and the same product card component. Do not redesign them.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Category listing only. Match the accepted foundation and homepage exactly: same header, footer, colors, type, radius, and the same product card component. Do not redesign them.
 
 Page: category “Конструктори”.
 

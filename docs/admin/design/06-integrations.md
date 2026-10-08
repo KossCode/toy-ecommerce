@@ -40,7 +40,7 @@ H1 `Інтеграції`. Под заголовком вкладки площа
 Справа панель `Підключення`:
 
 - `Токен API` `••••••••3f9a`, quiet `Замінити`
-- `Посилання на фід` `https://lapka.ua/feeds/epicentr.xml`, кнопка-иконка `Копіювати`
+- `Посилання на фід` `https://triomio.ua/feeds/epicentr.xml`, кнопка-иконка `Копіювати`
 - `Можливості`: `Замовлення` ✓, `Ціни і наявність через API` ✓, `Автооновлення фіду` `раз на добу, 00:00`
 - Подпись: `Частоту автооновлення змінює менеджер Epicentr.`
 
@@ -63,13 +63,13 @@ H1 `Інтеграції`. Под заголовком вкладки площа
 
 | Товар | Помилка | Коли | |
 | --- | --- | --- | --- |
-| М’яка іграшка «Ведмедик Тео», 31 см · LP-10042 | Головне фото містить напис | 07.10, 09:40 | `Відкрити товар` |
+| М’яка іграшка «Ведмедик Тео», 31 см · TM-10042 | Головне фото містить напис | 07.10, 09:40 | `Відкрити товар` |
 
 Под таблицей: `Після виправлення товар повторно піде на модерацію з наступним оновленням фіду.`
 
 Панель `Готовність товарів`: `Готові 239 з 248`, `Не готові 9`, причина `Не вказано бренд` — 9 товарів.
 
-Панель `Підключення`: `Логін` `lapka.shop@…`, `Пароль` `••••••••`, quiet `Змінити`; `Посилання на фід` `https://lapka.ua/feeds/rozetka.xml` и `Копіювати`; `Тип синхронізації цін` `Через API`; подпись `Фід у режимі «Український» — підтверджено підтримкою Rozetka.`
+Панель `Підключення`: `Логін` `triomio.shop@…`, `Пароль` `••••••••`, quiet `Змінити`; `Посилання на фід` `https://triomio.ua/feeds/rozetka.xml` и `Копіювати`; `Тип синхронізації цін` `Через API`; подпись `Фід у режимі «Український» — підтверджено підтримкою Rozetka.`
 
 ## Не делать
 
@@ -86,7 +86,7 @@ H1 `Інтеграції`. Под заголовком вкладки площа
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, panels, tables, chips, key-value lists and buttons. Do not redesign them. Sidebar current item: “Інтеграції”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, panels, tables, chips, key-value lists and buttons. Do not redesign them. Sidebar current item: “Інтеграції”.
 
 H1 “Інтеграції”. Marketplace tabs with a small status dot and a word: “Prom · працює”, “Rozetka · 1 помилка”, “Epicentr · помилка” (current).
 
@@ -100,7 +100,7 @@ Panel “Стан”, table “Потік”, “Стан”, “Коли”:
 
 Two columns below.
 Left panel “Готовність товарів”: “Готові 206 з 248”, link “Не готові 42”. Top reasons: “Бренд не зіставлено — 31 товар”, “Не вказано бренд — 9 товарів”, “Не заповнені обов’язкові характеристики — 2 товари”.
-Right panel “Підключення”: “Токен API” “••••••••3f9a” with quiet “Замінити”; “Посилання на фід” “https://lapka.ua/feeds/epicentr.xml” with copy icon button “Копіювати”; “Можливості”: “Замовлення” ✓, “Ціни і наявність через API” ✓, “Автооновлення фіду” “раз на добу, 00:00”; caption “Частоту автооновлення змінює менеджер Epicentr.”
+Right panel “Підключення”: “Токен API” “••••••••3f9a” with quiet “Замінити”; “Посилання на фід” “https://triomio.ua/feeds/epicentr.xml” with copy icon button “Копіювати”; “Можливості”: “Замовлення” ✓, “Ціни і наявність через API” ✓, “Автооновлення фіду” “раз на добу, 00:00”; caption “Частоту автооновлення змінює менеджер Epicentr.”
 
 At the bottom a collapsed row “Показати технічні деталі”. Do not expand it.
 
@@ -119,11 +119,11 @@ Panel “Стан”:
 - “Модерація” “1 помилка” (warning) “оновлено о 09:40”
 
 Panel “Помилки модерації”, table “Товар”, “Помилка”, “Коли”, action:
-- “М’яка іграшка «Ведмедик Тео», 31 см” with secondary “LP-10042”, “Головне фото містить напис”, “07.10, 09:40”, quiet button “Відкрити товар”.
+- “М’яка іграшка «Ведмедик Тео», 31 см” with secondary “TM-10042”, “Головне фото містить напис”, “07.10, 09:40”, quiet button “Відкрити товар”.
 Caption: “Після виправлення товар повторно піде на модерацію з наступним оновленням фіду.”
 
 Panel “Готовність товарів”: “Готові 239 з 248”, link “Не готові 9”, reason “Не вказано бренд — 9 товарів”.
-Panel “Підключення”: “Логін” “lapka.shop@…”, “Пароль” “••••••••” with quiet “Змінити”; “Посилання на фід” “https://lapka.ua/feeds/rozetka.xml” with “Копіювати”; “Тип синхронізації цін” “Через API”; caption “Фід у режимі «Український» — підтверджено підтримкою Rozetka.”
+Panel “Підключення”: “Логін” “triomio.shop@…”, “Пароль” “••••••••” with quiet “Змінити”; “Посилання на фід” “https://triomio.ua/feeds/rozetka.xml” with “Копіювати”; “Тип синхронізації цін” “Через API”; caption “Фід у режимі «Український» — підтверджено підтримкою Rozetka.”
 
 All visible copy in Ukrainian exactly as written.
 ```

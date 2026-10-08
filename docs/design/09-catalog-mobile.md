@@ -40,9 +40,9 @@ H1 `Конструктори`
 ## STITCH PROMPT A
 
 ```text
-Design ONE mobile screen at 390px for the Ukrainian toy store “Лапка”. Category listing. Reflow of the accepted desktop catalog, same brand and the same product card. Not a new design.
+Design ONE mobile screen at 390px for the Ukrainian toy store “Trio Mio”. Category listing. Reflow of the accepted desktop catalog, same brand and the same product card. Not a new design.
 
-Mobile header: “Меню”, wordmark “Лапка”, cart count 1, full-width search under it.
+Mobile header: “Меню”, wordmark “Trio Mio”, cart count 1, full-width search under it.
 
 Breadcrumb “Головна / Конструктори”.
 H1 “Конструктори”.
@@ -65,7 +65,7 @@ Button at the end: “Показати ще”. No numbered pagination. Filters 
 ## STITCH PROMPT B
 
 ```text
-Design ONE mobile screen at 390px for “Лапка”. Same category listing dimmed in the background, with a bottom sheet open for filters. Same visual system.
+Design ONE mobile screen at 390px for “Trio Mio”. Same category listing dimmed in the background, with a bottom sheet open for filters. Same visual system.
 
 Sheet title “Фільтри” and close button “Закрити”.
 Groups, matching the desktop catalog:

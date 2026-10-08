@@ -14,7 +14,7 @@
 
 ## Макет
 
-Шапка упрощается визуально тем же компонентом, но без второй строки `Новинки / Акції / Бренди / Подарунки` и без мегаменю. Остаются знак `Лапка` (ссылка на главную), поиск можно скрыть: на оформлении поиск отвлекает. Оставить телефон `0 800 33 12 12`. Справа не показывать лишние входы. Кошик как ссылка `Повернутись до кошика` слева под шапкой, не как иконка с чужим числом.
+Шапка упрощается визуально тем же компонентом, но без второй строки `Новинки / Акції / Бренди / Подарунки` и без мегаменю. Остаются знак `Trio Mio` (ссылка на главную), поиск можно скрыть: на оформлении поиск отвлекает. Оставить телефон `0 800 33 12 12`. Справа не показывать лишние входы. Кошик как ссылка `Повернутись до кошика` слева под шапкой, не как иконка с чужим числом.
 
 Это единственное разрешённое упрощение шапки. Цвета и шрифт те же. Не рисовать другой логотип и другую кнопку.
 
@@ -114,9 +114,9 @@ Primary: `Підтвердити замовлення`
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Checkout only, a single page, not a multi-step wizard. Match the accepted cart and foundation: same colors, type, radius, inputs, radio cards, and summary panel. Serious and quiet. No promo banner, no account-creation wall.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Checkout only, a single page, not a multi-step wizard. Match the accepted cart and foundation: same colors, type, radius, inputs, radio cards, and summary panel. Serious and quiet. No promo banner, no account-creation wall.
 
-Simplified header, same brand style: wordmark “Лапка”, phone “0 800 33 12 12”. No catalog mega-menu, no promo nav row, no search. Under the header, text link “Повернутись до кошика”.
+Simplified header, same brand style: wordmark “Trio Mio”, phone “0 800 33 12 12”. No catalog mega-menu, no promo nav row, no search. Under the header, text link “Повернутись до кошика”.
 
 H1 “Оформлення замовлення”. Line “Можна без реєстрації.” Text link “Увійти”.
 

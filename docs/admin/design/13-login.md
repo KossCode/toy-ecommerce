@@ -13,7 +13,7 @@
 
 Светло-серый фон CRM. По центру белая панель около 400px:
 
-- `Лапка` словесным знаком, под ним `CRM`
+- Полный логотип `logo.svg` (знак и планеты) шириной около 200px, под ним `CRM`
 - H1 `Вхід`
 - `Email` — поле
 - `Пароль` — поле с иконкой показать/скрыть
@@ -33,9 +33,9 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px: the sign-in page of “Лапка CRM”, the back office of a Ukrainian toy store. Use the accepted CRM foundation fields and buttons. No sidebar.
+Design ONE desktop screen at 1440px: the sign-in page of “Trio Mio CRM”, the back office of a Ukrainian toy store. Use the accepted CRM foundation fields and buttons. No sidebar.
 
-Cool light-gray background. Centered white panel about 400px wide: wordmark “Лапка” with label “CRM”, H1 “Вхід”, field “Email” filled with “olena@lapka.ua”, field “Пароль” with show/hide icon in error state and error text “Неправильний email або пароль.”, full-width primary button “Увійти”, quiet link “Забули пароль?”. Small text under the panel: “Доступ лише для працівників магазину.”
+Cool light-gray background. Centered white panel about 400px wide: the full logo about 200px wide (wordmark “TRIO♥MIO” in rounded pastel capitals with a coral heart, three small smiling pastel planets around it; it will be replaced by the real logo file) with label “CRM” under it, H1 “Вхід”, field “Email” filled with “olena@triomio.ua”, field “Пароль” with show/hide icon in error state and error text “Неправильний email або пароль.”, full-width primary button “Увійти”, quiet link “Забули пароль?”. Small text under the panel: “Доступ лише для працівників магазину.”
 
 No illustrations, no social login, no sign-up. All visible copy in Ukrainian exactly as written.
 ```

@@ -4,7 +4,7 @@
 
 ## Порядок
 
-Шапка: `Меню`, `Лапка`, без поиска или с поиском одной строкой, если не выталкивает товар. На кошике поиск вторичен. Показать шапку без поля поиска, с текстовой ссылкой не нужно. Строка шапки достаточна. Телефон не прятать совсем: мелкая строка под шапкой `0 800 33 12 12` необязательна. Оставить шапку из трёх элементов.
+Шапка: `Меню`, `Trio Mio`, без поиска или с поиском одной строкой, если не выталкивает товар. На кошике поиск вторичен. Показать шапку без поля поиска, с текстовой ссылкой не нужно. Строка шапки достаточна. Телефон не прятать совсем: мелкая строка под шапкой `0 800 33 12 12` необязательна. Оставить шапку из трёх элементов.
 
 H1 `Кошик`
 
@@ -35,9 +35,9 @@ H1 `Кошик`
 ## STITCH PROMPT
 
 ```text
-Design ONE mobile screen at 390px for the Ukrainian toy store “Лапка”. Cart. Same data and visual system as the accepted desktop cart. One-handed, serious, no upsells.
+Design ONE mobile screen at 390px for the Ukrainian toy store “Trio Mio”. Cart. Same data and visual system as the accepted desktop cart. One-handed, serious, no upsells.
 
-Header: “Меню”, wordmark “Лапка”, no search on this screen.
+Header: “Меню”, wordmark “Trio Mio”, no search on this screen.
 H1 “Кошик”.
 
 Two stacked item cards.

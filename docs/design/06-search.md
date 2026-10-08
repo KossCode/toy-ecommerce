@@ -16,7 +16,7 @@
 - Счётчик: `24 товари`
 - Описание категории отсутствует
 - Слева те же фильтры, что у конструкторов, плюс группа `Категорія` с чекбоксами `Конструктори`, `Пазли`, `Настільні ігри`. Возраст `6–8 років` может быть выключен: запрос уже про возраст, не обязательно дублировать включённым фильтром. На макете ни один фильтр не включён, чипов нет.
-- Сетка из четырёх карточек образца, у которых возраст близок к запросу: LP-10018, LP-10077, LP-10155, LP-10103
+- Сетка из четырёх карточек образца, у которых возраст близок к запросу: TM-10018, TM-10077, TM-10155, TM-10103
 - Над сеткой нет промо-баннера
 
 Поле поиска в шапке содержит текст `конструктор 6 років`, панель подсказок закрыта.
@@ -33,7 +33,7 @@
 - Строка: `За запитом «єдиноріг космос» немає товарів. Перевірте написання або оберіть категорію.`
 - Подпись `Спробуйте`: чипы `конструктор`, `м’яка іграшка`, `пазл`, `для дитини 5 років`
 - Подпись `Популярні категорії` и четыре плитки: `Конструктори`, `М’які іграшки`, `Пазли`, `Для немовлят`
-- Подпись `Зараз купують` и четыре карточки: LP-10018, LP-10042, LP-10188, LP-10204
+- Подпись `Зараз купують` и четыре карточки: TM-10018, TM-10042, TM-10188, TM-10204
 - Ссылка `До каталогу`
 
 Не писать одну фразу «Ничего не найдено» без выхода.
@@ -63,7 +63,7 @@
 ## STITCH PROMPT A
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Search results only. Reuse the accepted catalog listing exactly: same header, footer, filters, sort, and product cards. Do not create a new grid style.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Search results only. Reuse the accepted catalog listing exactly: same header, footer, filters, sort, and product cards. Do not create a new grid style.
 
 Search field in the header contains “конструктор 6 років”. Suggestion panel is closed.
 
@@ -90,7 +90,7 @@ Pagination can be omitted if there are only four shown, or show page 1. All copy
 Запускать после A, лучше правкой того экрана, если нужно отдельное состояние — отдельный экран с тем же хроме.
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка”, same header and footer as the accepted store. Empty search results. Do not use the filter sidebar.
+Design ONE desktop screen at 1440px for “Trio Mio”, same header and footer as the accepted store. Empty search results. Do not use the filter sidebar.
 
 Header search contains “єдиноріг космос”.
 
@@ -107,7 +107,7 @@ Helpful and calm, not a sad illustration page. All copy in Ukrainian exactly as 
 ## STITCH PROMPT C
 
 ```text
-Design ONE desktop screen showing the accepted “Лапка” header on the warm page background, with the search field focused and a suggestion panel open directly under the search field. The panel is as wide as the field, not a full-screen takeover. Dim the page slightly behind it.
+Design ONE desktop screen showing the accepted “Trio Mio” header on the warm page background, with the search field focused and a suggestion panel open directly under the search field. The panel is as wide as the field, not a full-screen takeover. Dim the page slightly behind it.
 
 Search placeholder: “Шукати іграшку, бренд або вік”. The field is empty.
 

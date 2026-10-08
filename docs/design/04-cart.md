@@ -101,7 +101,7 @@ Primary на всю ширину панели: `Оформити замовле�
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Cart page only. Match the accepted foundation and previous screens exactly: same header, footer, colors, type, radius, price style, and quantity stepper. Do not invent a mini-cart dropdown.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Cart page only. Match the accepted foundation and previous screens exactly: same header, footer, colors, type, radius, price style, and quantity stepper. Do not invent a mini-cart dropdown.
 
 Header cart count is 2. H1 “Кошик”.
 

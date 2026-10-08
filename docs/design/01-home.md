@@ -18,11 +18,11 @@
 2. Полоса мерчандайзинга высотой около 280–320px, не больше. Три карточки в ряд: широкая слева (~60%) и две узкие справа столбиком.
 3. `Популярні категорії` — 8 плиток, 4 колонки. Этот блок начинается в первом экране: виден хотя бы заголовок и верх плиток.
 4. Ряд возраста: подпись `Оберіть за віком` и шесть текстовых ссылок-чипов. Это не второй героя и не иллюстрации детей.
-5. `Зараз купують` — сетка из 4 карточек: LP-10018, LP-10042, LP-10077, LP-10155.
+5. `Зараз купують` — сетка из 4 карточек: TM-10018, TM-10042, TM-10077, TM-10155.
 6. Одна спокойная промо-полоса на всю колонку, высота около 160px: распродажа как категория, не кричащий красный баннер.
-7. `Нові надходження` — горизонтальный ряд из 4 карточек: LP-10155, LP-10188, LP-10204, LP-10042. Если карточка уже была выше, это нормально для образца. Стрелки ряда — icon button с именами `Назад` и `Далі`.
+7. `Нові надходження` — горизонтальный ряд из 4 карточек: TM-10155, TM-10188, TM-10204, TM-10042. Если карточка уже была выше, это нормально для образца. Стрелки ряда — icon button с именами `Назад` и `Далі`.
 8. `Бренди` — один ряд текстовых или простых логотипных ссылок: LEGO, Barbie, Hot Wheels, Cubika, Тигрес, Viga Toys. Без слоганов брендов.
-9. `Чому батьки обирають Лапку` — 4 равные ячейки с иконкой, заголовком и одной строкой. Не иллюстрации.
+9. `Чому батьки обирають Trio Mio` — 4 равные ячейки с иконкой, заголовком и одной строкой. Не иллюстрации.
 10. Подвал.
 
 Блока «о нас» на пол-экрана нет. История бренда не продаёт первый визит.
@@ -92,7 +92,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Homepage only. Use the already accepted foundation in this project: same colors, type, radius, header, footer, and product card. Do not invent a new visual style. If the foundation sheet exists, match it exactly.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Homepage only. Use the already accepted foundation in this project: same colors, type, radius, header, footer, and product card. Do not invent a new visual style. If the foundation sheet exists, match it exactly.
 
 This is a real shop, not a startup landing page. Adults buy for children. Warm paper background, white product cards, calm UI. No cartoon mascots, no gradients, no giant hero, no countdown, no fake “someone just bought” popups.
 
@@ -100,7 +100,7 @@ First viewport at 1440×900 must already show the header AND the start of the ca
 
 Structure, top to bottom:
 
-1. Foundation header. Utility bar: “Безкоштовна доставка від 2 000 грн” and “0 800 33 12 12”. Main row: “Каталог” button, wordmark “Лапка”, wide search with placeholder “Шукати іграшку, бренд або вік”, “Кабінет”, “Обране” 2, “Кошик” 1. Second row only: “Новинки”, “Акції”, “Бренди”, “Подарунки”. Catalog panel is closed.
+1. Foundation header. Utility bar: “Безкоштовна доставка від 2 000 грн” and “0 800 33 12 12”. Main row: “Каталог” button, wordmark “Trio Mio”, wide search with placeholder “Шукати іграшку, бренд або вік”, “Кабінет”, “Обране” 2, “Кошик” 1. Second row only: “Новинки”, “Акції”, “Бренди”, “Подарунки”. Catalog panel is closed.
 
 2. Promo band, three cards. Large left card: eyebrow “Нова колекція”, title “Іграшки, які легко обрати”, line “За віком, брендом і наявністю. Доставка по Україні.”, button “До каталогу”. Top right: “Знижки цього тижня” linking “Акції”. Bottom right: “Щойно надійшли” linking “Новинки”. Photography of real toys, restrained, no text baked into the photo.
 
@@ -120,13 +120,13 @@ Structure, top to bottom:
 
 8. Heading “Бренди”. A single quiet row: LEGO, Barbie, Hot Wheels, Cubika, Тигрес, Viga Toys.
 
-9. Heading “Чому батьки обирають Лапку”. Four equal cells, icon + title + one line:
+9. Heading “Чому батьки обирають Trio Mio”. Four equal cells, icon + title + one line:
    - “Доставка” — “Нова Пошта, Укрпошта або кур’єр. Безкоштовно від 2 000 грн.”
    - “Оплата” — “Картка, Apple Pay, Google Pay або під час отримання.”
    - “Повернення” — “14 днів, якщо товар не підійшов.”
    - “Підтримка” — “Щодня 9:00–20:00. Телефон і Telegram.”
 
-10. Foundation footer. Columns “Інформація”, “Каталог”, “Контакти”. Bottom: “© 2026 Лапка” and “Картка · Apple Pay · Google Pay · Під час отримання”.
+10. Foundation footer. Columns “Інформація”, “Каталог”, “Контакти”. Bottom: “© 2026 Trio Mio” and “Картка · Apple Pay · Google Pay · Під час отримання”.
 
 Content width about 1200–1280. Generous whitespace. Product photos on plain light backgrounds. All visible copy in Ukrainian exactly as written. Do not add extra sections, reviews, or a brand essay.
 ```

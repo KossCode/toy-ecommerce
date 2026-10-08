@@ -1,10 +1,10 @@
 # 10. Товар, mobile
 
-Волна 2. Мобильная версия `03-product.md`, товар LP-10018.
+Волна 2. Мобильная версия `03-product.md`, товар TM-10018.
 
 ## Порядок
 
-Шапка как на мобильном каталоге: меню, `Лапка`, кошик `1`, поиск под ней.
+Шапка как на мобильном каталоге: меню, `Trio Mio`, кошик `1`, поиск под ней.
 
 Крошки в одну строку с обрезкой середины: `Головна / … / Пожежна частина`.
 
@@ -23,9 +23,9 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE mobile screen at 390px for the Ukrainian toy store “Лапка”. Product page for the LEGO set, reflow of the accepted desktop product page. Same colors, type, radius, and price style. Single column. Adults shopping, calm UI.
+Design ONE mobile screen at 390px for the Ukrainian toy store “Trio Mio”. Product page for the LEGO set, reflow of the accepted desktop product page. Same colors, type, radius, and price style. Single column. Adults shopping, calm UI.
 
-Mobile header: “Меню”, “Лапка”, cart count 1, search field underneath.
+Mobile header: “Меню”, “Trio Mio”, cart count 1, search field underneath.
 Breadcrumb: “Головна / … / Пожежна частина”.
 
 Full-width square gallery, plain background. Text “1 / 4” and a “Збільшити” button. Small thumbnails if they fit.
@@ -33,7 +33,7 @@ Full-width square gallery, plain background. Text “1 / 4” and a “Збіл�
 Then the purchase content, same words as desktop:
 Badges “Хіт” and “−18%”.
 H1 “Конструктор LEGO City «Пожежна частина»”.
-“LEGO”, “Артикул LP-10018”, “4,8”, “36 відгуків”.
+“LEGO”, “Артикул TM-10018”, “4,8”, “36 відгуків”.
 “Вік: 6–12 років. Рекомендація виробника.”
 “1 890 грн” and struck-through “2 290 грн”.
 “В наявності”.
@@ -49,7 +49,7 @@ Lines:
 A sticky bottom bar repeats the price “1 890 грн” and the button “До кошика” so the action stays reachable. Same label, not a second product action.
 
 Accordion instead of tabs. Open item “Характеристики” with:
-Вік 6–12 років, Бренд LEGO, Кількість деталей 864, Матеріал Пластик, Розмір коробки 48 × 38 × 12 см, Країна виробництва Чехія, Артикул LP-10018.
+Вік 6–12 років, Бренд LEGO, Кількість деталей 864, Матеріал Пластик, Розмір коробки 48 × 38 × 12 см, Країна виробництва Чехія, Артикул TM-10018.
 Closed items: “Опис”, “Відгуки”.
 
 “Схожі товари” in two columns: Theo bear 1 100 грн, “Сімейний квіз” 649 грн status “Закінчується”, “Акварельний ранок” 530 грн, Hot Wheels 349 грн.

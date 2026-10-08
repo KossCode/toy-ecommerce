@@ -34,7 +34,7 @@
 
 Слева:
 
-1. Панель `Замовлення` — таблица: `ЛП-10481` `Rozetka` `07.10` `Нове` `2 050 грн`; `ЛП-10475` `Prom` `04.10` `Доставлено` `420 грн`.
+1. Панель `Замовлення` — таблица: `TM-10481` `Rozetka` `07.10` `Нове` `2 050 грн`; `TM-10475` `Prom` `04.10` `Доставлено` `420 грн`.
 2. Панель `Нотатки` — поле `Видно лише в CRM`, одна нотатка: `Просить дзвінок перед відправкою.` `Денис, 07.10`.
 
 Справа:
@@ -51,7 +51,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, filter row, tables, channel tags and buttons. Do not redesign them. Sidebar current item: “Клієнти”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, filter row, tables, channel tags and buttons. Do not redesign them. Sidebar current item: “Клієнти”.
 
 Header: H1 “Клієнти”, meta “386 клієнтів”, secondary “Експорт”. No primary button.
 Filter row: search “Ім’я або телефон”, selects “Канал”, “Місто”, link “Скинути”.
@@ -76,7 +76,7 @@ Design the customer detail screen in the same shell. Sidebar current item “К�
 Breadcrumbs “Клієнти / Марина Коваль”. H1 “Марина Коваль”, meta “Клієнт з 4 жовтня 2026 · 2 замовлення”.
 
 Left:
-1. Panel “Замовлення”, table: “ЛП-10481” “Rozetka” “07.10” chip “Нове” “2 050 грн”; “ЛП-10475” “Prom” “04.10” chip “Доставлено” “420 грн”.
+1. Panel “Замовлення”, table: “TM-10481” “Rozetka” “07.10” chip “Нове” “2 050 грн”; “TM-10475” “Prom” “04.10” chip “Доставлено” “420 грн”.
 2. Panel “Нотатки”: textarea placeholder “Видно лише в CRM”; one note “Просить дзвінок перед відправкою.” by “Денис, 07.10”.
 Right:
 1. Panel “Контакти”: “Телефон” “+380 67 000 00 01”, “Місто” “Київ”, “Відділення” “Київ, Відділення №25”.

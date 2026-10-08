@@ -3,7 +3,7 @@
 Волна 1, экран 3. После принятого каталога.
 
 - Устройство: desktop 1440
-- Товар: LP-10018, конструктор в наличии со скидкой
+- Товар: TM-10018, конструктор в наличии со скидкой
 - Общие части: шапка, подвал, цена, количество, бейджи, табы, карточка похожих товаров
 
 ## Зачем этот экран
@@ -24,7 +24,7 @@
 
 1. Бейджи `Хіт` и `−18%` в одну строку, маленькие.
 2. H1: `Конструктор LEGO City «Пожежна частина»`
-3. Строка мета: `LEGO` как ссылка, `Артикул LP-10018`, рейтинг `4,8` и `36 відгуків` как ссылка на блок отзывов. Звёзды сопровождаются числом, не заменяют его.
+3. Строка мета: `LEGO` как ссылка, `Артикул TM-10018`, рейтинг `4,8` и `36 відгуків` как ссылка на блок отзывов. Звёзды сопровождаются числом, не заменяют его.
 4. Возраст отдельной строкой с иконкой и словами: `Вік: 6–12 років. Рекомендація виробника.`
 5. Цена `1 890 грн` крупно, рядом зачёркнутая `2 290 грн`.
 6. Наличие: иконка + `В наявності`.
@@ -57,9 +57,9 @@
 | Матеріал | Пластик |
 | Розмір коробки | 48 × 38 × 12 см |
 | Країна виробництва | Чехія |
-| Артикул | LP-10018 |
+| Артикул | TM-10018 |
 
-Ниже заголовок `Схожі товари` и 4 карточки: LP-10042, LP-10077, LP-10155, LP-10188. Те же правила карточки.
+Ниже заголовок `Схожі товари` и 4 карточки: TM-10042, TM-10077, TM-10155, TM-10188. Те же правила карточки.
 
 Блок отзывов на этом макете не разворачивать. В табе достаточно, что пункт `Відгуки` есть, а в шапке покупки уже есть `36 відгуків`. Полный список отзывов — не эта генерация.
 
@@ -90,9 +90,9 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Product detail only. Match the accepted foundation, homepage, and catalog: same header, footer, colors, type, radius, price style, and product card. Do not invent a new style.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Product detail only. Match the accepted foundation, homepage, and catalog: same header, footer, colors, type, radius, price style, and product card. Do not invent a new style.
 
-Product LP-10018, in stock, discounted.
+Product TM-10018, in stock, discounted.
 
 Header as on the other screens. Catalog menu closed.
 
@@ -105,7 +105,7 @@ Left, about 56%: gallery on a plain light surface. Four vertical thumbnails, fir
 Right, about 44%: a bordered purchase panel.
 - Small badges “Хіт” and “−18%”.
 - H1 “Конструктор LEGO City «Пожежна частина»”.
-- Meta row: link “LEGO”, “Артикул LP-10018”, “4,8”, “36 відгуків”. Stars are accompanied by the number.
+- Meta row: link “LEGO”, “Артикул TM-10018”, “4,8”, “36 відгуків”. Stars are accompanied by the number.
 - “Вік: 6–12 років. Рекомендація виробника.”
 - Price “1 890 грн” large, old price “2 290 грн” struck through.
 - Icon plus “В наявності”.
@@ -128,7 +128,7 @@ Below the columns, tabs: “Опис”, “Характеристики” sele
 Матеріал — Пластик
 Розмір коробки — 48 × 38 × 12 см
 Країна виробництва — Чехія
-Артикул — LP-10018
+Артикул — TM-10018
 
 Then heading “Схожі товари” and four product cards in the catalog card style:
 - “М’яка іграшка «Ведмедик Тео», 31 см”, 1 100 грн, “В наявності”

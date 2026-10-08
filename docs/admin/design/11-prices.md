@@ -28,7 +28,7 @@
 | Rozetka | За замовчуванням | +12% | вгору до 10 грн | 184 |
 | Rozetka | Бренд LEGO | +8% | вгору до 10 грн | 64 |
 | Epicentr | За замовчуванням | +8% | вгору до 10 грн | 247 |
-| Epicentr | Товар LP-10188 | Точна ціна 399 грн | — | 1 |
+| Epicentr | Товар TM-10188 | Точна ціна 399 грн | — | 1 |
 | Prom | За замовчуванням | Як базова ціна | — | 248 |
 
 «Товарів» — сколько товаров сейчас получают цену по этому правилу. Колонка «Де діє» — с вторичной подписью уровня: `Майданчик`, `Бренд`, `Товар`.
@@ -46,7 +46,7 @@
 - Блок `Попередній перегляд`:
   - `Зміниться ціна 38 товарів`
   - `Стрибків понад поріг Rozetka: 0` (success)
-  - Строка-пример: `Машинка інерційна Hot Wheels · LP-10188` · `400 грн` → `390 грн`, расчёт `349 грн` → `+10%` → `383,90` → `вгору до 10` → `390 грн`
+  - Строка-пример: `Машинка інерційна Hot Wheels · TM-10188` · `400 грн` → `390 грн`, расчёт `349 грн` → `+10%` → `383,90` → `вгору до 10` → `390 грн`
   - Ссылка `Показати всі 38`
 
 Внизу primary `Зберегти правило`, secondary `Скасувати`.
@@ -64,7 +64,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Лапка CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, panels and buttons. Do not redesign them. Sidebar current item: “Ціни”.
+Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, tabs, tables, panels and buttons. Do not redesign them. Sidebar current item: “Ціни”.
 
 Header: H1 “Ціни”, meta “5 правил”, primary “Додати правило”.
 Tabs: “Усі” (current), “Rozetka”, “Epicentr”, “Prom”.
@@ -74,7 +74,7 @@ Table columns “Майданчик”, “Де діє” (with a secondary leve
 - “Rozetka”, “За замовчуванням” / “Майданчик”, “+12%”, “вгору до 10 грн”, “184”
 - “Rozetka”, “LEGO” / “Бренд”, “+8%”, “вгору до 10 грн”, “64”
 - “Epicentr”, “За замовчуванням” / “Майданчик”, “+8%”, “вгору до 10 грн”, “247”
-- “Epicentr”, “LP-10188” / “Товар”, “Точна ціна 399 грн”, “—”, “1”
+- “Epicentr”, “TM-10188” / “Товар”, “Точна ціна 399 грн”, “—”, “1”
 - “Prom”, “За замовчуванням” / “Майданчик”, “Як базова ціна”, “—”, “248”
 
 Right info panel “Пороги Rozetka”: “CRM попереджає, якщо ціна зростає більш ніж у 1,5 раза або падає більш ніж у 2 рази: після таких змін Rozetka може вимкнути товар до підтвердження в кабінеті.”
@@ -92,7 +92,7 @@ Fields:
 - “Де діє” segmented control “За замовчуванням”, “Категорія” (selected), “Бренд”, “Товар”; select “Машинки та транспорт”
 - “Правило” segmented control “Точна ціна”, “Вище на %” (selected), “Вище на суму”; field “10” suffix “%”
 - “Округлення” selects “Вгору” and “до 10 грн”
-- Block “Попередній перегляд”: “Зміниться ціна 38 товарів”; success line “Стрибків понад поріг Rozetka: 0”; example row “Машинка інерційна Hot Wheels · LP-10188” “400 грн” → “390 грн” with breakdown “349 грн” → “+10%” → “383,90” → “вгору до 10” → “390 грн”; link “Показати всі 38”.
+- Block “Попередній перегляд”: “Зміниться ціна 38 товарів”; success line “Стрибків понад поріг Rozetka: 0”; example row “Машинка інерційна Hot Wheels · TM-10188” “400 грн” → “390 грн” with breakdown “349 грн” → “+10%” → “383,90” → “вгору до 10” → “390 грн”; link “Показати всі 38”.
 Sticky footer: primary “Зберегти правило”, secondary “Скасувати”.
 
 All visible copy in Ukrainian exactly as written.

@@ -27,7 +27,7 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop artboard at 1440px titled “Стани” for the Ukrainian toy store “Лапка”. A labeled library of empty, error, and loading panels. Use the accepted storefront colors, type, radius, buttons, and inputs. Not a marketing page. No mascots, no “oops” jokes, no HTTP codes.
+Design ONE desktop artboard at 1440px titled “Стани” for the Ukrainian toy store “Trio Mio”. A labeled library of empty, error, and loading panels. Use the accepted storefront colors, type, radius, buttons, and inputs. Not a marketing page. No mascots, no “oops” jokes, no HTTP codes.
 
 Lay the panels out in a clear grid. Each panel has a short Ukrainian title, one sentence, and one main action.
 

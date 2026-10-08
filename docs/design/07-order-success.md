@@ -13,7 +13,7 @@
 Узкая колонка около 720px по центру, плюс короткая сводка. Не конфетти, не иллюстрация праздника. Одна иконка успеха в цвете success, рядом текст, не вместо текста.
 
 Надзаголовок: `Замовлення прийнято`
-H1: `Номер ЛП-10482`
+H1: `Номер TM-10482`
 Строка: `Ми надіслали деталі на maryna@example.com і зателефонуємо, якщо доставку треба уточнити.`
 
 Дальше три нумерованных шага, просто текст:
@@ -49,14 +49,14 @@ H1: `Номер ЛП-10482`
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for the Ukrainian toy store “Лапка”. Order success only. Same visual system as checkout: same wordmark, colors, type, radius. Quiet and serious. No confetti, no mascot, no gift illustration, no review request.
+Design ONE desktop screen at 1440px for the Ukrainian toy store “Trio Mio”. Order success only. Same visual system as checkout: same wordmark, colors, type, radius. Quiet and serious. No confetti, no mascot, no gift illustration, no review request.
 
-Header: wordmark “Лапка” and phone “0 800 33 12 12” only.
+Header: wordmark “Trio Mio” and phone “0 800 33 12 12” only.
 
 Centered content, about 720px wide.
 
 Success icon plus eyebrow “Замовлення прийнято”.
-H1 “Номер ЛП-10482”.
+H1 “Номер TM-10482”.
 “Ми надіслали деталі на maryna@example.com і зателефонуємо, якщо доставку треба уточнити.”
 
 Three numbered steps:
