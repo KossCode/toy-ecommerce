@@ -14,7 +14,7 @@
 
 Текущий пункт `Замовлення`, счётчик `2`.
 
-Заголовок: H1 `Замовлення`, мета `214 замовлень`. Справа secondary `Експорт`. Primary-действия нет: заказы приходят с площадок, вручную их не создают. Ручной заказ (телефон, офлайн) — открытый вопрос, на макете не рисовать.
+Заголовок: H1 `Замовлення`, мета `214 замовлень`. Справа primary `Створити замовлення`, secondary `Експорт`. Ручные заказы (Instagram Direct и др.) создаются здесь; канал у таких — `Instagram` или `Ручне`.
 
 Под заголовком быстрые вкладки-счётчики:
 
@@ -70,7 +70,7 @@
 ```text
 Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, filter row, table, chips, channel tags, deadline text and buttons. Do not redesign them. Sidebar current item: “Замовлення” with counter 2.
 
-Header: H1 “Замовлення”, meta “214 замовлень”, secondary button “Експорт”. No primary button.
+Header: H1 “Замовлення”, meta “214 замовлень”, primary “Створити замовлення”, secondary “Експорт”.
 
 Quick tabs with counts: “Усі 214” (current), “Нові 2”, “До відправлення 2”, “Відправлені 9”, “Скасовані 6”.
 

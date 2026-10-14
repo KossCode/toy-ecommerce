@@ -92,6 +92,7 @@
 | Фундамент CRM | [`approved/00-foundation.png`](approved/00-foundation.png) | `dad28d2300fb4835918dd94684e22646` |
 | Огляд | [`approved/01-overview.png`](approved/01-overview.png) | `49d7552ba82443ee8797067e65f70cbd` |
 | Замовлення: список | [`approved/02-orders.png`](approved/02-orders.png) | `7d28cc5c277b4553a8969279c88d4233` |
+| Замовлення: картка | [`approved/03-order.png`](approved/03-order.png) | `0ef522f17d92448d9db6f8e41d13cc85` |
 
 ## Что считается принятым экраном
 
