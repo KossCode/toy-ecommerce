@@ -36,7 +36,7 @@ Stitch выбирает точные значения в этих граница
 
 ### Типографика
 
-Manrope, как на витрине.
+Manrope, как на витрине. Один шрифт на всё: артикулы, номера заказов, суммы, даты и ТТН тоже Manrope, с табличными цифрами (`font-variant-numeric: tabular-nums`). Моноширинный шрифт не использовать.
 
 | Роль | Образец | Характер |
 | --- | --- | --- |
@@ -64,7 +64,7 @@ Lucide, как на витрине. 16–20px. Иконка не заменяе�
 
 ### Оболочка
 
-- Колонка навигации 240px. Сверху знак `logo-wordmark.svg` высотой около 24px, под ним `CRM` вторичным текстом. Пункты по списку из [`README.md`](README.md), разделитель перед `Клієнти`, `Налаштування` внизу колонки. Текущий пункт выделен фоном и полосой слева.
+- Колонка навигации 240px. Сверху знак `logo-wordmark.svg` высотой около 24px, под ним `CRM` вторичным текстом. Пункты: Огляд, Замовлення, Товари, Категорії, Бренди, Наявність, Ціни, Інтеграції; разделитель; Клієнти, Акції, Аналітика, Контент; Налаштування внизу. Пункта «Характеристики» нет. Текущий пункт выделен фоном и полосой слева.
 - У пункта `Замовлення` счётчик `2` — неподтверждённые заказы. Других счётчиков в навигации нет.
 - Верхняя полоса: поиск `Пошук замовлення або артикула`, справа `Олена` и `Вийти`.
 
@@ -94,6 +94,8 @@ H1, под ним строка мета, справа одно primary-дейс�
 
 Заказ: `Нове` (info), `Підтверджено` (нейтральный тёмный), `Відправлено` (primary-тинт), `Доставлено` (success), `Скасовано` (нейтральный серый), `Повернення` (warning).
 
+Статус товара в CRM: `Чернетка` (серый), `Активний` (success), `Архів` (серый).
+
 Товар на площадке: `Активний` (success), `На модерації` (info), `Не готовий: 2 поля` (warning), `Вимкнено` (серый), `Помилка модерації` (error).
 
 Наличие: `В наявності`, `Закінчується`, `Немає в наявності`, `Очікується` — те же цвета, что на витрине, с иконкой.
@@ -118,9 +120,11 @@ Primary, secondary, quiet, destructive. Destructive красный только 
 
 `Input`, `Select`, `Textarea`, поле числа с суффиксом `грн` или `шт.`, `Checkbox`, `Radio`, переключатель `Toggle`, сегментный выбор из трёх вариантов (`Точна ціна` · `Вище на %` · `Вище на суму`). Состояния: default, focus, filled, disabled, error. Ошибка — текст под полем: `Вкажіть кількість`.
 
-### Вкладки
+### Вкладки карточки товара
 
-`Основне · Характеристики · Ціни і наявність · Майданчики · Історія`.
+`Основне · Атрибути · Ціни і наявність · Майданчики · Історія`.
+
+«Атрибути» — фиксированные поля (колір, вік, матеріал…), не справочник характеристик.
 
 ### Панель «ключ — значение»
 
@@ -162,14 +166,30 @@ Primary, secondary, quiet, destructive. Destructive красный только 
 
 ## Зафиксировано
 
-Пусто до принятия листа.
+Принято 14.10.2026. Локальная копия: [`approved/00-foundation.png`](approved/00-foundation.png).
+
+Stitch: `dad28d2300fb4835918dd94684e22646` — «Trio Mio CRM — foundation (MVP)». Черновики без суффикса MVP — не использовать как эталон.
+
+| Токен | Значение |
+| --- | --- |
+| Background | `#F4F5F7` |
+| Surface | `#FFFFFF` |
+| Primary | `#2D6A64` (на листе также встречается `#044454` — для кнопок держим `#2D6A64`) |
+| Success | `#2E7D47` |
+| Warning | `#B87212` |
+| Error | `#C53929` |
+| Font | Manrope |
+| Radius | ~6–8px |
+| Table row | ~40px |
+
+Навигация MVP без «Характеристики». Вкладки товара: Основне · Атрибути · Ціни і наявність · Майданчики · Історія.
 
 ## STITCH PROMPT
 
 ```text
 Design ONE desktop artboard, 1440px wide, titled “Trio Mio CRM — foundation”. A design-system sheet for the back office of a Ukrainian toy store that sells on the marketplaces Rozetka, Epicentr and Prom. Not a dashboard, not a marketing page.
 
-This is a work tool used all day: calm, dense, predictable. Same font as the storefront, Manrope, but a different product: cool light-gray background, white panels, 1px neutral borders, radius about 8px, 14px table text, rows about 40px. No warm paper background, no illustrations, no shadows on panels, no gradients, no glass.
+This is a work tool used all day: calm, dense, predictable. Same font as the storefront, Manrope, and only Manrope: SKUs, order numbers, sums and dates use Manrope with tabular figures, no monospace font. A different product from the storefront: cool light-gray background, white panels, 1px neutral borders, radius about 8px, 14px table text, rows about 40px. No warm paper background, no illustrations, no shadows on panels, no gradients, no glass.
 
 Choose exact values inside these bounds and print them on the sheet:
 - Background: cool light gray. Surface: white. Border: thin neutral gray. Text: near-black neutral, secondary text quieter but readable.
@@ -181,18 +201,18 @@ Choose exact values inside these bounds and print them on the sheet:
 Show on the sheet, Ukrainian copy exactly as written:
 
 1. Color tokens with role names and hex. Type scale samples: H1 “Замовлення”, H2 “Склад замовлення”, body “Подзвоніть, будь ласка, перед відправкою”, table text “Конструктор LEGO City «Пожежна частина»”, secondary “Артикул TM-10018”, number “2 050 грн”, metric “214”, label “Номер на площадці”.
-2. App shell: left sidebar 240px with a small logo wordmark about 24px tall — “TRIO♥MIO” in rounded bold capitals, letters in soft pastel yellow, teal, lavender, blue and mint, a small coral heart between TRIO and MIO (it will be replaced by the real logo file) — and under it the label “CRM” in secondary text; items “Огляд”, “Замовлення” with counter 2, “Товари”, “Категорії”, “Бренди”, “Характеристики”, “Наявність”, “Ціни”, “Інтеграції”; thin divider; “Клієнти”, “Акції”, “Аналітика”, “Контент”; “Налаштування” pinned at the bottom. Current item highlighted with a background and a left bar. Top bar: search “Пошук замовлення або артикула”, “Олена”, button “Вийти”.
+2. App shell: left sidebar 240px with a small logo wordmark about 24px tall — “TRIO♥MIO” in rounded bold capitals, letters in soft pastel yellow, teal, lavender, blue and mint, a small coral heart between TRIO and MIO (it will be replaced by the real logo file) — and under it the label “CRM” in secondary text; items “Огляд”, “Замовлення” with counter 2, “Товари”, “Категорії”, “Бренди”, “Наявність”, “Ціни”, “Інтеграції”; thin divider; “Клієнти”, “Акції”, “Аналітика”, “Контент”; “Налаштування” pinned at the bottom. No “Характеристики” nav item. Current item highlighted with a background and a left bar. Top bar: search “Пошук замовлення або артикула”, “Олена”, button “Вийти”.
 3. Page header: H1 “Товари”, meta “248 товарів”, primary “Додати товар”, secondary “Імпорт”. Breadcrumbs “Замовлення / TM-10481”.
 4. Filter row: search, selects “Канал”, “Статус”, “Період”, link “Скинути”; removable chips “Rozetka”, “Нове”.
 5. A compact table with columns “Номер”, “Канал”, “Клієнт”, “Статус”, “Сума”: row “TM-10481”, “Rozetka”, “Марина Коваль”, “Нове”, “2 050 грн”; row “TM-10480”, “Prom”, “Ігор Мельник”, “Відправлено”, “649 грн”. Checkbox column, one sortable header, right-aligned sums, pagination “1–50 з 214”. A bulk action bar “Вибрано 3”, “Змінити статус”, “Експорт”.
-6. Status chips with soft backgrounds and text: orders “Нове”, “Підтверджено”, “Відправлено”, “Доставлено”, “Скасовано”, “Повернення”; marketplace listing “Активний”, “На модерації”, “Не готовий: 2 поля”, “Вимкнено”, “Помилка модерації”; stock with icon and text “В наявності”, “Закінчується”, “Немає в наявності”, “Очікується”.
+6. Status chips with soft backgrounds and text: orders “Нове”, “Підтверджено”, “Відправлено”, “Доставлено”, “Скасовано”, “Повернення”; product CRM status “Чернетка”, “Активний”, “Архів”; marketplace listing “Активний”, “На модерації”, “Не готовий: 2 поля”, “Вимкнено”, “Помилка модерації”; stock with icon and text “В наявності”, “Закінчується”, “Немає в наявності”, “Очікується”.
 7. Channel tags as small neutral text tags: “Rozetka”, “Epicentr”, “Prom”, “Сайт”. No marketplace logos or brand colors.
 8. Deadline text with a clock icon in warning color: “підтвердити за 1 год 20 хв”; and a quiet one without color: “підтвердити за 21 год”.
 9. Metric card: “Потрібно підтвердити”, “2”, “найближче — за 1 год 20 хв”.
 10. Buttons primary, secondary, quiet, destructive; states default, hover, focus, disabled, loading. Labels “Підтвердити”, “Створити накладну”, “Скинути”, “Скасувати замовлення”.
 11. Fields: input, select, textarea, number with suffix “грн” and “шт.”, checkbox, radio, toggle, segmented control “Точна ціна” / “Вище на %” / “Вище на суму”. Error text under a field: “Вкажіть кількість”.
-12. Tabs “Основне”, “Характеристики”, “Ціни і наявність”, “Майданчики”, “Історія”. Key-value panel: “Канал” “Rozetka”, “Номер на площадці” “891204557”, “Створено” “7 жовтня 2026, 09:15”.
-13. Mapping row, three states: “Матеріал: Пластик” → “Epicentr: Пластмаса” mapped; “Серія: City” → empty select “Оберіть значення” in warning state; “Hot Wheels” → “Немає в довіднику”.
+12. Product tabs “Основне”, “Атрибути”, “Ціни і наявність”, “Майданчики”, “Історія”. Key-value panel: “Канал” “Rozetka”, “Номер на площадці” “891204557”, “Створено” “7 жовтня 2026, 09:15”. TTN row sample: “ТТН” “20450000000001”, “Статус доставки” “У відділенні”, caption “Нова Пошта”.
+13. Mapping row (categories), three states: “Конструктори” → “Rozetka: Дитячі конструктори (97420)” mapped; “Конструктори” → empty select “Оберіть категорію Prom” in warning; “Hot Wheels” brand → “Немає в довіднику Epicentr”.
 14. Price breakdown line: “1 890 грн” → “+8%” → “2 041,20” → “вгору до 10” → “2 050 грн”, caption “Бренд LEGO”.
 15. History timeline: “07.10, 09:15” “Створено на Rozetka”; “07.10, 09:16” “Зарезервовано 1 шт. TM-10018” “Система”.
 16. Right side panel 480px with sticky “Зберегти” and “Скасувати”. Confirm modal “Скасувати замовлення TM-10481?” with field “Причина”, destructive button “Скасувати замовлення” and “Залишити”. Toast “Замовлення підтверджено. Статус надіслано на Rozetka.”
