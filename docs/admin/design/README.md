@@ -86,9 +86,10 @@
 
 ## Принятые экраны
 
-| Экран | Файл |
-| --- | --- |
-| Фундамент CRM | [`approved/00-foundation.png`](approved/00-foundation.png) |
+| Экран | Файл | Stitch |
+| --- | --- | --- |
+| Фундамент CRM | [`approved/00-foundation.png`](approved/00-foundation.png) | `dad28d2300fb4835918dd94684e22646` |
+| Огляд | [`approved/01-overview.png`](approved/01-overview.png) | `49d7552ba82443ee8797067e65f70cbd` |
 
 ## Что считается принятым экраном
 
