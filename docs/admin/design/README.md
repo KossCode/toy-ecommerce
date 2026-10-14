@@ -83,6 +83,7 @@
 4. В `prompt` — блок `STITCH PROMPT` целиком.
 5. В контекст: файл экрана, `00-foundation.md`, `sample-data.md`.
 6. Все экраны CRM — `DESKTOP`, 1440. Мобильной CRM нет.
+7. **Один экран — один вызов.** При таймауте НЕ перегенерировать: сначала проверить `list_screens` / canvas. Дубликаты не создавать.
 
 ## Принятые экраны
 
@@ -90,6 +91,7 @@
 | --- | --- | --- |
 | Фундамент CRM | [`approved/00-foundation.png`](approved/00-foundation.png) | `dad28d2300fb4835918dd94684e22646` |
 | Огляд | [`approved/01-overview.png`](approved/01-overview.png) | `49d7552ba82443ee8797067e65f70cbd` |
+| Замовлення: список | [`approved/02-orders.png`](approved/02-orders.png) | `7d28cc5c277b4553a8969279c88d4233` |
 
 ## Что считается принятым экраном
 
