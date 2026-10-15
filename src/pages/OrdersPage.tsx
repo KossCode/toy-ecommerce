@@ -245,8 +245,9 @@ function CreateOrderModal({
   const [deliveryPayer, setDeliveryPayer] =
     useState<(typeof DELIVERY_PAYERS)[number]>('Отримувач')
   const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('Під час отримання')
-  const [sku, setSku] = useState(products[0]?.sku ?? '')
-  const [qty, setQty] = useState(1)
+  const [lines, setLines] = useState<{ key: string; sku: string; qty: number }[]>([
+    { key: 'line-1', sku: products[0]?.sku ?? '', qty: 1 },
+  ])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -258,6 +259,42 @@ function CreateOrderModal({
       : deliveryType === 'Поштомат'
         ? 'Номер поштомату'
         : 'Наприклад, Відділення №25'
+
+  const lineTotal = lines.reduce((sum, line) => {
+    const p = products.find((x) => x.sku === line.sku)
+    return sum + (p?.price ?? 0) * Math.max(0, line.qty || 0)
+  }, 0)
+
+  const qtyBySku = lines.reduce((map, line) => {
+    if (!line.sku) return map
+    map.set(line.sku, (map.get(line.sku) ?? 0) + Math.max(0, line.qty || 0))
+    return map
+  }, new Map<string, number>())
+
+  const itemsValid =
+    lines.length > 0 &&
+    lines.every((line) => line.sku && line.qty >= 1) &&
+    [...qtyBySku.entries()].every(([sku, qty]) => {
+      const p = products.find((x) => x.sku === sku)
+      return Boolean(p && qty <= p.available)
+    })
+
+  function updateLine(key: string, patch: Partial<{ sku: string; qty: number }>) {
+    setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)))
+  }
+
+  function addLine() {
+    const used = new Set(lines.map((l) => l.sku))
+    const next = products.find((p) => !used.has(p.sku)) ?? products[0]
+    setLines((prev) => [
+      ...prev,
+      { key: `line-${Date.now()}`, sku: next?.sku ?? '', qty: 1 },
+    ])
+  }
+
+  function removeLine(key: string) {
+    setLines((prev) => (prev.length <= 1 ? prev : prev.filter((line) => line.key !== key)))
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -378,30 +415,80 @@ function CreateOrderModal({
             </p>
           ) : null}
 
-          <div className="grid grid-cols-[1fr_80px] gap-2">
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Товар</span>
-              <Select className="w-full" value={sku} onChange={(e) => setSku(e.target.value)}>
-                {products.length === 0 ? (
-                  <option value="">Немає товарів у наявності</option>
-                ) : (
-                  products.map((p) => (
-                    <option key={p.sku} value={p.sku}>
-                      {p.sku} · {p.name}
-                    </option>
-                  ))
-                )}
-              </Select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">К-сть</span>
-              <Input
-                type="number"
-                min={1}
-                value={qty}
-                onChange={(e) => setQty(Number(e.target.value))}
-              />
-            </label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Товари</span>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={products.length === 0}
+                onClick={addLine}
+              >
+                + Додати позицію
+              </Button>
+            </div>
+            {products.length === 0 ? (
+              <p className="text-sm text-[var(--error)]">Немає товарів у наявності</p>
+            ) : (
+              lines.map((line, index) => {
+                const product = products.find((p) => p.sku === line.sku)
+                const needed = qtyBySku.get(line.sku) ?? line.qty
+                const overstock = product ? needed > product.available : false
+                return (
+                  <div
+                    key={line.key}
+                    className="grid grid-cols-[1fr_72px_auto] items-end gap-2 rounded-[var(--radius)] border border-[var(--border)] p-2"
+                  >
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-[var(--text-secondary)]">
+                        Позиція {index + 1}
+                      </span>
+                      <Select
+                        className="w-full"
+                        value={line.sku}
+                        onChange={(e) => updateLine(line.key, { sku: e.target.value })}
+                      >
+                        {products.map((p) => (
+                          <option key={p.sku} value={p.sku}>
+                            {p.sku} · {p.name} (доступно {p.available})
+                          </option>
+                        ))}
+                      </Select>
+                    </label>
+                    <label className="block text-sm">
+                      <span className="mb-1 block text-[var(--text-secondary)]">К-сть</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={product?.available}
+                        value={line.qty}
+                        onChange={(e) =>
+                          updateLine(line.key, { qty: Math.max(1, Number(e.target.value) || 1) })
+                        }
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      className="mb-0.5 text-[var(--error)]"
+                      disabled={lines.length <= 1}
+                      onClick={() => removeLine(line.key)}
+                    >
+                      Прибрати
+                    </Button>
+                    {overstock ? (
+                      <p className="col-span-3 text-xs text-[var(--error)]">
+                        Доступно лише {product?.available} шт.
+                        {needed !== line.qty ? ` (у рядках разом ${needed})` : ''}
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })
+            )}
+            <div className="text-right text-sm">
+              Разом: <strong>{money(lineTotal)}</strong>
+            </div>
           </div>
           {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
         </div>
@@ -410,11 +497,15 @@ function CreateOrderModal({
             Скасувати
           </Button>
           <Button
-            disabled={saving || !customerName.trim() || !sku}
+            disabled={saving || !customerName.trim() || !itemsValid}
             onClick={async () => {
               try {
                 setSaving(true)
                 setError(null)
+                const merged = new Map<string, number>()
+                for (const line of lines) {
+                  merged.set(line.sku, (merged.get(line.sku) ?? 0) + line.qty)
+                }
                 const order = await api.createOrder({
                   channel: 'Instagram',
                   customerName: customerName.trim(),
@@ -425,7 +516,7 @@ function CreateOrderModal({
                   deliveryAddress: deliveryDetail.trim() || undefined,
                   deliveryPayer,
                   payment,
-                  items: [{ sku, qty }],
+                  items: [...merged.entries()].map(([sku, qty]) => ({ sku, qty })),
                 })
                 onCreated(order.id)
               } catch (e) {
