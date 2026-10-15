@@ -324,6 +324,16 @@ export const browserApi = {
         recalcStock(p)
       }
       const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
+      const delivery = body.delivery ?? 'Нова Пошта'
+      if (!['Нова Пошта', 'Міст Експрес'].includes(delivery)) {
+        throw new Error('Оберіть Нову Пошту або Міст Експрес')
+      }
+      const payment = body.payment ?? 'Під час отримання'
+      const addressParts = [
+        body.deliveryType || null,
+        body.deliveryAddress?.trim() || null,
+        body.deliveryPayer ? `платник: ${body.deliveryPayer}` : null,
+      ].filter(Boolean)
       const order: Order = {
         id,
         channel: body.channel ?? 'Instagram',
@@ -334,9 +344,9 @@ export const browserApi = {
         city: body.city ?? null,
         status: 'Підтверджено',
         confirmDeadlineMinutes: null,
-        delivery: 'Нова Пошта',
-        deliveryAddress: body.deliveryAddress ?? null,
-        payment: body.payment ?? 'Під час отримання',
+        delivery,
+        deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
+        payment,
         ttn: null,
         ttnStatus: null,
         comment: body.comment ?? null,
@@ -344,7 +354,11 @@ export const browserApi = {
         items: orderItems,
         total,
         history: [
-          { at: nowIso(), text: `Створено вручну (${body.channel ?? 'Instagram'})`, who: 'Олена' },
+          {
+            at: nowIso(),
+            text: `Створено вручну (${body.channel ?? 'Instagram'}) · ${delivery} · ${payment}`,
+            who: 'Олена',
+          },
           ...orderItems.map((i) => ({
             at: nowIso(),
             text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
