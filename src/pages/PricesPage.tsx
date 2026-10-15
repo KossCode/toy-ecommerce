@@ -8,6 +8,7 @@ import {
   type Product,
 } from '@/api/client'
 import { Button, Input, PageHeader, Panel, Select, StatusChip } from '@/components/ui'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { money } from '@/lib/format'
 
 type Tab = 'all' | 'rozetka' | 'epicentr' | 'prom'
@@ -119,6 +120,8 @@ export function PricesPage() {
     setPreview(null)
     setShowAllExamples(false)
   }
+
+  useEscapeKey(panelOpen, closePanel)
 
   async function save() {
     setSaving(true)
