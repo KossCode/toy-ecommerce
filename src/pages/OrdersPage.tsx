@@ -70,7 +70,7 @@ export function OrdersPage() {
   }, [orders, tab, channel, q])
 
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'all', label: 'Усі', count: 214 },
+    { id: 'all', label: 'Усі', count: orders.length },
     {
       id: 'draft',
       label: 'Чернетки',
@@ -82,8 +82,16 @@ export function OrdersPage() {
       label: 'До відправлення',
       count: orders.filter((o) => o.status === 'Підтверджено').length,
     },
-    { id: 'sent', label: 'Відправлені', count: 9 },
-    { id: 'cancelled', label: 'Скасовані', count: 6 },
+    {
+      id: 'sent',
+      label: 'Відправлені',
+      count: orders.filter((o) => o.status === 'Відправлено').length,
+    },
+    {
+      id: 'cancelled',
+      label: 'Скасовані',
+      count: orders.filter((o) => o.status === 'Скасовано').length,
+    },
   ]
 
   function toggle(id: string) {
@@ -94,7 +102,7 @@ export function OrdersPage() {
     <div>
       <PageHeader
         title="Замовлення"
-        meta={`${orders.length} у моці · 214 замовлень`}
+        meta={`${orders.length} замовлень`}
         actions={
           <>
             <Button onClick={() => setCreating(true)}>Створити замовлення</Button>
@@ -225,7 +233,8 @@ export function OrdersPage() {
         </table>
       </div>
       <div className="mt-3 text-sm text-[var(--text-secondary)]">
-        1–{filtered.length} з {orders.length} (мокові рядки)
+        1–{filtered.length} з {filtered.length}
+        {filtered.length !== orders.length ? ` (усього ${orders.length})` : ''}
       </div>
 
       {creating ? (

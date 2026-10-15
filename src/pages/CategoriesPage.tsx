@@ -161,7 +161,7 @@ export function CategoriesPage() {
           <>
             <Button onClick={() => setAdding(true)}>Додати категорію</Button>
             <Button variant="secondary" disabled={saving} onClick={() => void refreshDictionaries()}>
-              Оновити довідники майданчиків
+              Оновити довідники площадок
             </Button>
           </>
         }
@@ -234,7 +234,7 @@ export function CategoriesPage() {
               </dl>
             </Panel>
 
-            <Panel title="Категорії на майданчиках">
+            <Panel title="Категорії на площадках">
               <div className="space-y-3">
                 {CHANNELS.map(({ key, label }) => (
                   <MappingRow
@@ -248,7 +248,7 @@ export function CategoriesPage() {
                 ))}
               </div>
               <p className="mt-3 text-xs text-[var(--text-secondary)]">
-                Лише кінцеві (листові) категорії майданчиків. Довідники оновлено{' '}
+                Лише кінцеві (листові) категорії площадок. Довідники оновлено{' '}
                 {data.meta.dictionariesUpdatedAt}.
               </p>
             </Panel>

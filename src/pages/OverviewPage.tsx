@@ -182,10 +182,30 @@ export function OverviewPage() {
                 <div className="text-[var(--text-secondary)]">
                   {data.lowStockSample.available} шт.
                 </div>
-                <div className="mt-2 text-[var(--text-secondary)]">ще 11 товарів</div>
-                <Link className="mt-1 inline-block text-[var(--primary)]" to="/products?tab=low">
-                  Усі 12
-                </Link>
+                {(() => {
+                  const total = Number(data.meta.counts.lowStock ?? 1)
+                  const rest = Math.max(0, total - 1)
+                  return rest > 0 ? (
+                    <>
+                      <div className="mt-2 text-[var(--text-secondary)]">
+                        ще {rest} {rest === 1 ? 'товар' : rest < 5 ? 'товари' : 'товарів'}
+                      </div>
+                      <Link
+                        className="mt-1 inline-block text-[var(--primary)]"
+                        to="/products?tab=low"
+                      >
+                        Усі {total}
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      className="mt-2 inline-block text-[var(--primary)]"
+                      to="/products?tab=low"
+                    >
+                      До товару
+                    </Link>
+                  )
+                })()}
               </div>
             ) : (
               <p className="text-[var(--text-secondary)]">Немає</p>

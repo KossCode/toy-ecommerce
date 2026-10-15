@@ -201,7 +201,7 @@ export function PricesPage() {
           <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
               <tr>
-                <th className="px-3 py-2 font-medium">Майданчик</th>
+                <th className="px-3 py-2 font-medium">Площадка</th>
                 <th className="px-3 py-2 font-medium">Де діє</th>
                 <th className="px-3 py-2 font-medium">Правило</th>
                 <th className="px-3 py-2 font-medium">Округлення</th>
@@ -267,7 +267,7 @@ export function PricesPage() {
           </header>
           <div className="flex-1 space-y-4 overflow-auto p-5 text-sm">
             <label className="block">
-              <span className="mb-1 block text-[var(--text-secondary)]">Майданчик</span>
+              <span className="mb-1 block text-[var(--text-secondary)]">Площадка</span>
               <Select
                 className="w-full"
                 value={draft.marketplace}

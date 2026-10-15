@@ -217,9 +217,37 @@ export const browserApi = {
         actionKind: o.status === 'Нове' ? 'confirm' : 'ttn',
         urgent: o.status === 'Нове' && (o.confirmDeadlineMinutes ?? 9999) < 120,
       }))
-    const low = products.find((p) => p.stockLabel === 'Закінчується')
+    const lowStockList = products.filter((p) => p.stockLabel === 'Закінчується')
+    const low = lowStockList[0]
+    const needConfirm = orders.filter((o) => o.status === 'Нове').length
+    const awaitingShip = orders.filter((o) => o.status === 'Підтверджено').length
+    const today = meta.todayIso.slice(0, 10)
+    const ordersTodayList = orders.filter((o) => o.createdAt.startsWith(today))
+    const ordersTodaySum = ordersTodayList.reduce((s, o) => s + o.total, 0)
     return {
-      meta,
+      meta: {
+        ...meta,
+        counts: {
+          productsTotal: products.length,
+          ordersTotal: orders.length,
+          lowStock: lowStockList.length,
+          drafts: products.filter((p) => p.status === 'Чернетка').length,
+          notOnMarketplaces: products.filter((p) => p.syncStatus === '—').length,
+          notReady: products.filter((p) => p.syncStatus === 'Є питання').length,
+          outOfStock: products.filter((p) => p.stockLabel === 'Немає в наявності').length,
+        },
+        overview: {
+          ...meta.overview,
+          needConfirm,
+          awaitingShip,
+          ordersToday: ordersTodayList.length,
+          ordersTodayHint: ordersTodayList.length
+            ? `на ${ordersTodaySum.toLocaleString('uk-UA')} грн`
+            : 'немає',
+          lowStock: lowStockList.length,
+          lowStockHint: `з ${products.length} товарів`,
+        },
+      },
       todo,
       integrations: integrations.marketplaces.map((m) => ({
         id: m.id,
@@ -559,7 +587,7 @@ export const browserApi = {
       scope: draft.scope,
       scopeLabel: draft.scopeLabel ?? '—',
       scopeLevel:
-        draft.scope === 'default' ? 'Майданчик' : draft.scope === 'category' ? 'Категорія' : 'Товар',
+        draft.scope === 'default' ? 'Площадка' : draft.scope === 'category' ? 'Категорія' : 'Товар',
       scopeValue: draft.scopeValue ?? null,
       kind: draft.kind,
       value: draft.value ?? null,
@@ -624,7 +652,7 @@ export const browserApi = {
             ? 'За замовчуванням'
             : String(body.scopeLabel || body.scopeValue || '—'),
         scopeLevel:
-          body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+          body.scope === 'default' ? 'Площадка' : body.scope === 'category' ? 'Категорія' : 'Товар',
         scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
         kind: body.kind,
         value: body.value ?? null,
@@ -678,7 +706,7 @@ export const browserApi = {
             ? 'За замовчуванням'
             : String(body.scopeLabel || body.scopeValue || '—'),
         scopeLevel:
-          body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+          body.scope === 'default' ? 'Площадка' : body.scope === 'category' ? 'Категорія' : 'Товар',
         scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
         kind: body.kind,
         value: body.value ?? null,

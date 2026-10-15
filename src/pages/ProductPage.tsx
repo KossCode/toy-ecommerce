@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import { formatDateTime, money } from '@/lib/format'
 
-const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Майданчики', 'Історія'] as const
+const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Площадки', 'Історія'] as const
 
 export function ProductPage() {
   const { sku = '' } = useParams()
@@ -77,8 +77,10 @@ export function ProductPage() {
             <StatusChip tone={chipTone(product.status)}>{product.status}</StatusChip>
             <StockDot label={product.stockLabel} />
             <span>
-              {product.sku} · {product.brand || 'Не вказано бренд'} · {product.category} · змінено{' '}
-              {product.updatedBy}
+              {[product.sku, product.brand || null, product.category]
+                .filter(Boolean)
+                .join(' · ')}{' '}
+              · змінено {product.updatedBy}
             </span>
           </span>
         }
@@ -290,7 +292,7 @@ export function ProductPage() {
                   </Field>
                 </div>
                 <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                  Від базової ціни рахуються ціни майданчиків.
+                  Від базової ціни рахуються ціни на площадках.
                 </p>
               </Panel>
               <Panel title="Наявність">
@@ -312,13 +314,13 @@ export function ProductPage() {
                   Очікується
                 </label>
               </Panel>
-              <Panel title="Ціни на майданчиках">
+              <Panel title="Ціни на площадках">
                 {prices ? (
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[320px] table-fixed text-sm">
                       <thead className="text-[var(--text-secondary)]">
                         <tr className="border-b border-[var(--border)]">
-                          <th className="w-[28%] py-2 pr-3 text-left font-medium">Майданчик</th>
+                          <th className="w-[28%] py-2 pr-3 text-left font-medium">Площадка</th>
                           <th className="w-[32%] py-2 px-3 text-right font-medium">Ціна</th>
                           <th className="w-[40%] py-2 pl-3 text-left font-medium">Правило</th>
                         </tr>
@@ -352,11 +354,11 @@ export function ProductPage() {
             </>
           ) : null}
 
-          {tab === 'Майданчики' ? (
+          {tab === 'Площадки' ? (
             <div className="space-y-3">
               {product.status === 'Чернетка' ? (
                 <p className="text-sm text-[var(--warning)]">
-                  Чернетка не синхронізується з майданчиками.
+                  Чернетка не синхронізується з площадками.
                 </p>
               ) : null}
               {(['rozetka', 'epicentr', 'prom'] as const).map((key) => {
@@ -455,7 +457,7 @@ export function ProductPage() {
               </div>
             ) : null}
           </Panel>
-          <Panel title="Майданчики">
+          <Panel title="Площадки">
             <ul className="space-y-2 text-sm">
               {Object.entries(product.channels).map(([key, status]) => (
                 <li key={key} className="flex items-center justify-between gap-2">
