@@ -7,7 +7,10 @@ import seedIntegrations from '../../data/integrations.json'
 import seedMeta from '../../data/meta.json'
 import seedHistory from '../../data/product-history.json'
 import seedCategories from '../../data/categories.json'
+import seedBrands from '../../data/brands.json'
 import type {
+  Brand,
+  BrandsFile,
   CategoriesFile,
   Category,
   CreateOrderBody,
@@ -20,7 +23,7 @@ import type {
   ProductHistoryItem,
 } from './client'
 
-const STORAGE_KEY = 'triomio-crm-browser-v2'
+const STORAGE_KEY = 'triomio-crm-browser-v3'
 
 type Store = {
   products: Product[]
@@ -29,6 +32,7 @@ type Store = {
   meta: typeof seedMeta
   history: ProductHistoryItem[]
   categories: CategoriesFile
+  brands: BrandsFile
 }
 
 function nowIso() {
@@ -90,7 +94,15 @@ function seed(): Store {
     meta: structuredClone(seedMeta),
     history: structuredClone(seedHistory) as ProductHistoryItem[],
     categories: structuredClone(seedCategories) as CategoriesFile,
+    brands: structuredClone(seedBrands) as BrandsFile,
   }
+}
+
+function brandNeedsAttention(b: Brand) {
+  if (b.unnamed) return true
+  return Object.values(b.mappings).some(
+    (m) => m.status === 'missing_dictionary' || m.status === 'missing_prom',
+  )
 }
 
 function mappingFromLeaf(
@@ -427,6 +439,49 @@ export const browserApi = {
       })
     })
     return store.categories
+  },
+
+  async getBrands() {
+    return store.brands
+  },
+
+  async createBrand(body: { name: string }) {
+    let created: Brand | null = null
+    mutate((s) => {
+      const name = body.name?.trim()
+      if (!name) throw new Error('Потрібна назва')
+      if (s.brands.brands.some((b) => b.name.toLowerCase() === name.toLowerCase())) {
+        throw new Error('Такий бренд уже є')
+      }
+      const mapped = { status: 'mapped' as const, label: 'Зіставлено', value: name }
+      created = {
+        id: `brand-${Date.now()}`,
+        name,
+        productCount: 0,
+        unnamed: false,
+        mappings: { rozetka: { ...mapped }, epicentr: { ...mapped }, prom: { ...mapped } },
+      }
+      s.brands.brands.push(created)
+      s.brands.meta.total = s.brands.brands.length
+      s.brands.meta.needsAttention = s.brands.brands.filter(brandNeedsAttention).length
+    })
+    return created!
+  },
+
+  async recheckBrand(id: string) {
+    let brand: Brand | null = null
+    mutate((s) => {
+      const found = s.brands.brands.find((b) => b.id === id)
+      if (!found) throw new Error('Бренд не знайдено')
+      s.brands.meta.dictionariesUpdatedAt = new Date().toLocaleString('uk-UA', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      brand = found
+    })
+    return { brand: brand!, meta: store.brands.meta }
   },
 
   async retryIntegration(id: string) {

@@ -136,3 +136,32 @@ export type CategoriesFile = {
   }
   categories: Category[]
 }
+
+export type BrandMapping = {
+  status: 'mapped' | 'missing_dictionary' | 'missing_prom' | 'dash'
+  label: string
+  value: string | null
+  hint?: string
+  letter?: string
+}
+
+export type Brand = {
+  id: string
+  name: string
+  productCount: number
+  unnamed: boolean
+  mappings: {
+    rozetka: BrandMapping
+    epicentr: BrandMapping
+    prom: BrandMapping
+  }
+}
+
+export type BrandsFile = {
+  meta: {
+    total: number
+    needsAttention: number
+    dictionariesUpdatedAt: string
+  }
+  brands: Brand[]
+}

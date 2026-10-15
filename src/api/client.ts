@@ -54,6 +54,14 @@ const httpApi = {
       method: 'POST',
       body: '{}',
     }),
+  getBrands: () => request<BrandsFile>('/brands'),
+  createBrand: (body: { name: string }) =>
+    request<Brand>('/brands', { method: 'POST', body: JSON.stringify(body) }),
+  recheckBrand: (id: string) =>
+    request<{ brand: Brand; meta: BrandsFile['meta'] }>(`/brands/${id}/recheck`, {
+      method: 'POST',
+      body: '{}',
+    }),
 }
 
 export const api = useBrowserApi ? browserApi : httpApi
@@ -238,4 +246,33 @@ export type CategoriesFile = {
     prom: MarketplaceLeaf[]
   }
   categories: Category[]
+}
+
+export type BrandMapping = {
+  status: 'mapped' | 'missing_dictionary' | 'missing_prom' | 'dash'
+  label: string
+  value: string | null
+  hint?: string
+  letter?: string
+}
+
+export type Brand = {
+  id: string
+  name: string
+  productCount: number
+  unnamed: boolean
+  mappings: {
+    rozetka: BrandMapping
+    epicentr: BrandMapping
+    prom: BrandMapping
+  }
+}
+
+export type BrandsFile = {
+  meta: {
+    total: number
+    needsAttention: number
+    dictionariesUpdatedAt: string
+  }
+  brands: Brand[]
 }
