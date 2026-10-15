@@ -241,7 +241,10 @@ app.post('/api/orders', (req, res) => {
     customerName,
     customerPhone,
     city,
+    delivery = 'Нова Пошта',
     deliveryAddress,
+    deliveryType,
+    deliveryPayer = 'Отримувач',
     payment = 'Під час отримання',
     comment,
     items,
@@ -250,7 +253,10 @@ app.post('/api/orders', (req, res) => {
     customerName: string
     customerPhone?: string
     city?: string
+    delivery?: string
     deliveryAddress?: string
+    deliveryType?: string
+    deliveryPayer?: string
     payment?: string
     comment?: string
     items: { sku: string; qty: number }[]
@@ -258,6 +264,10 @@ app.post('/api/orders', (req, res) => {
 
   if (!customerName || !items?.length) {
     res.status(400).json({ error: 'Потрібні клієнт і склад' })
+    return
+  }
+  if (!['Нова Пошта', 'Міст Експрес'].includes(delivery)) {
+    res.status(400).json({ error: 'Оберіть Нову Пошту або Міст Експрес' })
     return
   }
 
@@ -287,6 +297,11 @@ app.post('/api/orders', (req, res) => {
   writeJson('products.json', products)
 
   const total = orderItems.reduce((s, i) => s + i.price * i.qty, 0)
+  const addressParts = [
+    deliveryType || null,
+    deliveryAddress?.trim() || null,
+    deliveryPayer ? `платник: ${deliveryPayer}` : null,
+  ].filter(Boolean)
   const order: Order = {
     id,
     channel,
@@ -297,8 +312,8 @@ app.post('/api/orders', (req, res) => {
     city: city ?? null,
     status: 'Підтверджено',
     confirmDeadlineMinutes: null,
-    delivery: 'Нова Пошта',
-    deliveryAddress: deliveryAddress ?? null,
+    delivery,
+    deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
     payment,
     ttn: null,
     ttnStatus: null,
@@ -309,7 +324,7 @@ app.post('/api/orders', (req, res) => {
     history: [
       {
         at: nowIso(),
-        text: `Створено вручну (${channel})`,
+        text: `Створено вручну (${channel}) · ${delivery} · ${payment}`,
         who: 'Олена',
       },
       ...orderItems.map((i) => ({

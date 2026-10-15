@@ -157,7 +157,18 @@ export type CreateOrderBody = {
   customerName: string
   customerPhone?: string
   city?: string
+  /** Carrier shown in the orders table: Нова Пошта | Міст Експрес */
+  delivery?: string
+  /** Branch / address / locker details */
   deliveryAddress?: string
+  /** Відділення | Адреса — CRM label; maps to NP Warehouse* / Doors* later */
+  deliveryType?: string
+  /** Отримувач | Відправник — NP/Meest payerType */
+  deliveryPayer?: string
+  /**
+   * Оплачено | Накладений платіж | Під час отримання | Карткою при отриманні
+   * COD → післяплата on waybill when TTN is created (stage 5).
+   */
   payment?: string
   comment?: string
   items: { sku: string; qty: number }[]

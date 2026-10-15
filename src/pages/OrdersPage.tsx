@@ -3,7 +3,18 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type OrderListItem, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { Button, Input, PageHeader, Select, StatusChip, chipTone } from '@/components/ui'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
+
+const CARRIERS = ['Нова Пошта', 'Міст Експрес'] as const
+const DELIVERY_TYPES = ['Відділення', 'Адреса', 'Поштомат'] as const
+const DELIVERY_PAYERS = ['Отримувач', 'Відправник'] as const
+const PAYMENTS = [
+  'Оплачено',
+  'Накладений платіж',
+  'Під час отримання',
+  'Карткою при отриманні',
+] as const
 
 type Tab = 'all' | 'new' | 'ship' | 'sent' | 'cancelled'
 
@@ -228,40 +239,158 @@ function CreateOrderModal({
   const [customerName, setCustomerName] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
+  const [carrier, setCarrier] = useState<(typeof CARRIERS)[number]>('Нова Пошта')
+  const [deliveryType, setDeliveryType] = useState<(typeof DELIVERY_TYPES)[number]>('Відділення')
+  const [deliveryDetail, setDeliveryDetail] = useState('')
+  const [deliveryPayer, setDeliveryPayer] =
+    useState<(typeof DELIVERY_PAYERS)[number]>('Отримувач')
+  const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('Під час отримання')
   const [sku, setSku] = useState(products[0]?.sku ?? '')
   const [qty, setQty] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
+  useEscapeKey(true, onClose)
+
+  const detailPlaceholder =
+    deliveryType === 'Адреса'
+      ? 'Вулиця, будинок, квартира'
+      : deliveryType === 'Поштомат'
+        ? 'Номер поштомату'
+        : 'Наприклад, Відділення №25'
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-[var(--radius)] bg-white p-5 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-auto rounded-[var(--radius)] bg-white p-5 shadow-lg">
         <h2 className="text-lg font-semibold">Створити замовлення</h2>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Ручний канал (Instagram Direct тощо). Резервує залишок.
+          Ручний канал (Instagram Direct тощо). Резервує залишок. ТТН НП/МЄ — пізніше; зараз
+          зберігаємо спосіб доставки й оплати для накладної.
         </p>
         <div className="mt-4 space-y-3">
           <label className="block text-sm">
             <span className="mb-1 block text-[var(--text-secondary)]">Клієнт</span>
-            <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            <Input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Імʼя отримувача"
+              autoFocus
+            />
           </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Телефон</span>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+380…"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Місто</span>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Київ" />
+            </label>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Служба доставки</span>
+              <Select
+                className="w-full"
+                value={carrier}
+                onChange={(e) => setCarrier(e.target.value as (typeof CARRIERS)[number])}
+              >
+                {CARRIERS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Тип доставки</span>
+              <Select
+                className="w-full"
+                value={deliveryType}
+                onChange={(e) => setDeliveryType(e.target.value as (typeof DELIVERY_TYPES)[number])}
+              >
+                {DELIVERY_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          </div>
+
           <label className="block text-sm">
-            <span className="mb-1 block text-[var(--text-secondary)]">Телефон</span>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <span className="mb-1 block text-[var(--text-secondary)]">
+              {deliveryType === 'Адреса'
+                ? 'Адреса'
+                : deliveryType === 'Поштомат'
+                  ? 'Поштомат'
+                  : 'Відділення'}
+            </span>
+            <Input
+              value={deliveryDetail}
+              onChange={(e) => setDeliveryDetail(e.target.value)}
+              placeholder={detailPlaceholder}
+            />
           </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-[var(--text-secondary)]">Місто</span>
-            <Input value={city} onChange={(e) => setCity(e.target.value)} />
-          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Платник доставки</span>
+              <Select
+                className="w-full"
+                value={deliveryPayer}
+                onChange={(e) =>
+                  setDeliveryPayer(e.target.value as (typeof DELIVERY_PAYERS)[number])
+                }
+              >
+                {DELIVERY_PAYERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Оплата</span>
+              <Select
+                className="w-full"
+                value={payment}
+                onChange={(e) => setPayment(e.target.value as (typeof PAYMENTS)[number])}
+              >
+                {PAYMENTS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          </div>
+
+          {payment === 'Накладений платіж' ? (
+            <p className="text-xs text-[var(--text-secondary)]">
+              Накладений платіж (післяплата / COD) піде в ТТН {carrier} при створенні накладної —
+              сума = залишок по замовленню.
+            </p>
+          ) : null}
+
           <div className="grid grid-cols-[1fr_80px] gap-2">
             <label className="block text-sm">
               <span className="mb-1 block text-[var(--text-secondary)]">Товар</span>
-              <Select value={sku} onChange={(e) => setSku(e.target.value)}>
-                {products.map((p) => (
-                  <option key={p.sku} value={p.sku}>
-                    {p.sku} · {p.name}
-                  </option>
-                ))}
+              <Select className="w-full" value={sku} onChange={(e) => setSku(e.target.value)}>
+                {products.length === 0 ? (
+                  <option value="">Немає товарів у наявності</option>
+                ) : (
+                  products.map((p) => (
+                    <option key={p.sku} value={p.sku}>
+                      {p.sku} · {p.name}
+                    </option>
+                  ))
+                )}
               </Select>
             </label>
             <label className="block text-sm">
@@ -281,16 +410,21 @@ function CreateOrderModal({
             Скасувати
           </Button>
           <Button
-            disabled={saving}
+            disabled={saving || !customerName.trim() || !sku}
             onClick={async () => {
               try {
                 setSaving(true)
                 setError(null)
                 const order = await api.createOrder({
                   channel: 'Instagram',
-                  customerName,
-                  customerPhone: phone,
-                  city,
+                  customerName: customerName.trim(),
+                  customerPhone: phone.trim() || undefined,
+                  city: city.trim() || undefined,
+                  delivery: carrier,
+                  deliveryType,
+                  deliveryAddress: deliveryDetail.trim() || undefined,
+                  deliveryPayer,
+                  payment,
                   items: [{ sku, qty }],
                 })
                 onCreated(order.id)
