@@ -6,6 +6,7 @@ import { OrderDetailPage } from '@/pages/OrderDetailPage'
 import { ProductsPage } from '@/pages/ProductsPage'
 import { ProductPage } from '@/pages/ProductPage'
 import { IntegrationsPage } from '@/pages/IntegrationsPage'
+import { StockPage } from '@/pages/StockPage'
 import { StubPage } from '@/pages/StubPage'
 
 export default function App() {
@@ -21,7 +22,7 @@ export default function App() {
           <Route path="integrations" element={<IntegrationsPage />} />
           <Route path="categories" element={<StubPage title="Категорії" />} />
           <Route path="brands" element={<StubPage title="Бренди" />} />
-          <Route path="stock" element={<StubPage title="Наявність" />} />
+          <Route path="stock" element={<StockPage />} />
           <Route path="prices" element={<StubPage title="Ціни" />} />
           <Route path="customers" element={<StubPage title="Клієнти" />} />
           <Route path="promotions" element={<StubPage title="Акції" />} />

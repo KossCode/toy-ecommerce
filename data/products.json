@@ -7,9 +7,9 @@
     "status": "Активний",
     "price": 1890,
     "oldPrice": 2290,
-    "total": 16,
+    "total": 20,
     "reserve": 3,
-    "available": 13,
+    "available": 17,
     "stockLabel": "В наявності",
     "channels": {
       "rozetka": "Активний",
@@ -31,7 +31,7 @@
     "partsCount": 540,
     "series": "City",
     "condition": "Новий",
-    "updatedAt": "2026-10-07T09:16:00",
+    "updatedAt": "2026-10-15T06:47:14",
     "updatedBy": "Олена",
     "duplicateOf": null,
     "brandMissing": false

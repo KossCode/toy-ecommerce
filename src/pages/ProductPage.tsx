@@ -1,8 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type Product } from '@/api/client'
-import { Button, Input, PageHeader, Panel, StatusChip, StockDot, Textarea, chipTone } from '@/components/ui'
-import { money } from '@/lib/format'
+import { api, type Product, type ProductHistoryItem } from '@/api/client'
+import {
+  Button,
+  Input,
+  PageHeader,
+  Panel,
+  StatusChip,
+  StockDot,
+  Textarea,
+  chipTone,
+} from '@/components/ui'
+import { formatDateTime, money } from '@/lib/format'
 
 const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Майданчики', 'Історія'] as const
 
@@ -11,13 +20,16 @@ export function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [draft, setDraft] = useState<Partial<Product>>({})
   const [tab, setTab] = useState<(typeof tabs)[number]>('Основне')
+  const [history, setHistory] = useState<ProductHistoryItem[]>([])
+  const [historyFilter, setHistoryFilter] = useState('Усі')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const dirty = Object.keys(draft).length > 0
 
   async function load() {
-    const p = await api.getProduct(sku)
+    const [p, h] = await Promise.all([api.getProduct(sku), api.getProductHistory(sku)])
     setProduct(p)
+    setHistory(h)
     setDraft({})
   }
 
@@ -33,6 +45,22 @@ export function ProductPage() {
   function setField<K extends keyof Product>(key: K, value: Product[K]) {
     setDraft((d) => ({ ...d, [key]: value }))
   }
+
+  async function save() {
+    if (!product) return
+    setSaving(true)
+    try {
+      const next = await api.patchProduct(product.sku, draft)
+      setProduct(next)
+      setDraft({})
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const prices = product.marketplacePrices
+  const filteredHistory =
+    historyFilter === 'Усі' ? history : history.filter((h) => h.kind === historyFilter)
 
   return (
     <div>
@@ -56,19 +84,7 @@ export function ProductPage() {
         }
         actions={
           <>
-            <Button
-              disabled={!dirty || saving}
-              onClick={async () => {
-                setSaving(true)
-                try {
-                  const next = await api.patchProduct(product.sku, draft)
-                  setProduct(next)
-                  setDraft({})
-                } finally {
-                  setSaving(false)
-                }
-              }}
-            >
+            <Button disabled={!dirty || saving} onClick={() => void save()}>
               Зберегти
             </Button>
             <Button variant="secondary">…</Button>
@@ -93,15 +109,9 @@ export function ProductPage() {
         ))}
       </div>
 
-      {tab !== 'Основне' ? (
-        <Panel>
-          <p className="text-[var(--text-secondary)]">
-            Вкладка «{tab}» — наступний крок (у макеті через edit_screens). Зараз доступна «Основне».
-          </p>
-        </Panel>
-      ) : (
-        <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-          <div className="space-y-4">
+      <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+        <div className="space-y-4">
+          {tab === 'Основне' ? (
             <Panel>
               <label className="block text-sm">
                 <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
@@ -152,7 +162,7 @@ export function ProductPage() {
                 <Field label="Артикул">
                   <Input value={product.sku} disabled />
                   <div className="mt-1 text-xs text-[var(--text-secondary)]">
-                    На RZ/EC передається як TM10018 (без дефіса).
+                    На RZ/EC передається без дефіса.
                   </div>
                 </Field>
                 <Field label="Категорія">
@@ -188,45 +198,272 @@ export function ProductPage() {
                 </Field>
               </div>
             </Panel>
-          </div>
+          ) : null}
 
-          <div className="space-y-4">
-            <Panel title="Наявність">
-              <div className="text-2xl font-semibold">Доступно {product.available} шт.</div>
-              <div className="mt-1 text-sm text-[var(--text-secondary)]">
-                Всього {product.total} · резерв {product.reserve}
+          {tab === 'Атрибути' ? (
+            <Panel>
+              <h2 className="text-base font-semibold">Фіксовані поля товару (не варіанти)</h2>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Різний колір — окремий артикул через Дублювати.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Field label="Стан">
+                  <Input
+                    value={view.condition ?? ''}
+                    onChange={(e) => setField('condition', e.target.value)}
+                  />
+                </Field>
+                <Field label="Колір">
+                  <Input value={view.color ?? ''} onChange={(e) => setField('color', e.target.value)} />
+                </Field>
+                <Field label="Вікова група">
+                  <Input
+                    value={view.ageGroup ?? ''}
+                    onChange={(e) => setField('ageGroup', e.target.value)}
+                  />
+                </Field>
+                <Field label="Матеріал">
+                  <Input
+                    value={view.material ?? ''}
+                    onChange={(e) => setField('material', e.target.value)}
+                  />
+                </Field>
+                <Field label="Тип">
+                  <Input value={view.type ?? ''} onChange={(e) => setField('type', e.target.value)} />
+                </Field>
+                <Field label="Кількість деталей">
+                  <Input
+                    type="number"
+                    value={view.partsCount ?? ''}
+                    onChange={(e) =>
+                      setField(
+                        'partsCount',
+                        e.target.value === '' ? null : Number(e.target.value),
+                      )
+                    }
+                  />
+                </Field>
+                <Field label="Серія">
+                  <Input
+                    value={view.series ?? ''}
+                    onChange={(e) => setField('series', e.target.value)}
+                  />
+                </Field>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <StatusChip tone="success">Rozetka: 5 з мінімум 3</StatusChip>
+                {product.syncHint?.includes('Epicentr') ? (
+                  <StatusChip tone="warning">Epicentr: є питання</StatusChip>
+                ) : (
+                  <StatusChip tone="success">Epicentr: обов’язкові заповнені</StatusChip>
+                )}
               </div>
             </Panel>
-            <Panel title="Ціна">
-              <div className="text-2xl font-semibold">{money(product.price)}</div>
-              {product.oldPrice ? (
-                <div className="mt-1 flex items-center gap-2 text-sm">
-                  <span className="text-[var(--text-secondary)] line-through">
-                    {money(product.oldPrice)}
-                  </span>
-                  <StatusChip tone="warning">
-                    −{Math.round((1 - product.price / product.oldPrice) * 100)}%
-                  </StatusChip>
+          ) : null}
+
+          {tab === 'Ціни і наявність' ? (
+            <>
+              <Panel title="Базова ціна">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Ціна, грн">
+                    <Input
+                      type="number"
+                      value={view.price}
+                      onChange={(e) => setField('price', Number(e.target.value))}
+                    />
+                  </Field>
+                  <Field label="Стара ціна, грн">
+                    <Input
+                      type="number"
+                      value={view.oldPrice ?? ''}
+                      onChange={(e) =>
+                        setField(
+                          'oldPrice',
+                          e.target.value === '' ? null : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </Field>
                 </div>
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                  Від базової ціни рахуються ціни майданчиків.
+                </p>
+              </Panel>
+              <Panel title="Наявність">
+                <div className="text-sm">
+                  Всього {product.total} · резерв {product.reserve} · доступно {product.available}
+                </div>
+                <Link className="mt-2 inline-block text-sm text-[var(--primary)]" to="/stock">
+                  Змінити у «Наявність»
+                </Link>
+                <div className="mt-3 text-sm text-[var(--text-secondary)]">
+                  Поріг «Закінчується»: 5
+                </div>
+                <label className="mt-3 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(view.awaiting)}
+                    onChange={(e) => setField('awaiting', e.target.checked)}
+                  />
+                  Очікується
+                </label>
+              </Panel>
+              <Panel title="Ціни на майданчиках">
+                {prices ? (
+                  <table className="w-full text-sm">
+                    <thead className="text-[var(--text-secondary)]">
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="pb-2 text-left font-medium">Майданчик</th>
+                        <th className="pb-2 text-right font-medium">Ціна</th>
+                        <th className="pb-2 text-left font-medium">Правило</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(
+                        [
+                          ['Rozetka', prices.rozetka],
+                          ['Epicentr', prices.epicentr],
+                          ['Prom', prices.prom],
+                        ] as const
+                      ).map(([name, row]) => (
+                        <tr key={name} className="border-b border-[var(--border)] last:border-0">
+                          <td className="py-2">{name}</td>
+                          <td className="py-2 text-right">
+                            <div>{money(row.price)}</div>
+                            {row.oldPrice ? (
+                              <div className="text-xs text-[var(--text-secondary)] line-through">
+                                {money(row.oldPrice)}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td className="py-2 text-[var(--text-secondary)]">{row.rule}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : null}
+              </Panel>
+            </>
+          ) : null}
+
+          {tab === 'Майданчики' ? (
+            <div className="space-y-3">
+              {product.status === 'Чернетка' ? (
+                <p className="text-sm text-[var(--warning)]">
+                  Чернетка не синхронізується з майданчиками.
+                </p>
               ) : null}
-            </Panel>
-            <Panel title="Майданчики">
-              <ul className="space-y-2 text-sm">
-                {Object.entries(product.channels).map(([key, status]) => (
-                  <li key={key} className="flex items-center justify-between gap-2">
-                    <span className="capitalize">{key}</span>
-                    <StatusChip tone={chipTone(status)}>{status}</StatusChip>
+              {(['rozetka', 'epicentr', 'prom'] as const).map((key) => {
+                const label = key === 'rozetka' ? 'Rozetka' : key === 'epicentr' ? 'Epicentr' : 'Prom'
+                const status = view.channels?.[key] ?? '—'
+                const enabled = status !== '—' && status !== 'Вимкнено'
+                const price = prices?.[key]
+                return (
+                  <Panel key={key} title={label}>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={(e) => {
+                          const next = { ...(view.channels ?? product.channels) }
+                          next[key] = e.target.checked ? 'Активний' : '—'
+                          setField('channels', next)
+                        }}
+                      />
+                      Продавати на {label}
+                    </label>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                      <StatusChip tone={chipTone(status)}>{status}</StatusChip>
+                      {price ? <span>Передано: {money(price.price)}</span> : null}
+                      <span className="text-[var(--text-secondary)]">
+                        залишок {product.available} шт.
+                      </span>
+                    </div>
+                    {key === 'epicentr' && product.syncHint?.includes('Epicentr') ? (
+                      <p className="mt-2 text-sm text-[var(--warning)]">{product.syncHint}</p>
+                    ) : null}
+                    {key === 'epicentr' ? (
+                      <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                        Epicentr не приймає кількість, лише статус.
+                      </p>
+                    ) : null}
+                  </Panel>
+                )
+              })}
+            </div>
+          ) : null}
+
+          {tab === 'Історія' ? (
+            <Panel>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {['Усі', 'Ціна', 'Наявність', 'Поля', 'Статус'].map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setHistoryFilter(f === 'Усі' ? 'Усі' : f)}
+                    className={`rounded-full px-3 py-1 text-sm ${
+                      historyFilter === f || (f === 'Усі' && historyFilter === 'Усі')
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'border border-[var(--border)] bg-white'
+                    }`}
+                  >
+                    {f === 'Усі' ? 'Усі події' : f}
+                  </button>
+                ))}
+              </div>
+              <ul className="space-y-3 text-sm">
+                {filteredHistory.map((h, i) => (
+                  <li key={`${h.at}-${i}`} className="flex gap-3">
+                    <span className="w-28 shrink-0 text-[var(--text-secondary)]">
+                      {formatDateTime(h.at)}
+                    </span>
+                    <span className="flex-1">{h.text}</span>
+                    <span className="text-[var(--text-secondary)]">{h.who}</span>
                   </li>
                 ))}
+                {filteredHistory.length === 0 ? (
+                  <li className="text-[var(--text-secondary)]">Подій немає.</li>
+                ) : null}
               </ul>
-              <p className="mt-3 text-xs text-[var(--text-secondary)]">
-                Деталі по каналах — вкладка «Майданчики». У списку товарів лише «Синхронізація»:{' '}
-                {product.syncStatus}.
-              </p>
             </Panel>
-          </div>
+          ) : null}
         </div>
-      )}
+
+        <div className="space-y-4">
+          <Panel title="Наявність">
+            <div className="text-2xl font-semibold">Доступно {product.available} шт.</div>
+            <div className="mt-1 text-sm text-[var(--text-secondary)]">
+              Всього {product.total} · резерв {product.reserve}
+            </div>
+          </Panel>
+          <Panel title="Ціна">
+            <div className="text-2xl font-semibold">{money(product.price)}</div>
+            {product.oldPrice ? (
+              <div className="mt-1 flex items-center gap-2 text-sm">
+                <span className="text-[var(--text-secondary)] line-through">
+                  {money(product.oldPrice)}
+                </span>
+                <StatusChip tone="warning">
+                  −{Math.round((1 - product.price / product.oldPrice) * 100)}%
+                </StatusChip>
+              </div>
+            ) : null}
+          </Panel>
+          <Panel title="Майданчики">
+            <ul className="space-y-2 text-sm">
+              {Object.entries(product.channels).map(([key, status]) => (
+                <li key={key} className="flex items-center justify-between gap-2">
+                  <span className="capitalize">{key}</span>
+                  <StatusChip tone={chipTone(status)}>{status}</StatusChip>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-[var(--text-secondary)]">
+              У списку товарів — колонка «Синхронізація»: {product.syncStatus}.
+            </p>
+          </Panel>
+        </div>
+      </div>
     </div>
   )
 }

@@ -21,6 +21,47 @@ function formatDeadline(minutes: number | null) {
   return `підтвердити за ${h} год ${m} хв`
 }
 
+function recalcStock(product: Product) {
+  product.available = Math.max(0, product.total - product.reserve)
+  if (product.awaiting && product.available === 0) {
+    product.stockLabel = 'Очікується'
+  } else if (product.available === 0) {
+    product.stockLabel = 'Немає в наявності'
+  } else if (product.available <= 5) {
+    product.stockLabel = 'Закінчується'
+  } else {
+    product.stockLabel = 'В наявності'
+  }
+}
+
+function roundUpTo10(n: number) {
+  return Math.ceil(n / 10) * 10
+}
+
+function marketplacePrices(product: Product) {
+  const base = product.price
+  const old = product.oldPrice
+  let rozetka = product.brand === 'LEGO' ? roundUpTo10(base * 1.08) : roundUpTo10(base * 1.12)
+  let epicentr =
+    product.sku === 'TM-10188' ? 399 : roundUpTo10(base * 1.08)
+  const prom = base
+  const rozetkaOld = old
+    ? product.brand === 'LEGO'
+      ? roundUpTo10(old * 1.08)
+      : roundUpTo10(old * 1.12)
+    : null
+  const epicentrOld = old && product.sku !== 'TM-10188' ? roundUpTo10(old * 1.08) : old
+  return {
+    rozetka: { price: rozetka, oldPrice: rozetkaOld, rule: product.brand === 'LEGO' ? '+8%, вгору до 10' : '+12%, вгору до 10' },
+    epicentr: {
+      price: epicentr,
+      oldPrice: epicentrOld,
+      rule: product.sku === 'TM-10188' ? 'Точна ціна' : '+8%, вгору до 10',
+    },
+    prom: { price: prom, oldPrice: old, rule: 'Як базова ціна' },
+  }
+}
+
 app.get('/api/meta', (_req, res) => {
   res.json(readJson<Meta>('meta.json'))
 })
@@ -89,7 +130,7 @@ app.get('/api/products/:sku', (req, res) => {
     res.status(404).json({ error: 'Товар не знайдено' })
     return
   }
-  res.json(product)
+  res.json({ ...product, marketplacePrices: marketplacePrices(product) })
 })
 
 app.patch('/api/products/:sku', (req, res) => {
@@ -112,6 +153,16 @@ app.patch('/api/products/:sku', (req, res) => {
     'status',
     'price',
     'oldPrice',
+    'total',
+    'awaiting',
+    'condition',
+    'color',
+    'ageGroup',
+    'material',
+    'type',
+    'partsCount',
+    'series',
+    'channels',
   ] as const
   const next = { ...products[idx] }
   for (const key of allowed) {
@@ -120,12 +171,24 @@ app.patch('/api/products/:sku', (req, res) => {
       next[key] = req.body[key]
     }
   }
+  if (typeof next.total === 'number' && next.total < next.reserve) {
+    res.status(400).json({ error: 'Всього не може бути менше резерву' })
+    return
+  }
   next.brandMissing = !next.brand
+  recalcStock(next)
   next.updatedAt = nowIso()
   next.updatedBy = 'Олена'
   products[idx] = next
   writeJson('products.json', products)
-  res.json(next)
+  res.json({ ...next, marketplacePrices: marketplacePrices(next) })
+})
+
+app.get('/api/products/:sku/history', (req, res) => {
+  const history = readJson<{ at: string; sku: string; text: string; who: string; kind: string }[]>(
+    'product-history.json',
+  )
+  res.json(history.filter((h) => h.sku === req.params.sku))
 })
 
 app.get('/api/orders', (_req, res) => {
@@ -210,7 +273,7 @@ app.post('/api/orders', (req, res) => {
   for (const row of orderItems) {
     const p = products.find((x) => x.sku === row.sku)!
     p.reserve += row.qty
-    p.available = Math.max(0, p.total - p.reserve)
+    recalcStock(p)
   }
   writeJson('products.json', products)
 
@@ -296,7 +359,7 @@ app.post('/api/orders/:id/cancel', (req, res) => {
       const p = products.find((x) => x.sku === item.sku)
       if (p) {
         p.reserve = Math.max(0, p.reserve - item.qty)
-        p.available = Math.max(0, p.total - p.reserve)
+        recalcStock(p)
       }
     }
     writeJson('products.json', products)

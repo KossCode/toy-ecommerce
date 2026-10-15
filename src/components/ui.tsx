@@ -65,10 +65,10 @@ export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInpu
   )
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
+export function Select({ className = '', ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-2 outline-none focus:border-[var(--primary)]"
+      className={`h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-2 outline-none focus:border-[var(--primary)] ${className}`}
       {...props}
     />
   )

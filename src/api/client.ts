@@ -16,6 +16,8 @@ export const api = {
   getProduct: (sku: string) => request<Product>(`/products/${sku}`),
   patchProduct: (sku: string, body: Partial<Product>) =>
     request<Product>(`/products/${sku}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  getProductHistory: (sku: string) =>
+    request<ProductHistoryItem[]>(`/products/${sku}/history`),
   getOrders: () => request<OrderListItem[]>('/orders'),
   getOrder: (id: string) => request<OrderDetail>(`/orders/${id}`),
   createOrder: (body: CreateOrderBody) =>
@@ -33,6 +35,12 @@ export const api = {
       method: 'POST',
       body: '{}',
     }),
+}
+
+export type MarketplacePrice = {
+  price: number
+  oldPrice: number | null
+  rule: string
 }
 
 export type Product = {
@@ -60,6 +68,27 @@ export type Product = {
   duplicateOf: string | null
   updatedAt: string
   updatedBy: string
+  condition?: string
+  color?: string
+  ageGroup?: string
+  material?: string
+  type?: string
+  partsCount?: number | null
+  series?: string
+  awaiting?: boolean
+  marketplacePrices?: {
+    rozetka: MarketplacePrice
+    epicentr: MarketplacePrice
+    prom: MarketplacePrice
+  }
+}
+
+export type ProductHistoryItem = {
+  at: string
+  sku: string
+  text: string
+  who: string
+  kind: string
 }
 
 export type Order = {
