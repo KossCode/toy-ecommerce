@@ -3,7 +3,8 @@
 Волна 1, экран 5. Промпт A — вкладка «Основне»; B–E — смена вкладки через `edit_screens`.
 
 - Устройство: desktop 1440
-- Оболочка, крошки, вкладки, поля, чипы — из фундамента
+- Сайдбар / оболочка — эталон `5ccffb430d5b4055a2adf50f62f6e063` (принятый список товарів)
+- Крошки, вкладки, поля, чипы — из фундамента
 - Данные — [`sample-data.md`](sample-data.md); поля — [`../product-fields.md`](../product-fields.md)
 
 ## Зачем этот экран
@@ -56,7 +57,9 @@
 
 ## D. Майданчики
 
-Три панели. У каждой: toggle `Продавати на …`; чип статуса; ID; категория на площадке (из маппинга); назва; передано цена/остаток; чек-лист обязательных полей. Если toggle включить при дырах — warning и список «Не заповнено: …», toggle не сохраняется включённым / или сохраняется выключенным с тостом.
+Здесь — единственное место, где видно **по каждой площадке**, что происходит. В списке товаров колонок на маркетплейсы нет (только сводная `Синхронізація`).
+
+Панель на каждый подключённый канал (Rozetka, Epicentr, Prom, позже другие). У каждой: toggle `Продавати на …`; чип статуса; ID; категория на площадке (из маппинга); назва; передано цена/остаток; чек-лист обязательных полей. Если toggle включить при дырах — warning и список «Не заповнено: …», toggle не сохраняется включённым / или сохраняется выключенным с тостом.
 
 Подпись у черновика (если статус Чернетка): `Чернетка не синхронізується з майданчиками.`
 
@@ -79,7 +82,8 @@
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Trio Mio CRM”. Match the accepted CRM foundation exactly. Sidebar current item: “Товари”. No “Характеристики” nav item.
+Design ONE desktop screen at 1440px titled “Trio Mio CRM — Товар TM-10018”.
+VISUAL LOCK: sidebar and top bar pixel-match accepted screen 5ccffb430d5b4055a2adf50f62f6e063. Current nav “Товари”. No “Характеристики”. Design system assets/3699739428585285203. Cool gray #F4F5F7, Manrope, primary #2D6A64. Same density as order detail 0ef522f17d92448d9db6f8e41d13cc85 (form panels, not airy marketing).
 
 Product edit, tab “Основне” active.
 Breadcrumbs “Товари / TM-10018”.
