@@ -465,7 +465,8 @@ export const browserApi = {
   },
 
   async previewPriceRule(
-    draft: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>,
+    draft: Partial<PriceRule> &
+      Pick<PriceRule, 'marketplace' | 'scope' | 'kind'> & { excludeId?: string },
   ): Promise<PricePreview> {
     const temp: PriceRule = {
       id: 'preview',
@@ -484,26 +485,30 @@ export const browserApi = {
       roundingLabel: draft.roundingLabel ?? '—',
       productCount: 0,
     }
-    const existing = store.prices.rules.filter(
-      (r) =>
-        !(
-          r.marketplace === temp.marketplace &&
-          r.scope === temp.scope &&
-          r.scopeValue === temp.scopeValue
-        ),
-    )
+    const existing = store.prices.rules.filter((r) => {
+      if (draft.excludeId && r.id === draft.excludeId) return false
+      return !(
+        r.marketplace === temp.marketplace &&
+        r.scope === temp.scope &&
+        r.scopeValue === temp.scopeValue
+      )
+    })
     const withDraft = [...existing, temp]
     const affected = store.products.filter(
       (p) => pickRule(withDraft, temp.marketplace, p)?.id === 'preview',
     )
-    const examples = affected.slice(0, 5).map((p) => {
+    const examples = affected.slice(0, 8).map((p) => {
       const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p))
       const after = applyPriceRule(p.price, temp)
       return { sku: p.sku, name: p.name, base: p.price, before: before.price, after: after.price }
     })
     const jumps =
       temp.marketplace === 'rozetka'
-        ? examples.filter((e) => e.after > e.before * 1.5 || e.after < e.before / 2).length
+        ? affected.filter((p) => {
+            const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p)).price
+            const after = applyPriceRule(p.price, temp).price
+            return after > before * 1.5 || after < before / 2
+          }).length
         : 0
     return { count: affected.length, jumps, examples }
   },
@@ -557,6 +562,72 @@ export const browserApi = {
       recountRuleProducts(s.prices, s.products)
     })
     return created!
+  },
+
+  async updatePriceRule(
+    id: string,
+    body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>,
+  ) {
+    let updated: PriceRule | null = null
+    mutate((s) => {
+      const idx = s.prices.rules.findIndex((r) => r.id === id)
+      if (idx < 0) throw new Error('Правило не знайдено')
+      const ruleLabel =
+        body.kind === 'base'
+          ? 'Як базова ціна'
+          : body.kind === 'exact'
+            ? `Точна ціна ${body.value} грн`
+            : body.kind === 'percent'
+              ? `+${body.value}%`
+              : `+${body.value} грн`
+      updated = {
+        ...s.prices.rules[idx],
+        marketplace: body.marketplace,
+        marketplaceLabel:
+          body.marketplace === 'rozetka'
+            ? 'Rozetka'
+            : body.marketplace === 'epicentr'
+              ? 'Epicentr'
+              : 'Prom',
+        scope: body.scope,
+        scopeLabel:
+          body.scope === 'default'
+            ? 'За замовчуванням'
+            : String(body.scopeLabel || body.scopeValue || '—'),
+        scopeLevel:
+          body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+        scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
+        kind: body.kind,
+        value: body.value ?? null,
+        ruleLabel,
+        rounding: body.rounding ?? 'none',
+        roundingLabel: body.rounding === 'up_10' ? 'вгору до 10 грн' : '—',
+      }
+      s.prices.rules = s.prices.rules.filter(
+        (r) =>
+          r.id === id ||
+          !(
+            r.marketplace === updated!.marketplace &&
+            r.scope === updated!.scope &&
+            r.scopeValue === updated!.scopeValue
+          ),
+      )
+      const nextIdx = s.prices.rules.findIndex((r) => r.id === id)
+      if (nextIdx >= 0) s.prices.rules[nextIdx] = updated
+      else s.prices.rules.push(updated)
+      recountRuleProducts(s.prices, s.products)
+    })
+    return updated!
+  },
+
+  async deletePriceRule(id: string) {
+    mutate((s) => {
+      const before = s.prices.rules.length
+      s.prices.rules = s.prices.rules.filter((r) => r.id !== id)
+      if (s.prices.rules.length === before) throw new Error('Правило не знайдено')
+      recountRuleProducts(s.prices, s.products)
+    })
+    return { ok: true }
   },
 
   async retryIntegration(id: string) {

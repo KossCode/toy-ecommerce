@@ -55,10 +55,18 @@ const httpApi = {
       body: '{}',
     }),
   getPrices: () => request<PricesFile>('/prices'),
-  previewPriceRule: (body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>) =>
-    request<PricePreview>('/prices/preview', { method: 'POST', body: JSON.stringify(body) }),
+  previewPriceRule: (
+    body: Partial<PriceRule> &
+      Pick<PriceRule, 'marketplace' | 'scope' | 'kind'> & { excludeId?: string },
+  ) => request<PricePreview>('/prices/preview', { method: 'POST', body: JSON.stringify(body) }),
   createPriceRule: (body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>) =>
     request<PriceRule>('/prices', { method: 'POST', body: JSON.stringify(body) }),
+  updatePriceRule: (
+    id: string,
+    body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>,
+  ) => request<PriceRule>(`/prices/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deletePriceRule: (id: string) =>
+    request<{ ok: boolean }>(`/prices/${id}`, { method: 'DELETE' }),
 }
 
 export const api = useBrowserApi ? browserApi : httpApi

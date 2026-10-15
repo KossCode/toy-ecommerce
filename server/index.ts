@@ -521,62 +521,8 @@ app.get('/api/prices', (_req, res) => {
   res.json(data)
 })
 
-app.post('/api/prices/preview', (req, res) => {
-  const products = readJson<Product[]>('products.json')
-  const draft = req.body as Partial<PriceRule> & {
-    marketplace: PriceRule['marketplace']
-    scope: PriceRule['scope']
-    kind: PriceRule['kind']
-  }
-  const temp: PriceRule = {
-    id: 'preview',
-    marketplace: draft.marketplace,
-    marketplaceLabel:
-      draft.marketplace === 'rozetka' ? 'Rozetka' : draft.marketplace === 'epicentr' ? 'Epicentr' : 'Prom',
-    scope: draft.scope,
-    scopeLabel: draft.scopeLabel ?? '—',
-    scopeLevel:
-      draft.scope === 'default' ? 'Майданчик' : draft.scope === 'category' ? 'Категорія' : 'Товар',
-    scopeValue: draft.scopeValue ?? null,
-    kind: draft.kind,
-    value: draft.value ?? null,
-    ruleLabel: draft.ruleLabel ?? '',
-    rounding: draft.rounding ?? 'none',
-    roundingLabel: draft.roundingLabel ?? '—',
-    productCount: 0,
-  }
-  const existing = readJson<PricesFile>('prices.json').rules.filter(
-    (r) => !(r.marketplace === temp.marketplace && r.scope === temp.scope && r.scopeValue === temp.scopeValue),
-  )
-  const withDraft = [...existing, temp]
-  const affected = products.filter((p) => pickRule(withDraft, temp.marketplace, p)?.id === 'preview')
-  const examples = affected.slice(0, 5).map((p) => {
-    const beforeRule = pickRule(existing, temp.marketplace, p)
-    const before = applyPriceRule(p.price, beforeRule)
-    const after = applyPriceRule(p.price, temp)
-    return {
-      sku: p.sku,
-      name: p.name,
-      base: p.price,
-      before: before.price,
-      after: after.price,
-    }
-  })
-  const jumps =
-    temp.marketplace === 'rozetka'
-      ? examples.filter((e) => e.after > e.before * 1.5 || e.after < e.before / 2).length
-      : 0
-  res.json({ count: affected.length, jumps, examples })
-})
-
-app.post('/api/prices', (req, res) => {
-  const data = readJson<PricesFile>('prices.json')
-  const products = readJson<Product[]>('products.json')
-  const body = req.body as Partial<PriceRule>
-  if (!body.marketplace || !body.scope || !body.kind) {
-    res.status(400).json({ error: 'Неповні дані правила' })
-    return
-  }
+function buildPriceRule(body: Partial<PriceRule>, id: string): PriceRule | null {
+  if (!body.marketplace || !body.scope || !body.kind) return null
   const ruleLabel =
     body.kind === 'base'
       ? 'Як базова ціна'
@@ -585,8 +531,8 @@ app.post('/api/prices', (req, res) => {
         : body.kind === 'percent'
           ? `+${body.value}%`
           : `+${body.value} грн`
-  const created: PriceRule = {
-    id: `price-${Date.now()}`,
+  return {
+    id,
     marketplace: body.marketplace,
     marketplaceLabel:
       body.marketplace === 'rozetka' ? 'Rozetka' : body.marketplace === 'epicentr' ? 'Epicentr' : 'Prom',
@@ -604,6 +550,61 @@ app.post('/api/prices', (req, res) => {
     roundingLabel: body.rounding === 'up_10' ? 'вгору до 10 грн' : '—',
     productCount: 0,
   }
+}
+
+app.post('/api/prices/preview', (req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const draft = req.body as Partial<PriceRule> & {
+    marketplace: PriceRule['marketplace']
+    scope: PriceRule['scope']
+    kind: PriceRule['kind']
+    excludeId?: string
+  }
+  const temp = buildPriceRule(draft, 'preview')
+  if (!temp) {
+    res.status(400).json({ error: 'Неповні дані правила' })
+    return
+  }
+  const existing = readJson<PricesFile>('prices.json').rules.filter((r) => {
+    if (draft.excludeId && r.id === draft.excludeId) return false
+    return !(
+      r.marketplace === temp.marketplace &&
+      r.scope === temp.scope &&
+      r.scopeValue === temp.scopeValue
+    )
+  })
+  const withDraft = [...existing, temp]
+  const affected = products.filter((p) => pickRule(withDraft, temp.marketplace, p)?.id === 'preview')
+  const examples = affected.slice(0, 8).map((p) => {
+    const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p))
+    const after = applyPriceRule(p.price, temp)
+    return {
+      sku: p.sku,
+      name: p.name,
+      base: p.price,
+      before: before.price,
+      after: after.price,
+    }
+  })
+  const jumps =
+    temp.marketplace === 'rozetka'
+      ? affected.filter((p) => {
+          const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p)).price
+          const after = applyPriceRule(p.price, temp).price
+          return after > before * 1.5 || after < before / 2
+        }).length
+      : 0
+  res.json({ count: affected.length, jumps, examples })
+})
+
+app.post('/api/prices', (req, res) => {
+  const data = readJson<PricesFile>('prices.json')
+  const products = readJson<Product[]>('products.json')
+  const created = buildPriceRule(req.body as Partial<PriceRule>, `price-${Date.now()}`)
+  if (!created) {
+    res.status(400).json({ error: 'Неповні дані правила' })
+    return
+  }
   data.rules = data.rules.filter(
     (r) =>
       !(
@@ -616,6 +617,53 @@ app.post('/api/prices', (req, res) => {
   recountRuleProducts(data, products)
   writeJson('prices.json', data)
   res.status(201).json(created)
+})
+
+app.patch('/api/prices/:id', (req, res) => {
+  const data = readJson<PricesFile>('prices.json')
+  const products = readJson<Product[]>('products.json')
+  const idx = data.rules.findIndex((r) => r.id === req.params.id)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Правило не знайдено' })
+    return
+  }
+  const updated = buildPriceRule(
+    { ...data.rules[idx], ...(req.body as Partial<PriceRule>) },
+    data.rules[idx].id,
+  )
+  if (!updated) {
+    res.status(400).json({ error: 'Неповні дані правила' })
+    return
+  }
+  data.rules = data.rules.filter(
+    (r) =>
+      r.id === updated.id ||
+      !(
+        r.marketplace === updated.marketplace &&
+        r.scope === updated.scope &&
+        r.scopeValue === updated.scopeValue
+      ),
+  )
+  const nextIdx = data.rules.findIndex((r) => r.id === updated.id)
+  if (nextIdx >= 0) data.rules[nextIdx] = updated
+  else data.rules.push(updated)
+  recountRuleProducts(data, products)
+  writeJson('prices.json', data)
+  res.json(updated)
+})
+
+app.delete('/api/prices/:id', (req, res) => {
+  const data = readJson<PricesFile>('prices.json')
+  const products = readJson<Product[]>('products.json')
+  const before = data.rules.length
+  data.rules = data.rules.filter((r) => r.id !== req.params.id)
+  if (data.rules.length === before) {
+    res.status(404).json({ error: 'Правило не знайдено' })
+    return
+  }
+  recountRuleProducts(data, products)
+  writeJson('prices.json', data)
+  res.json({ ok: true })
 })
 
 app.get('/api/integrations', (_req, res) => {

@@ -12,21 +12,56 @@ import { money } from '@/lib/format'
 
 type Tab = 'all' | 'rozetka' | 'epicentr' | 'prom'
 
-const emptyDraft = {
-  marketplace: 'rozetka' as PriceRule['marketplace'],
-  scope: 'default' as PriceRule['scope'],
-  scopeValue: '' as string,
-  kind: 'percent' as PriceRule['kind'],
+type Draft = {
+  marketplace: PriceRule['marketplace']
+  scope: PriceRule['scope']
+  scopeValue: string
+  kind: PriceRule['kind']
+  value: number
+  rounding: PriceRule['rounding']
+}
+
+const emptyDraft: Draft = {
+  marketplace: 'rozetka',
+  scope: 'default',
+  scopeValue: '',
+  kind: 'percent',
   value: 10,
-  rounding: 'up_10' as PriceRule['rounding'],
+  rounding: 'up_10',
+}
+
+function ruleToDraft(r: PriceRule): Draft {
+  return {
+    marketplace: r.marketplace,
+    scope: r.scope,
+    scopeValue: r.scopeValue ?? '',
+    kind: r.kind,
+    value: r.value ?? 0,
+    rounding: r.rounding,
+  }
+}
+
+function draftPayload(draft: Draft, excludeId?: string) {
+  return {
+    marketplace: draft.marketplace,
+    scope: draft.scope,
+    scopeValue: draft.scope === 'default' ? null : draft.scopeValue || null,
+    scopeLabel: draft.scopeValue,
+    kind: draft.kind,
+    value: draft.kind === 'base' ? null : Number(draft.value),
+    rounding: draft.kind === 'base' || draft.kind === 'exact' ? ('none' as const) : draft.rounding,
+    excludeId,
+  }
 }
 
 export function PricesPage() {
   const [data, setData] = useState<PricesFile | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [panelOpen, setPanelOpen] = useState(false)
-  const [draft, setDraft] = useState(emptyDraft)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<Draft>(emptyDraft)
   const [preview, setPreview] = useState<PricePreview | null>(null)
+  const [showAllExamples, setShowAllExamples] = useState(false)
   const [saving, setSaving] = useState(false)
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'all'
@@ -45,20 +80,12 @@ export function PricesPage() {
     if (!panelOpen) return
     const t = window.setTimeout(() => {
       void api
-        .previewPriceRule({
-          marketplace: draft.marketplace,
-          scope: draft.scope,
-          scopeValue: draft.scope === 'default' ? null : draft.scopeValue || null,
-          scopeLabel: draft.scopeValue,
-          kind: draft.kind,
-          value: draft.kind === 'base' ? null : draft.value,
-          rounding: draft.kind === 'base' || draft.kind === 'exact' ? 'none' : draft.rounding,
-        })
+        .previewPriceRule(draftPayload(draft, editingId ?? undefined))
         .then(setPreview)
         .catch(() => setPreview(null))
     }, 200)
     return () => window.clearTimeout(t)
-  }, [panelOpen, draft])
+  }, [panelOpen, draft, editingId])
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category).filter(Boolean))].sort()
@@ -70,22 +97,50 @@ export function PricesPage() {
     return data.rules.filter((r) => r.marketplace === tab)
   }, [data, tab])
 
+  function openCreate() {
+    setEditingId(null)
+    setDraft(emptyDraft)
+    setPreview(null)
+    setShowAllExamples(false)
+    setPanelOpen(true)
+  }
+
+  function openEdit(r: PriceRule) {
+    setEditingId(r.id)
+    setDraft(ruleToDraft(r))
+    setPreview(null)
+    setShowAllExamples(false)
+    setPanelOpen(true)
+  }
+
+  function closePanel() {
+    setPanelOpen(false)
+    setEditingId(null)
+    setPreview(null)
+    setShowAllExamples(false)
+  }
+
   async function save() {
     setSaving(true)
     try {
-      await api.createPriceRule({
-        marketplace: draft.marketplace,
-        scope: draft.scope,
-        scopeValue: draft.scope === 'default' ? null : draft.scopeValue || null,
-        scopeLabel: draft.scopeValue,
-        kind: draft.kind,
-        value: draft.kind === 'base' ? null : Number(draft.value),
-        rounding: draft.kind === 'base' || draft.kind === 'exact' ? 'none' : draft.rounding,
-      })
+      const body = draftPayload(draft)
+      if (editingId) await api.updatePriceRule(editingId, body)
+      else await api.createPriceRule(body)
       await load()
-      setPanelOpen(false)
+      closePanel()
       setDraft(emptyDraft)
-      setPreview(null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove(id: string) {
+    if (!window.confirm('Видалити це правило?')) return
+    setSaving(true)
+    try {
+      await api.deletePriceRule(id)
+      if (editingId === id) closePanel()
+      await load()
     } finally {
       setSaving(false)
     }
@@ -95,21 +150,18 @@ export function PricesPage() {
     return <div className="text-sm text-[var(--text-secondary)]">Завантаження…</div>
   }
 
+  const examples = preview
+    ? showAllExamples
+      ? preview.examples
+      : preview.examples.slice(0, 1)
+    : []
+
   return (
     <div>
       <PageHeader
         title="Ціни"
         meta={`${data.meta.ruleCount} правил`}
-        actions={
-          <Button
-            onClick={() => {
-              setDraft(emptyDraft)
-              setPanelOpen(true)
-            }}
-          >
-            Додати правило
-          </Button>
-        }
+        actions={<Button onClick={openCreate}>Додати правило</Button>}
       />
 
       <div className="mb-3 flex flex-wrap gap-2">
@@ -137,12 +189,13 @@ export function PricesPage() {
       </div>
 
       <p className="mb-3 text-sm text-[var(--text-secondary)]">
-        Діє найточніше правило: товар → категорія → за замовчуванням.
+        Діє найточніше правило: товар → категорія → за замовчуванням. Клік по рядку — редагування з
+        попереднім переглядом.
       </p>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
               <tr>
                 <th className="px-3 py-2 font-medium">Майданчик</th>
@@ -150,21 +203,46 @@ export function PricesPage() {
                 <th className="px-3 py-2 font-medium">Правило</th>
                 <th className="px-3 py-2 font-medium">Округлення</th>
                 <th className="px-3 py-2 text-right font-medium">Товарів</th>
+                <th className="px-3 py-2 text-right font-medium">Дії</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} className="border-t border-[var(--border)]">
-                  <td className="px-3 py-2.5">{r.marketplaceLabel}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="font-medium">{r.scopeLabel}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">{r.scopeLevel}</div>
-                  </td>
-                  <td className="px-3 py-2.5">{r.ruleLabel}</td>
-                  <td className="px-3 py-2.5">{r.roundingLabel}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{r.productCount}</td>
-                </tr>
-              ))}
+              {filtered.map((r) => {
+                const active = editingId === r.id && panelOpen
+                return (
+                  <tr
+                    key={r.id}
+                    className={`cursor-pointer border-t border-[var(--border)] ${
+                      active ? 'bg-[#e4f1ef]' : 'hover:bg-[var(--bg)]'
+                    }`}
+                    onClick={() => openEdit(r)}
+                  >
+                    <td className="px-3 py-2.5">{r.marketplaceLabel}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium">{r.scopeLabel}</div>
+                      <div className="text-xs text-[var(--text-secondary)]">{r.scopeLevel}</div>
+                    </td>
+                    <td className="px-3 py-2.5">{r.ruleLabel}</td>
+                    <td className="px-3 py-2.5">{r.roundingLabel}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{r.productCount}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <div className="inline-flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="quiet" onClick={() => openEdit(r)}>
+                          Змінити
+                        </Button>
+                        <Button
+                          variant="quiet"
+                          className="text-[var(--error)]"
+                          disabled={saving}
+                          onClick={() => void remove(r.id)}
+                        >
+                          Видалити
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -176,8 +254,13 @@ export function PricesPage() {
 
       {panelOpen ? (
         <div className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[480px] flex-col border-l border-[var(--border)] bg-white shadow-lg">
-          <header className="border-b border-[var(--border)] px-5 py-4 text-lg font-semibold">
-            Нове правило
+          <header className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+            <h2 className="text-lg font-semibold">
+              {editingId ? 'Редагувати правило' : 'Нове правило'}
+            </h2>
+            <Button variant="quiet" onClick={closePanel}>
+              Закрити
+            </Button>
           </header>
           <div className="flex-1 space-y-4 overflow-auto p-5 text-sm">
             <label className="block">
@@ -313,29 +396,44 @@ export function PricesPage() {
 
             <Panel title="Попередній перегляд">
               {preview ? (
-                <div className="space-y-2 text-sm">
-                  <div>Зміниться ціна {preview.count} товарів</div>
-                  <div className="flex items-center gap-2">
+                <div className="space-y-3 text-sm">
+                  <div>
+                    {editingId ? 'Під це правило потрапляє' : 'Зміниться ціна'}{' '}
+                    <strong>{preview.count}</strong> товарів
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <span>Стрибків понад поріг Rozetka:</span>
                     <StatusChip tone={preview.jumps === 0 ? 'success' : 'warning'}>
                       {preview.jumps}
                     </StatusChip>
                   </div>
-                  {preview.examples[0] ? (
-                    <div className="rounded-md bg-[var(--bg)] p-2 text-xs">
-                      <div className="font-medium">
-                        {preview.examples[0].name} · {preview.examples[0].sku}
-                      </div>
-                      <div className="mt-1 text-[var(--text-secondary)]">
-                        {money(preview.examples[0].before)} → {money(preview.examples[0].after)}
-                        <span className="ml-1">(база {money(preview.examples[0].base)})</span>
-                      </div>
+                  {examples.length ? (
+                    <div className="space-y-2">
+                      {examples.map((ex) => (
+                        <div key={ex.sku} className="rounded-md bg-[var(--bg)] p-2 text-xs">
+                          <div className="font-medium">
+                            {ex.name} · {ex.sku}
+                          </div>
+                          <div className="mt-1 text-[var(--text-secondary)]">
+                            {money(ex.before)} → <strong className="text-[var(--text)]">{money(ex.after)}</strong>
+                            <span className="ml-1">(база {money(ex.base)})</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-[var(--text-secondary)]">Немає товарів під це правило</div>
                   )}
-                  {preview.count > 1 ? (
-                    <div className="text-[var(--text-secondary)]">Показати всі {preview.count}</div>
+                  {preview.examples.length > 1 ? (
+                    <button
+                      type="button"
+                      className="text-[var(--primary)] hover:underline"
+                      onClick={() => setShowAllExamples((v) => !v)}
+                    >
+                      {showAllExamples
+                        ? 'Згорнути приклади'
+                        : `Показати приклади (${Math.min(preview.examples.length, 8)})`}
+                    </button>
                   ) : null}
                 </div>
               ) : (
@@ -343,7 +441,7 @@ export function PricesPage() {
               )}
             </Panel>
           </div>
-          <footer className="flex gap-2 border-t border-[var(--border)] p-4">
+          <footer className="flex flex-wrap gap-2 border-t border-[var(--border)] p-4">
             <Button
               disabled={
                 saving ||
@@ -354,15 +452,19 @@ export function PricesPage() {
             >
               Зберегти правило
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setPanelOpen(false)
-                setPreview(null)
-              }}
-            >
+            <Button variant="secondary" onClick={closePanel}>
               Скасувати
             </Button>
+            {editingId ? (
+              <Button
+                variant="quiet"
+                className="ml-auto text-[var(--error)]"
+                disabled={saving}
+                onClick={() => void remove(editingId)}
+              >
+                Видалити
+              </Button>
+            ) : null}
           </footer>
         </div>
       ) : null}
