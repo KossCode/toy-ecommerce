@@ -40,6 +40,20 @@ const httpApi = {
       method: 'POST',
       body: '{}',
     }),
+  getCategories: () => request<CategoriesFile>('/categories'),
+  createCategory: (body: { name: string; parentId?: string | null }) =>
+    request<Category>('/categories', { method: 'POST', body: JSON.stringify(body) }),
+  patchCategory: (
+    id: string,
+    body: Partial<Pick<Category, 'name' | 'parentId'>> & {
+      mappings?: Partial<Category['mappings']>
+    },
+  ) => request<Category>(`/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  refreshCategoryDictionaries: () =>
+    request<CategoriesFile>('/categories/refresh-dictionaries', {
+      method: 'POST',
+      body: '{}',
+    }),
 }
 
 export const api = useBrowserApi ? browserApi : httpApi
@@ -185,4 +199,43 @@ export type IntegrationsFile = {
     errorBanner: { title: string; nextTry: string } | null
     moderationErrors: { sku: string; name: string; error: string; when: string }[]
   }[]
+}
+
+export type CategoryMapping = {
+  leafId: string | null
+  name: string | null
+  secondary: string | null
+}
+
+export type Category = {
+  id: string
+  name: string
+  parentId: string | null
+  productCount: number
+  sortOrder: number
+  mappings: {
+    rozetka: CategoryMapping
+    epicentr: CategoryMapping
+    prom: CategoryMapping
+  }
+}
+
+export type MarketplaceLeaf = {
+  id: string
+  name: string
+  attributeSet?: string
+}
+
+export type CategoriesFile = {
+  meta: {
+    topLevelCount: number
+    productTotal: number
+    dictionariesUpdatedAt: string
+  }
+  marketplaceLeaves: {
+    rozetka: MarketplaceLeaf[]
+    epicentr: MarketplaceLeaf[]
+    prom: MarketplaceLeaf[]
+  }
+  categories: Category[]
 }
