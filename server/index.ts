@@ -1,7 +1,7 @@
 import cors from 'cors'
 import express from 'express'
 import { readJson, writeJson } from './store'
-import type { IntegrationsFile, Meta, Order, Product } from './types'
+import type { CategoriesFile, Category, IntegrationsFile, Meta, Order, Product } from './types'
 
 const app = express()
 const PORT = 3001
@@ -375,6 +375,106 @@ app.post('/api/orders/:id/cancel', (req, res) => {
   orders[idx] = order
   writeJson('orders.json', orders)
   res.json(order)
+})
+
+app.get('/api/categories', (_req, res) => {
+  res.json(readJson<CategoriesFile>('categories.json'))
+})
+
+app.post('/api/categories', (req, res) => {
+  const data = readJson<CategoriesFile>('categories.json')
+  const name = String(req.body?.name ?? '').trim()
+  const parentId = (req.body?.parentId as string | null) ?? null
+  if (!name) {
+    res.status(400).json({ error: 'Потрібна назва' })
+    return
+  }
+  if (parentId && !data.categories.some((c) => c.id === parentId)) {
+    res.status(400).json({ error: 'Немає батьківської категорії' })
+    return
+  }
+  const siblings = data.categories.filter((c) => c.parentId === parentId)
+  const id = `cat-${Date.now()}`
+  const emptyMap = { leafId: null, name: null, secondary: null }
+  const created: Category = {
+    id,
+    name,
+    parentId,
+    productCount: 0,
+    sortOrder: siblings.length,
+    mappings: { rozetka: { ...emptyMap }, epicentr: { ...emptyMap }, prom: { ...emptyMap } },
+  }
+  data.categories.push(created)
+  data.meta.topLevelCount = data.categories.filter((c) => c.parentId == null).length
+  writeJson('categories.json', data)
+  res.status(201).json(created)
+})
+
+app.patch('/api/categories/:id', (req, res) => {
+  const data = readJson<CategoriesFile>('categories.json')
+  const idx = data.categories.findIndex((c) => c.id === req.params.id)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Категорію не знайдено' })
+    return
+  }
+  const current = data.categories[idx]
+  const body = req.body as Partial<Category> & {
+    mappings?: Partial<Category['mappings']>
+  }
+  if (typeof body.name === 'string' && body.name.trim()) current.name = body.name.trim()
+  if (body.parentId !== undefined) {
+    if (body.parentId && !data.categories.some((c) => c.id === body.parentId)) {
+      res.status(400).json({ error: 'Немає батьківської категорії' })
+      return
+    }
+    if (body.parentId === current.id) {
+      res.status(400).json({ error: 'Категорія не може бути батьком собі' })
+      return
+    }
+    current.parentId = body.parentId
+  }
+  if (body.mappings) {
+    for (const key of ['rozetka', 'epicentr', 'prom'] as const) {
+      const next = body.mappings[key]
+      if (!next) continue
+      if (next.leafId == null) {
+        current.mappings[key] = { leafId: null, name: null, secondary: null }
+        continue
+      }
+      const leaf = data.marketplaceLeaves[key].find((l) => l.id === next.leafId)
+      if (!leaf) {
+        res.status(400).json({ error: `Немає категорії ${key}` })
+        return
+      }
+      current.mappings[key] = {
+        leafId: leaf.id,
+        name: leaf.name,
+        secondary:
+          key === 'rozetka'
+            ? `ID ${leaf.id}`
+            : key === 'epicentr'
+              ? `code ${leaf.id} · attribute set ${leaf.attributeSet ?? '—'}`
+              : `portal_id ${leaf.id}`,
+      }
+    }
+  }
+  data.categories[idx] = current
+  data.meta.topLevelCount = data.categories.filter((c) => c.parentId == null).length
+  writeJson('categories.json', data)
+  res.json(current)
+})
+
+app.post('/api/categories/refresh-dictionaries', (_req, res) => {
+  const data = readJson<CategoriesFile>('categories.json')
+  const now = new Date()
+  data.meta.dictionariesUpdatedAt = now.toLocaleString('uk-UA', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  writeJson('categories.json', data)
+  res.json(data)
 })
 
 app.get('/api/integrations', (_req, res) => {

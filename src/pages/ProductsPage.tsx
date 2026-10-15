@@ -14,6 +14,7 @@ export function ProductsPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
+  const categoryFilter = params.get('category') ?? ''
 
   useEffect(() => {
     void api.getProducts().then(setProducts)
@@ -26,13 +27,14 @@ export function ProductsPage() {
       if (tab === 'notReady' && p.syncStatus !== 'Є питання') return false
       if (tab === 'low' && p.stockLabel !== 'Закінчується') return false
       if (tab === 'oos' && p.stockLabel !== 'Немає в наявності') return false
+      if (categoryFilter && p.category !== categoryFilter) return false
       if (q) {
         const s = q.toLowerCase()
         if (!`${p.name} ${p.sku} ${p.brand} ${p.barcode}`.toLowerCase().includes(s)) return false
       }
       return true
     })
-  }, [products, tab, q])
+  }, [products, tab, q, categoryFilter])
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'Усі', count: 248 },

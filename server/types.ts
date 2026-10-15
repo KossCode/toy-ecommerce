@@ -97,3 +97,42 @@ export type Meta = {
   counts: Record<string, number>
   overview: Record<string, string | number>
 }
+
+export type CategoryMapping = {
+  leafId: string | null
+  name: string | null
+  secondary: string | null
+}
+
+export type Category = {
+  id: string
+  name: string
+  parentId: string | null
+  productCount: number
+  sortOrder: number
+  mappings: {
+    rozetka: CategoryMapping
+    epicentr: CategoryMapping
+    prom: CategoryMapping
+  }
+}
+
+export type MarketplaceLeaf = {
+  id: string
+  name: string
+  attributeSet?: string
+}
+
+export type CategoriesFile = {
+  meta: {
+    topLevelCount: number
+    productTotal: number
+    dictionariesUpdatedAt: string
+  }
+  marketplaceLeaves: {
+    rozetka: MarketplaceLeaf[]
+    epicentr: MarketplaceLeaf[]
+    prom: MarketplaceLeaf[]
+  }
+  categories: Category[]
+}

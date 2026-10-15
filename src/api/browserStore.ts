@@ -6,7 +6,10 @@ import seedOrders from '../../data/orders.json'
 import seedIntegrations from '../../data/integrations.json'
 import seedMeta from '../../data/meta.json'
 import seedHistory from '../../data/product-history.json'
+import seedCategories from '../../data/categories.json'
 import type {
+  CategoriesFile,
+  Category,
   CreateOrderBody,
   IntegrationsFile,
   Order,
@@ -17,7 +20,7 @@ import type {
   ProductHistoryItem,
 } from './client'
 
-const STORAGE_KEY = 'triomio-crm-browser-v1'
+const STORAGE_KEY = 'triomio-crm-browser-v2'
 
 type Store = {
   products: Product[]
@@ -25,6 +28,7 @@ type Store = {
   integrations: IntegrationsFile
   meta: typeof seedMeta
   history: ProductHistoryItem[]
+  categories: CategoriesFile
 }
 
 function nowIso() {
@@ -85,6 +89,23 @@ function seed(): Store {
     integrations: structuredClone(seedIntegrations) as IntegrationsFile,
     meta: structuredClone(seedMeta),
     history: structuredClone(seedHistory) as ProductHistoryItem[],
+    categories: structuredClone(seedCategories) as CategoriesFile,
+  }
+}
+
+function mappingFromLeaf(
+  key: 'rozetka' | 'epicentr' | 'prom',
+  leaf: { id: string; name: string; attributeSet?: string },
+) {
+  return {
+    leafId: leaf.id,
+    name: leaf.name,
+    secondary:
+      key === 'rozetka'
+        ? `ID ${leaf.id}`
+        : key === 'epicentr'
+          ? `code ${leaf.id} · attribute set ${leaf.attributeSet ?? '—'}`
+          : `portal_id ${leaf.id}`,
   }
 }
 
@@ -326,6 +347,86 @@ export const browserApi = {
 
   async getIntegrations() {
     return store.integrations
+  },
+
+  async getCategories() {
+    return store.categories
+  },
+
+  async createCategory(body: { name: string; parentId?: string | null }) {
+    let created: Category | null = null
+    mutate((s) => {
+      const name = body.name?.trim()
+      if (!name) throw new Error('Потрібна назва')
+      const parentId = body.parentId ?? null
+      if (parentId && !s.categories.categories.some((c) => c.id === parentId)) {
+        throw new Error('Немає батьківської категорії')
+      }
+      const siblings = s.categories.categories.filter((c) => c.parentId === parentId)
+      const empty = { leafId: null, name: null, secondary: null }
+      created = {
+        id: `cat-${Date.now()}`,
+        name,
+        parentId,
+        productCount: 0,
+        sortOrder: siblings.length,
+        mappings: { rozetka: { ...empty }, epicentr: { ...empty }, prom: { ...empty } },
+      }
+      s.categories.categories.push(created)
+      s.categories.meta.topLevelCount = s.categories.categories.filter((c) => c.parentId == null).length
+    })
+    return created!
+  },
+
+  async patchCategory(
+    id: string,
+    body: Partial<Pick<Category, 'name' | 'parentId'>> & {
+      mappings?: Partial<Category['mappings']>
+    },
+  ) {
+    let next: Category | null = null
+    mutate((s) => {
+      const idx = s.categories.categories.findIndex((c) => c.id === id)
+      if (idx < 0) throw new Error('Категорію не знайдено')
+      const current = s.categories.categories[idx]
+      if (typeof body.name === 'string' && body.name.trim()) current.name = body.name.trim()
+      if (body.parentId !== undefined) {
+        if (body.parentId && !s.categories.categories.some((c) => c.id === body.parentId)) {
+          throw new Error('Немає батьківської категорії')
+        }
+        if (body.parentId === current.id) throw new Error('Категорія не може бути батьком собі')
+        current.parentId = body.parentId
+      }
+      if (body.mappings) {
+        for (const key of ['rozetka', 'epicentr', 'prom'] as const) {
+          const map = body.mappings[key]
+          if (!map) continue
+          if (map.leafId == null) {
+            current.mappings[key] = { leafId: null, name: null, secondary: null }
+            continue
+          }
+          const leaf = s.categories.marketplaceLeaves[key].find((l) => l.id === map.leafId)
+          if (!leaf) throw new Error(`Немає категорії ${key}`)
+          current.mappings[key] = mappingFromLeaf(key, leaf)
+        }
+      }
+      s.categories.categories[idx] = current
+      s.categories.meta.topLevelCount = s.categories.categories.filter((c) => c.parentId == null).length
+      next = current
+    })
+    return next!
+  },
+
+  async refreshCategoryDictionaries() {
+    mutate((s) => {
+      s.categories.meta.dictionariesUpdatedAt = new Date().toLocaleString('uk-UA', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    })
+    return store.categories
   },
 
   async retryIntegration(id: string) {
