@@ -168,8 +168,12 @@ export function ProductPage() {
                 <Field label="Категорія">
                   <Input value={view.category} onChange={(e) => setField('category', e.target.value)} />
                 </Field>
-                <Field label="Бренд">
-                  <Input value={view.brand} onChange={(e) => setField('brand', e.target.value)} />
+                <Field label="Бренд (необовʼязково)">
+                  <Input
+                    value={view.brand}
+                    onChange={(e) => setField('brand', e.target.value)}
+                    placeholder="Зазвичай порожньо"
+                  />
                 </Field>
                 <Field label="Модель">
                   <Input value={view.model} onChange={(e) => setField('model', e.target.value)} />

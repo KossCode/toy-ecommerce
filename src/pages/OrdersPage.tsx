@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type OrderListItem, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { Button, Input, PageHeader, Select, StatusChip, chipTone } from '@/components/ui'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
 
 type Tab = 'all' | 'new' | 'ship' | 'sent' | 'cancelled'
@@ -232,6 +233,8 @@ function CreateOrderModal({
   const [qty, setQty] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  useEscapeKey(true, onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
