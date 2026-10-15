@@ -3,8 +3,9 @@
 Волна 1, экран 5. Промпт A — вкладка «Основне»; B–E — смена вкладки через `edit_screens`.
 
 - Устройство: desktop 1440
-- Сайдбар / оболочка — эталон `5ccffb430d5b4055a2adf50f62f6e063` (принятый список товарів)
-- Крошки, вкладки, поля, чипы — из фундамента
+- Принято (вкладка Основне): Stitch `a579e96c79c04fd588eaf5990cf4a5f6`, [`approved/05-product.png`](approved/05-product.png)
+- Сайдбар — эталон `5ccffb430d5b4055a2adf50f62f6e063`
+- Вкладки B–E — через `edit_screens` после принятия A
 - Данные — [`sample-data.md`](sample-data.md); поля — [`../product-fields.md`](../product-fields.md)
 
 ## Зачем этот экран

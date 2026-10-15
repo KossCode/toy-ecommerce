@@ -3,7 +3,8 @@
 Волна 1, экран 6. Два промпта: Epicentr с ошибкой отправки, затем Rozetka с ошибкой модерации.
 
 - Устройство: desktop 1440
-- Оболочка, таблица, чипы, «ключ — значение», кнопки — из фундамента
+- Сайдбар / оболочка — эталон `5ccffb430d5b4055a2adf50f62f6e063`; плотность панелей как у карточки товара `a579e96c79c04fd588eaf5990cf4a5f6`
+- Таблица / чипы / «ключ — значение» — из фундамента
 - Данные — [`sample-data.md`](sample-data.md), «Интеграции»
 
 ## Зачем этот экран
@@ -86,7 +87,8 @@ H1 `Інтеграції`. Под заголовком вкладки площа
 ## STITCH PROMPT
 
 ```text
-Design ONE desktop screen at 1440px for “Trio Mio CRM”, the back office of a Ukrainian toy store selling on Rozetka, Epicentr and Prom. Match the accepted CRM foundation exactly: same sidebar, top bar, panels, tables, chips, key-value lists and buttons. Do not redesign them. Sidebar current item: “Інтеграції”.
+Design ONE desktop screen at 1440px titled “Trio Mio CRM — Інтеграції”.
+VISUAL LOCK: sidebar and top bar pixel-match 5ccffb430d5b4055a2adf50f62f6e063. Panel density like a579e96c79c04fd588eaf5990cf4a5f6. Design system assets/3699739428585285203. Cool gray #F4F5F7, Manrope, primary #2D6A64. Sidebar current: “Інтеграції”. No “Характеристики”.
 
 H1 “Інтеграції”. Marketplace tabs with a small status dot and a word: “Prom · працює”, “Rozetka · 1 помилка”, “Epicentr · помилка” (current).
 

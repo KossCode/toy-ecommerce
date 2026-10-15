@@ -108,6 +108,7 @@
 | Замовлення: список | [`approved/02-orders.png`](approved/02-orders.png) | `7d28cc5c277b4553a8969279c88d4233` |
 | Замовлення: картка | [`approved/03-order.png`](approved/03-order.png) | `0ef522f17d92448d9db6f8e41d13cc85` |
 | Товари: список | [`approved/04-products.png`](approved/04-products.png) | `5ccffb430d5b4055a2adf50f62f6e063` |
+| Товар: картка (Основне) | [`approved/05-product.png`](approved/05-product.png) | `a579e96c79c04fd588eaf5990cf4a5f6` |
 
 ## Что считается принятым экраном
 
