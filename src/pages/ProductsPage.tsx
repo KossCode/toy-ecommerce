@@ -15,6 +15,8 @@ export function ProductsPage() {
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
   const categoryFilter = params.get('category') ?? ''
+  const brandFilter = params.get('brand')
+  const hasBrandFilter = params.has('brand')
 
   useEffect(() => {
     void api.getProducts().then(setProducts)
@@ -28,13 +30,17 @@ export function ProductsPage() {
       if (tab === 'low' && p.stockLabel !== 'Закінчується') return false
       if (tab === 'oos' && p.stockLabel !== 'Немає в наявності') return false
       if (categoryFilter && p.category !== categoryFilter) return false
+      if (hasBrandFilter) {
+        const brand = brandFilter ?? ''
+        if (brand === '' ? Boolean(p.brand) : p.brand !== brand) return false
+      }
       if (q) {
         const s = q.toLowerCase()
         if (!`${p.name} ${p.sku} ${p.brand} ${p.barcode}`.toLowerCase().includes(s)) return false
       }
       return true
     })
-  }, [products, tab, q, categoryFilter])
+  }, [products, tab, q, categoryFilter, brandFilter, hasBrandFilter])
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'Усі', count: 248 },

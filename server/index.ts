@@ -1,7 +1,16 @@
 import cors from 'cors'
 import express from 'express'
 import { readJson, writeJson } from './store'
-import type { CategoriesFile, Category, IntegrationsFile, Meta, Order, Product } from './types'
+import type {
+  Brand,
+  BrandsFile,
+  CategoriesFile,
+  Category,
+  IntegrationsFile,
+  Meta,
+  Order,
+  Product,
+} from './types'
 
 const app = express()
 const PORT = 3001
@@ -475,6 +484,60 @@ app.post('/api/categories/refresh-dictionaries', (_req, res) => {
   })
   writeJson('categories.json', data)
   res.json(data)
+})
+
+function brandNeedsAttention(b: Brand) {
+  if (b.unnamed) return true
+  return Object.values(b.mappings).some(
+    (m) => m.status === 'missing_dictionary' || m.status === 'missing_prom',
+  )
+}
+
+app.get('/api/brands', (_req, res) => {
+  res.json(readJson<BrandsFile>('brands.json'))
+})
+
+app.post('/api/brands', (req, res) => {
+  const data = readJson<BrandsFile>('brands.json')
+  const name = String(req.body?.name ?? '').trim()
+  if (!name) {
+    res.status(400).json({ error: 'Потрібна назва' })
+    return
+  }
+  if (data.brands.some((b) => b.name.toLowerCase() === name.toLowerCase())) {
+    res.status(400).json({ error: 'Такий бренд уже є' })
+    return
+  }
+  const mapped = { status: 'mapped' as const, label: 'Зіставлено', value: name }
+  const created: Brand = {
+    id: `brand-${Date.now()}`,
+    name,
+    productCount: 0,
+    unnamed: false,
+    mappings: { rozetka: { ...mapped }, epicentr: { ...mapped }, prom: { ...mapped } },
+  }
+  data.brands.push(created)
+  data.meta.total = data.brands.length
+  data.meta.needsAttention = data.brands.filter(brandNeedsAttention).length
+  writeJson('brands.json', data)
+  res.status(201).json(created)
+})
+
+app.post('/api/brands/:id/recheck', (req, res) => {
+  const data = readJson<BrandsFile>('brands.json')
+  const brand = data.brands.find((b) => b.id === req.params.id)
+  if (!brand) {
+    res.status(404).json({ error: 'Бренд не знайдено' })
+    return
+  }
+  data.meta.dictionariesUpdatedAt = new Date().toLocaleString('uk-UA', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  writeJson('brands.json', data)
+  res.json({ brand, meta: data.meta })
 })
 
 app.get('/api/integrations', (_req, res) => {
