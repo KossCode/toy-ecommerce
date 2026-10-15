@@ -100,9 +100,6 @@ export function ProductsPage() {
           <option value="">Категорія</option>
         </Select>
         <Select defaultValue="">
-          <option value="">Бренд</option>
-        </Select>
-        <Select defaultValue="">
           <option value="">Статус</option>
         </Select>
         <Select defaultValue="">
