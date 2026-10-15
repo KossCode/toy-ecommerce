@@ -1,0 +1,94 @@
+{
+  "marketplaces": [
+    {
+      "id": "prom",
+      "name": "Prom",
+      "tabLabel": "працює",
+      "tabTone": "ok",
+      "flows": [
+        { "name": "Замовлення", "status": "Працює", "when": "опитано о 10:05" },
+        { "name": "Ціни і наявність", "status": "Працює", "when": "надіслано о 10:02" },
+        { "name": "Фід товарів", "status": "Працює", "when": "імпорт о 09:40" },
+        { "name": "Модерація", "status": "Працює", "when": "оновлено о 09:40" }
+      ],
+      "ready": { "ready": 248, "total": 248, "notReady": 0, "reasons": [] },
+      "connection": {
+        "feedUrl": "https://triomio.ua/feeds/prom.xml",
+        "notes": ["Імпорт о 09:40: оновлено 248, помилок 0"]
+      },
+      "errorBanner": null,
+      "moderationErrors": []
+    },
+    {
+      "id": "rozetka",
+      "name": "Rozetka",
+      "tabLabel": "1 помилка",
+      "tabTone": "warn",
+      "flows": [
+        { "name": "Замовлення", "status": "Працює", "when": "опитано о 10:05" },
+        { "name": "Ціни і наявність", "status": "Працює", "when": "надіслано о 10:02" },
+        { "name": "Фід товарів", "status": "Працює", "when": "прочитано о 09:40" },
+        { "name": "Модерація", "status": "1 помилка", "when": "оновлено о 09:40" }
+      ],
+      "ready": {
+        "ready": 239,
+        "total": 248,
+        "notReady": 9,
+        "reasons": [{ "text": "Не вказано бренд", "count": 9 }]
+      },
+      "connection": {
+        "login": "triomio.shop@…",
+        "passwordMasked": "••••••••",
+        "feedUrl": "https://triomio.ua/feeds/rozetka.xml",
+        "priceSync": "Через API",
+        "caption": "Фід у режимі «Український» — підтверджено підтримкою Rozetka."
+      },
+      "errorBanner": null,
+      "moderationErrors": [
+        {
+          "sku": "TM-10042",
+          "name": "М’яка іграшка «Ведмедик Тео», 31 см",
+          "error": "Головне фото містить напис",
+          "when": "07.10, 09:40"
+        }
+      ]
+    },
+    {
+      "id": "epicentr",
+      "name": "Epicentr",
+      "tabLabel": "помилка",
+      "tabTone": "error",
+      "flows": [
+        { "name": "Замовлення", "status": "Працює", "when": "опитано о 10:05" },
+        { "name": "Ціни і наявність", "status": "Помилка", "when": "09:12, 148 товарів у черзі" },
+        { "name": "Фід товарів", "status": "Працює", "when": "автооновлення о 00:00" },
+        { "name": "Модерація", "status": "Даних немає", "when": "Epicentr показує модерацію лише в кабінеті", "link": "Відкрити кабінет Epicentr" }
+      ],
+      "ready": {
+        "ready": 206,
+        "total": 248,
+        "notReady": 42,
+        "reasons": [
+          { "text": "Бренд не зіставлено", "count": 31 },
+          { "text": "Не вказано бренд", "count": 9 },
+          { "text": "Не заповнені обов’язкові характеристики", "count": 2 }
+        ]
+      },
+      "connection": {
+        "tokenMasked": "••••••••3f9a",
+        "feedUrl": "https://triomio.ua/feeds/epicentr.xml",
+        "capabilities": [
+          "Замовлення ✓",
+          "Ціни і наявність через API ✓",
+          "Автооновлення фіду раз на добу, 00:00"
+        ],
+        "caption": "Частоту автооновлення змінює менеджер Epicentr."
+      },
+      "errorBanner": {
+        "title": "Не вдалося надіслати ціни і наявність для 148 товарів. Майданчик не відповідає.",
+        "nextTry": "Наступна спроба автоматично о 10:15."
+      },
+      "moderationErrors": []
+    }
+  ]
+}
