@@ -4,7 +4,9 @@ import { api, type OrderListItem, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import {
   Button,
+  FilterTab,
   Input,
+  ListFilters,
   PageHeader,
   Select,
   StatusChip,
@@ -101,26 +103,23 @@ export function OrdersPage() {
         }
       />
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
+      <ListFilters
+        tabs={tabs.map((t) => (
+          <FilterTab
             key={t.id}
-            type="button"
+            active={tab === t.id}
             onClick={() => navigate(t.id === 'all' ? '/orders' : `/orders?tab=${t.id}`)}
-            className={`rounded-full px-3 py-1.5 text-sm ${
-              tab === t.id
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-white border border-[var(--border)]'
-            }`}
           >
-            {t.label} {t.count}
-          </button>
+            {t.label}
+            <span className={tab === t.id ? 'opacity-80' : 'text-[var(--text-secondary)]'}>
+              {' '}
+              {t.count}
+            </span>
+          </FilterTab>
         ))}
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      >
         <Input
-          className="max-w-xs"
+          className="min-w-[220px] max-w-sm flex-1"
           placeholder="Номер, телефон або номер на площадці"
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -134,7 +133,7 @@ export function OrdersPage() {
         </Select>
         <button
           type="button"
-          className="text-sm text-[var(--primary)]"
+          className="ml-auto text-sm text-[var(--primary)] hover:underline"
           onClick={() => {
             setQ('')
             setChannel('all')
@@ -142,7 +141,7 @@ export function OrdersPage() {
         >
           Скинути
         </button>
-      </div>
+      </ListFilters>
 
       <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
         <Button variant="secondary" className="h-8 border-white/30 bg-white/10 text-white">

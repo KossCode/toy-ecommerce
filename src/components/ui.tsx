@@ -116,13 +116,64 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {meta ? <div className="mt-1 text-sm text-[var(--text-secondary)]">{meta}</div> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
+  )
+}
+
+/** Unified tabs + field filters above list tables. */
+export function ListFilters({
+  tabs,
+  children,
+  footer,
+}: {
+  tabs?: ReactNode
+  children?: ReactNode
+  footer?: ReactNode
+}) {
+  return (
+    <div className="mb-4 rounded-[var(--radius)] border border-[var(--border)] bg-white shadow-[0_1px_0_rgba(16,24,40,0.03)]">
+      {tabs ? (
+        <div className="flex flex-wrap gap-1 border-b border-[var(--border)] px-3 py-2">{tabs}</div>
+      ) : null}
+      {children ? (
+        <div className="flex flex-wrap items-center gap-2 px-3 py-3">{children}</div>
+      ) : null}
+      {footer ? (
+        <div className="border-t border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+          {footer}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export function FilterTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[var(--radius)] px-3 py-1.5 text-sm font-medium transition ${
+        active
+          ? 'bg-[var(--primary)] text-white'
+          : 'text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--text)]'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 

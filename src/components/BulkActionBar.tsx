@@ -13,9 +13,9 @@ export function BulkActionBar({
   const active = count > 0
 
   return (
-    <div className="mb-2 min-h-11">
+    <div className="mb-3 min-h-10">
       <div
-        className={`flex h-11 items-center gap-3 rounded-[var(--radius)] px-3 text-sm transition-opacity ${
+        className={`flex h-10 items-center gap-3 rounded-[var(--radius)] px-3 text-sm transition-opacity ${
           active
             ? 'bg-[var(--primary)] text-white opacity-100'
             : 'pointer-events-none border border-transparent bg-transparent opacity-0'
