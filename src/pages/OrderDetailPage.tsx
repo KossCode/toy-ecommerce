@@ -60,14 +60,14 @@ export function OrderDetailPage() {
         }
         actions={
           <>
-            {order.status === 'Нове' ? (
+            {order.status === 'Нове' || order.status === 'Чернетка' ? (
               <Button
                 onClick={async () => {
                   await api.confirmOrder(order.id)
                   await load()
                 }}
               >
-                Підтвердити
+                {order.status === 'Чернетка' ? 'Підтвердити і зарезервувати' : 'Підтвердити'}
               </Button>
             ) : null}
             {order.status === 'Підтверджено' ? (

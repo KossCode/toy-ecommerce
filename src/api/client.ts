@@ -179,6 +179,8 @@ export type CreateOrderBody = {
    * COD → післяплата on waybill when TTN is created (stage 5).
    */
   payment?: string
+  /** Чернетка — без резерву; Нове / Підтверджено — резервує залишок */
+  status?: 'Чернетка' | 'Нове' | 'Підтверджено'
   comment?: string
   items: { sku: string; qty: number }[]
 }

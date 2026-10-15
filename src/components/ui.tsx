@@ -24,6 +24,7 @@ export function StatusChip({
 
 export function chipTone(label: string): 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'primary' {
   if (['Активний', 'Активна', 'Працює', 'Доставлено', 'В наявності'].includes(label)) return 'success'
+  if (['Чернетка'].includes(label)) return 'neutral'
   if (['Нове', 'На модерації', 'Під замовлення', 'Очікується'].includes(label)) return 'info'
   if (['Є питання', 'Закінчується', 'Часткова', '1 помилка', 'Не готовий'].some((x) => label.includes(x)))
     return 'warning'

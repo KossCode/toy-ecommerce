@@ -304,6 +304,7 @@ app.post('/api/orders', (req, res) => {
     deliveryType,
     deliveryPayer = 'Отримувач',
     payment = 'Під час отримання',
+    status: statusIn = 'Підтверджено',
     comment,
     items,
   } = req.body as {
@@ -317,6 +318,7 @@ app.post('/api/orders', (req, res) => {
     deliveryType?: string
     deliveryPayer?: string
     payment?: string
+    status?: string
     comment?: string
     items: { sku: string; qty: number }[]
   }
@@ -329,6 +331,11 @@ app.post('/api/orders', (req, res) => {
     res.status(400).json({ error: 'Оберіть Нову Пошту або Міст Експрес' })
     return
   }
+  const allowedStatus = ['Чернетка', 'Нове', 'Підтверджено'] as const
+  const status = allowedStatus.includes(statusIn as (typeof allowedStatus)[number])
+    ? (statusIn as (typeof allowedStatus)[number])
+    : 'Підтверджено'
+  const shouldReserve = status === 'Нове' || status === 'Підтверджено'
 
   const maxNum = orders.reduce((max, o) => {
     const n = Number(o.id.replace('TM-', ''))
@@ -348,12 +355,14 @@ app.post('/api/orders', (req, res) => {
     }
   })
 
-  for (const row of orderItems) {
-    const p = products.find((x) => x.sku === row.sku)!
-    p.reserve += row.qty
-    recalcStock(p)
+  if (shouldReserve) {
+    for (const row of orderItems) {
+      const p = products.find((x) => x.sku === row.sku)!
+      p.reserve += row.qty
+      recalcStock(p)
+    }
+    writeJson('products.json', products)
   }
-  writeJson('products.json', products)
 
   const total = orderItems.reduce((s, i) => s + i.price * i.qty, 0)
   const addressParts = [
@@ -369,8 +378,8 @@ app.post('/api/orders', (req, res) => {
     customerName,
     customerPhone: customerPhone ?? null,
     city: city ?? null,
-    status: 'Підтверджено',
-    confirmDeadlineMinutes: null,
+    status,
+    confirmDeadlineMinutes: status === 'Нове' ? 24 * 60 : null,
     warehouse,
     delivery,
     deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
@@ -384,14 +393,22 @@ app.post('/api/orders', (req, res) => {
     history: [
       {
         at: nowIso(),
-        text: `Створено вручну (${channel}) · склад «${warehouse}» · ${delivery} · ${payment}`,
+        text: `Створено вручну (${channel}) · ${status} · склад «${warehouse}» · ${delivery} · ${payment}`,
         who: 'Олена',
       },
-      ...orderItems.map((i) => ({
-        at: nowIso(),
-        text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
-        who: 'Система',
-      })),
+      ...(shouldReserve
+        ? orderItems.map((i) => ({
+            at: nowIso(),
+            text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
+            who: 'Система',
+          }))
+        : [
+            {
+              at: nowIso(),
+              text: 'Чернетка: залишок не резервовано',
+              who: 'Система',
+            },
+          ]),
     ],
   }
 
@@ -408,9 +425,33 @@ app.post('/api/orders/:id/confirm', (req, res) => {
     return
   }
   const order = orders[idx]
-  if (order.status !== 'Нове') {
-    res.status(400).json({ error: 'Можна підтвердити лише нове' })
+  if (order.status !== 'Нове' && order.status !== 'Чернетка') {
+    res.status(400).json({ error: 'Можна підтвердити лише нове або чернетку' })
     return
+  }
+  const products = readJson<Product[]>('products.json')
+  if (order.status === 'Чернетка') {
+    for (const item of order.items) {
+      const p = products.find((x) => x.sku === item.sku)
+      if (!p) {
+        res.status(400).json({ error: `Немає товару ${item.sku}` })
+        return
+      }
+      if (p.available < item.qty) {
+        res.status(400).json({
+          error: `Недостатньо ${item.sku}: доступно ${p.available}, потрібно ${item.qty}`,
+        })
+        return
+      }
+      p.reserve += item.qty
+      recalcStock(p)
+    }
+    writeJson('products.json', products)
+    order.history.push({
+      at: nowIso(),
+      text: 'Зарезервовано залишок при підтвердженні чернетки',
+      who: 'Система',
+    })
   }
   order.status = 'Підтверджено'
   order.confirmDeadlineMinutes = null

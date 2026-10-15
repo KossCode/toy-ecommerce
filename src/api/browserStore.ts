@@ -318,16 +318,25 @@ export const browserApi = {
           oldPrice: p.oldPrice,
         }
       })
-      for (const row of orderItems) {
-        const p = s.products.find((x) => x.sku === row.sku)!
-        p.reserve += row.qty
-        recalcStock(p)
-      }
-      const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
       const delivery = body.delivery ?? 'Нова Пошта'
       if (!['Нова Пошта', 'Міст Експрес'].includes(delivery)) {
         throw new Error('Оберіть Нову Пошту або Міст Експрес')
       }
+      const allowedStatus = ['Чернетка', 'Нове', 'Підтверджено'] as const
+      const status = allowedStatus.includes(
+        (body.status ?? 'Підтверджено') as (typeof allowedStatus)[number],
+      )
+        ? ((body.status ?? 'Підтверджено') as (typeof allowedStatus)[number])
+        : 'Підтверджено'
+      const shouldReserve = status === 'Нове' || status === 'Підтверджено'
+      if (shouldReserve) {
+        for (const row of orderItems) {
+          const p = s.products.find((x) => x.sku === row.sku)!
+          p.reserve += row.qty
+          recalcStock(p)
+        }
+      }
+      const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
       const payment = body.payment ?? 'Під час отримання'
       const warehouse = body.warehouse ?? 'Основний'
       const addressParts = [
@@ -343,8 +352,8 @@ export const browserApi = {
         customerName: body.customerName,
         customerPhone: body.customerPhone ?? null,
         city: body.city ?? null,
-        status: 'Підтверджено',
-        confirmDeadlineMinutes: null,
+        status,
+        confirmDeadlineMinutes: status === 'Нове' ? 24 * 60 : null,
         warehouse,
         delivery,
         deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
@@ -358,14 +367,22 @@ export const browserApi = {
         history: [
           {
             at: nowIso(),
-            text: `Створено вручну (${body.channel ?? 'Instagram'}) · склад «${warehouse}» · ${delivery} · ${payment}`,
+            text: `Створено вручну (${body.channel ?? 'Instagram'}) · ${status} · склад «${warehouse}» · ${delivery} · ${payment}`,
             who: 'Олена',
           },
-          ...orderItems.map((i) => ({
-            at: nowIso(),
-            text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
-            who: 'Система',
-          })),
+          ...(shouldReserve
+            ? orderItems.map((i) => ({
+                at: nowIso(),
+                text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
+                who: 'Система',
+              }))
+            : [
+                {
+                  at: nowIso(),
+                  text: 'Чернетка: залишок не резервовано',
+                  who: 'Система',
+                },
+              ]),
         ],
       }
       s.orders.unshift(order)
@@ -380,7 +397,27 @@ export const browserApi = {
       const idx = s.orders.findIndex((o) => o.id === id)
       if (idx < 0) throw new Error('Замовлення не знайдено')
       const o = s.orders[idx]
-      if (o.status !== 'Нове') throw new Error('Можна підтвердити лише нове')
+      if (o.status !== 'Нове' && o.status !== 'Чернетка') {
+        throw new Error('Можна підтвердити лише нове або чернетку')
+      }
+      if (o.status === 'Чернетка') {
+        for (const item of o.items) {
+          const p = s.products.find((x) => x.sku === item.sku)
+          if (!p) throw new Error(`Немає товару ${item.sku}`)
+          if (p.available < item.qty) {
+            throw new Error(
+              `Недостатньо ${item.sku}: доступно ${p.available}, потрібно ${item.qty}`,
+            )
+          }
+          p.reserve += item.qty
+          recalcStock(p)
+        }
+        o.history.push({
+          at: nowIso(),
+          text: 'Зарезервовано залишок при підтвердженні чернетки',
+          who: 'Система',
+        })
+      }
       o.status = 'Підтверджено'
       o.confirmDeadlineMinutes = null
       if (!o.customerName && o.channel === 'Epicentr') {

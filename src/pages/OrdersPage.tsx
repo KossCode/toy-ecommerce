@@ -25,8 +25,9 @@ const PAYMENTS = [
   'Під час отримання',
   'Карткою при отриманні',
 ] as const
+const CREATE_STATUSES = ['Чернетка', 'Нове', 'Підтверджено'] as const
 
-type Tab = 'all' | 'new' | 'ship' | 'sent' | 'cancelled'
+type Tab = 'all' | 'draft' | 'new' | 'ship' | 'sent' | 'cancelled'
 
 export function OrdersPage() {
   const [orders, setOrders] = useState<OrderListItem[]>([])
@@ -51,6 +52,7 @@ export function OrdersPage() {
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
+      if (tab === 'draft' && o.status !== 'Чернетка') return false
       if (tab === 'new' && o.status !== 'Нове') return false
       if (tab === 'ship' && o.status !== 'Підтверджено') return false
       if (tab === 'sent' && o.status !== 'Відправлено') return false
@@ -67,6 +69,11 @@ export function OrdersPage() {
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'Усі', count: 214 },
+    {
+      id: 'draft',
+      label: 'Чернетки',
+      count: orders.filter((o) => o.status === 'Чернетка').length,
+    },
     { id: 'new', label: 'Нові', count: orders.filter((o) => o.status === 'Нове').length },
     {
       id: 'ship',
@@ -255,6 +262,8 @@ function CreateOrderModal({
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
   const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('Під час отримання')
+  const [orderStatus, setOrderStatus] =
+    useState<(typeof CREATE_STATUSES)[number]>('Чернетка')
   const [comment, setComment] = useState('')
   const [carrier, setCarrier] = useState<(typeof CARRIERS)[number]>('Нова Пошта')
   const [deliveryType, setDeliveryType] = useState<(typeof DELIVERY_TYPES)[number]>('Відділення')
@@ -299,13 +308,14 @@ function CreateOrderModal({
     return map
   }, new Map<string, number>())
 
+  const stockOk = [...qtyBySku.entries()].every(([sku, qty]) => {
+    const p = products.find((x) => x.sku === sku)
+    return Boolean(p && qty <= p.available)
+  })
   const itemsValid =
     lines.length > 0 &&
     lines.every((line) => line.sku && line.qty >= 1) &&
-    [...qtyBySku.entries()].every(([sku, qty]) => {
-      const p = products.find((x) => x.sku === sku)
-      return Boolean(p && qty <= p.available)
-    })
+    (orderStatus === 'Чернетка' || stockOk)
 
   const deliveryHint = [carrier, deliveryType, deliveryDetail.trim() || null]
     .filter(Boolean)
@@ -352,6 +362,7 @@ function CreateOrderModal({
         deliveryAddress: addressParts.length ? addressParts.join(', ') : undefined,
         deliveryPayer,
         payment,
+        status: orderStatus,
         comment: comment.trim() || undefined,
         items: [...merged.entries()].map(([sku, qty]) => ({ sku, qty })),
       })
@@ -371,12 +382,34 @@ function CreateOrderModal({
             <div>
               <h2 className="text-lg font-semibold">Нове замовлення</h2>
               <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
-                Чернетка · резерв залишку після створення
+                {orderStatus === 'Чернетка'
+                  ? 'Чернетка — без резерву залишку'
+                  : orderStatus === 'Нове'
+                    ? 'Нове — резерв залишку, чекає підтвердження'
+                    : 'Підтверджено — одразу в до відправлення з резервом'}
               </p>
             </div>
-            <div className="text-right text-sm">
-              <div className="text-[var(--text-secondary)]">Разом</div>
-              <div className="text-xl font-semibold tabular-nums">{money(lineTotal)}</div>
+            <div className="flex flex-col items-end gap-2 text-right text-sm">
+              <div>
+                <div className="text-[var(--text-secondary)]">Разом</div>
+                <div className="text-xl font-semibold tabular-nums">{money(lineTotal)}</div>
+              </div>
+              <label className="block text-left text-sm">
+                <span className="mb-1 block text-[var(--text-secondary)]">Статус</span>
+                <Select
+                  className="w-44"
+                  value={orderStatus}
+                  onChange={(e) =>
+                    setOrderStatus(e.target.value as (typeof CREATE_STATUSES)[number])
+                  }
+                >
+                  {CREATE_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Select>
+              </label>
             </div>
           </div>
 
@@ -734,7 +767,7 @@ function CreateOrderModal({
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] px-5 py-3">
           <p className="text-xs text-[var(--text-secondary)]">
             {itemsValid
-              ? `${lines.length} поз. · ${money(lineTotal)} · ${warehouse}`
+              ? `${lines.length} поз. · ${money(lineTotal)} · ${warehouse} · ${orderStatus}`
               : 'Додайте товари з доступним залишком'}
           </p>
           <div className="flex gap-2">
@@ -747,7 +780,11 @@ function CreateOrderModal({
               }
               onClick={() => void submit()}
             >
-              Створити
+              {orderStatus === 'Чернетка'
+                ? 'Зберегти чернетку'
+                : orderStatus === 'Нове'
+                  ? 'Створити як нове'
+                  : 'Створити і підтвердити'}
             </Button>
           </div>
         </div>
