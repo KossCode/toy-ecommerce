@@ -7,10 +7,8 @@ import seedIntegrations from '../../data/integrations.json'
 import seedMeta from '../../data/meta.json'
 import seedHistory from '../../data/product-history.json'
 import seedCategories from '../../data/categories.json'
-import seedBrands from '../../data/brands.json'
+import seedPrices from '../../data/prices.json'
 import type {
-  Brand,
-  BrandsFile,
   CategoriesFile,
   Category,
   CreateOrderBody,
@@ -19,11 +17,14 @@ import type {
   OrderDetail,
   OrderListItem,
   OverviewPayload,
+  PricePreview,
+  PriceRule,
+  PricesFile,
   Product,
   ProductHistoryItem,
 } from './client'
 
-const STORAGE_KEY = 'triomio-crm-browser-v3'
+const STORAGE_KEY = 'triomio-crm-browser-v4'
 
 type Store = {
   products: Product[]
@@ -32,7 +33,7 @@ type Store = {
   meta: typeof seedMeta
   history: ProductHistoryItem[]
   categories: CategoriesFile
-  brands: BrandsFile
+  prices: PricesFile
 }
 
 function nowIso() {
@@ -55,35 +56,88 @@ function recalcStock(product: Product) {
   else product.stockLabel = 'В наявності'
 }
 
-function roundUpTo10(n: number) {
-  return Math.ceil(n / 10) * 10
+function applyRounding(n: number, rounding: PriceRule['rounding']) {
+  switch (rounding) {
+    case 'up_10':
+      return Math.ceil(n / 10) * 10
+    case 'down_10':
+      return Math.floor(n / 10) * 10
+    case 'up_100':
+      return Math.ceil(n / 100) * 100
+    case 'down_100':
+      return Math.floor(n / 100) * 100
+    case 'to_99':
+      return Math.max(0.99, Math.ceil(n) - 0.01)
+    default:
+      return Math.round(n * 100) / 100
+  }
 }
 
-function marketplacePrices(product: Product) {
+function roundingLabelOf(rounding: PriceRule['rounding']) {
+  switch (rounding) {
+    case 'up_10':
+      return 'вгору до 10 грн'
+    case 'down_10':
+      return 'вниз до 10 грн'
+    case 'up_100':
+      return 'вгору до 100 грн'
+    case 'down_100':
+      return 'вниз до 100 грн'
+    case 'to_99':
+      return 'до *.99'
+    default:
+      return '—'
+  }
+}
+
+function pickRule(rules: PriceRule[], marketplace: PriceRule['marketplace'], product: Product) {
+  const pool = rules.filter((r) => r.marketplace === marketplace)
+  return (
+    pool.find((r) => r.scope === 'product' && r.scopeValue === product.sku) ??
+    pool.find((r) => r.scope === 'category' && r.scopeValue === product.category) ??
+    pool.find((r) => r.scope === 'default') ??
+    null
+  )
+}
+
+function applyPriceRule(base: number, rule: PriceRule | null) {
+  if (!rule || rule.kind === 'base') {
+    return { price: base, ruleLabel: rule?.ruleLabel ?? 'Як базова ціна' }
+  }
+  if (rule.kind === 'exact') {
+    return { price: rule.value ?? base, ruleLabel: rule.ruleLabel }
+  }
+  let next = base
+  if (rule.kind === 'percent') next = base * (1 + (rule.value ?? 0) / 100)
+  if (rule.kind === 'amount') next = base + (rule.value ?? 0)
+  next = applyRounding(next, rule.rounding)
+  return { price: next, ruleLabel: rule.ruleLabel }
+}
+
+function marketplacePrices(product: Product, rules: PriceRule[] = store.prices.rules) {
   const base = product.price
   const old = product.oldPrice
-  const rozetka =
-    product.brand === 'LEGO' ? roundUpTo10(base * 1.08) : roundUpTo10(base * 1.12)
-  const epicentr = product.sku === 'TM-10188' ? 399 : roundUpTo10(base * 1.08)
-  const rozetkaOld = old
-    ? product.brand === 'LEGO'
-      ? roundUpTo10(old * 1.08)
-      : roundUpTo10(old * 1.12)
-    : null
-  const epicentrOld = old && product.sku !== 'TM-10188' ? roundUpTo10(old * 1.08) : old
+  const rz = applyPriceRule(base, pickRule(rules, 'rozetka', product))
+  const ep = applyPriceRule(base, pickRule(rules, 'epicentr', product))
+  const pr = applyPriceRule(base, pickRule(rules, 'prom', product))
+  const rzOld = old ? applyPriceRule(old, pickRule(rules, 'rozetka', product)).price : null
+  const epRule = pickRule(rules, 'epicentr', product)
+  const epOld =
+    old && epRule?.kind !== 'exact' ? applyPriceRule(old, epRule).price : old
   return {
-    rozetka: {
-      price: rozetka,
-      oldPrice: rozetkaOld,
-      rule: product.brand === 'LEGO' ? '+8%, вгору до 10' : '+12%, вгору до 10',
-    },
-    epicentr: {
-      price: epicentr,
-      oldPrice: epicentrOld,
-      rule: product.sku === 'TM-10188' ? 'Точна ціна' : '+8%, вгору до 10',
-    },
-    prom: { price: base, oldPrice: old, rule: 'Як базова ціна' },
+    rozetka: { price: rz.price, oldPrice: rzOld, rule: rz.ruleLabel },
+    epicentr: { price: ep.price, oldPrice: epOld, rule: ep.ruleLabel },
+    prom: { price: pr.price, oldPrice: old, rule: pr.ruleLabel },
   }
+}
+
+function recountRuleProducts(data: PricesFile, products: Product[]) {
+  for (const rule of data.rules) {
+    rule.productCount = products.filter(
+      (p) => pickRule(data.rules, rule.marketplace, p)?.id === rule.id,
+    ).length
+  }
+  data.meta.ruleCount = data.rules.length
 }
 
 function seed(): Store {
@@ -94,15 +148,8 @@ function seed(): Store {
     meta: structuredClone(seedMeta),
     history: structuredClone(seedHistory) as ProductHistoryItem[],
     categories: structuredClone(seedCategories) as CategoriesFile,
-    brands: structuredClone(seedBrands) as BrandsFile,
+    prices: structuredClone(seedPrices) as PricesFile,
   }
-}
-
-function brandNeedsAttention(b: Brand) {
-  if (b.unnamed) return true
-  return Object.values(b.mappings).some(
-    (m) => m.status === 'missing_dictionary' || m.status === 'missing_prom',
-  )
 }
 
 function mappingFromLeaf(
@@ -455,47 +502,176 @@ export const browserApi = {
     return store.categories
   },
 
-  async getBrands() {
-    return store.brands
+  async getPrices() {
+    recountRuleProducts(store.prices, store.products)
+    saveStore(store)
+    return store.prices
   },
 
-  async createBrand(body: { name: string }) {
-    let created: Brand | null = null
+  async previewPriceRule(
+    draft: Partial<PriceRule> &
+      Pick<PriceRule, 'marketplace' | 'scope' | 'kind'> & { excludeId?: string },
+  ): Promise<PricePreview> {
+    const temp: PriceRule = {
+      id: 'preview',
+      marketplace: draft.marketplace,
+      marketplaceLabel:
+        draft.marketplace === 'rozetka' ? 'Rozetka' : draft.marketplace === 'epicentr' ? 'Epicentr' : 'Prom',
+      scope: draft.scope,
+      scopeLabel: draft.scopeLabel ?? '—',
+      scopeLevel:
+        draft.scope === 'default' ? 'Майданчик' : draft.scope === 'category' ? 'Категорія' : 'Товар',
+      scopeValue: draft.scopeValue ?? null,
+      kind: draft.kind,
+      value: draft.value ?? null,
+      ruleLabel: draft.ruleLabel ?? '',
+      rounding: draft.rounding ?? 'none',
+      roundingLabel: draft.roundingLabel ?? '—',
+      productCount: 0,
+    }
+    const existing = store.prices.rules.filter((r) => {
+      if (draft.excludeId && r.id === draft.excludeId) return false
+      return !(
+        r.marketplace === temp.marketplace &&
+        r.scope === temp.scope &&
+        r.scopeValue === temp.scopeValue
+      )
+    })
+    const withDraft = [...existing, temp]
+    const affected = store.products.filter(
+      (p) => pickRule(withDraft, temp.marketplace, p)?.id === 'preview',
+    )
+    const examples = affected.slice(0, 8).map((p) => {
+      const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p))
+      const after = applyPriceRule(p.price, temp)
+      return { sku: p.sku, name: p.name, base: p.price, before: before.price, after: after.price }
+    })
+    const jumps =
+      temp.marketplace === 'rozetka'
+        ? affected.filter((p) => {
+            const before = applyPriceRule(p.price, pickRule(existing, temp.marketplace, p)).price
+            const after = applyPriceRule(p.price, temp).price
+            return after > before * 1.5 || after < before / 2
+          }).length
+        : 0
+    return { count: affected.length, jumps, examples }
+  },
+
+  async createPriceRule(
+    body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>,
+  ) {
+    let created: PriceRule | null = null
     mutate((s) => {
-      const name = body.name?.trim()
-      if (!name) throw new Error('Потрібна назва')
-      if (s.brands.brands.some((b) => b.name.toLowerCase() === name.toLowerCase())) {
-        throw new Error('Такий бренд уже є')
-      }
-      const mapped = { status: 'mapped' as const, label: 'Зіставлено', value: name }
+      const ruleLabel =
+        body.kind === 'base'
+          ? 'Як базова ціна'
+          : body.kind === 'exact'
+            ? `Точна ціна ${body.value} грн`
+            : body.kind === 'percent'
+              ? `+${body.value}%`
+              : `+${body.value} грн`
       created = {
-        id: `brand-${Date.now()}`,
-        name,
+        id: `price-${Date.now()}`,
+        marketplace: body.marketplace,
+        marketplaceLabel:
+          body.marketplace === 'rozetka'
+            ? 'Rozetka'
+            : body.marketplace === 'epicentr'
+              ? 'Epicentr'
+              : 'Prom',
+        scope: body.scope,
+        scopeLabel:
+          body.scope === 'default'
+            ? 'За замовчуванням'
+            : String(body.scopeLabel || body.scopeValue || '—'),
+        scopeLevel:
+          body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+        scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
+        kind: body.kind,
+        value: body.value ?? null,
+        ruleLabel,
+        rounding: body.rounding ?? 'none',
+        roundingLabel: roundingLabelOf(body.rounding ?? 'none'),
         productCount: 0,
-        unnamed: false,
-        mappings: { rozetka: { ...mapped }, epicentr: { ...mapped }, prom: { ...mapped } },
       }
-      s.brands.brands.push(created)
-      s.brands.meta.total = s.brands.brands.length
-      s.brands.meta.needsAttention = s.brands.brands.filter(brandNeedsAttention).length
+      s.prices.rules = s.prices.rules.filter(
+        (r) =>
+          !(
+            r.marketplace === created!.marketplace &&
+            r.scope === created!.scope &&
+            r.scopeValue === created!.scopeValue
+          ),
+      )
+      s.prices.rules.push(created)
+      recountRuleProducts(s.prices, s.products)
     })
     return created!
   },
 
-  async recheckBrand(id: string) {
-    let brand: Brand | null = null
+  async updatePriceRule(
+    id: string,
+    body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>,
+  ) {
+    let updated: PriceRule | null = null
     mutate((s) => {
-      const found = s.brands.brands.find((b) => b.id === id)
-      if (!found) throw new Error('Бренд не знайдено')
-      s.brands.meta.dictionariesUpdatedAt = new Date().toLocaleString('uk-UA', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-      brand = found
+      const idx = s.prices.rules.findIndex((r) => r.id === id)
+      if (idx < 0) throw new Error('Правило не знайдено')
+      const ruleLabel =
+        body.kind === 'base'
+          ? 'Як базова ціна'
+          : body.kind === 'exact'
+            ? `Точна ціна ${body.value} грн`
+            : body.kind === 'percent'
+              ? `+${body.value}%`
+              : `+${body.value} грн`
+      updated = {
+        ...s.prices.rules[idx],
+        marketplace: body.marketplace,
+        marketplaceLabel:
+          body.marketplace === 'rozetka'
+            ? 'Rozetka'
+            : body.marketplace === 'epicentr'
+              ? 'Epicentr'
+              : 'Prom',
+        scope: body.scope,
+        scopeLabel:
+          body.scope === 'default'
+            ? 'За замовчуванням'
+            : String(body.scopeLabel || body.scopeValue || '—'),
+        scopeLevel:
+          body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+        scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
+        kind: body.kind,
+        value: body.value ?? null,
+        ruleLabel,
+        rounding: body.rounding ?? 'none',
+        roundingLabel: roundingLabelOf(body.rounding ?? 'none'),
+      }
+      s.prices.rules = s.prices.rules.filter(
+        (r) =>
+          r.id === id ||
+          !(
+            r.marketplace === updated!.marketplace &&
+            r.scope === updated!.scope &&
+            r.scopeValue === updated!.scopeValue
+          ),
+      )
+      const nextIdx = s.prices.rules.findIndex((r) => r.id === id)
+      if (nextIdx >= 0) s.prices.rules[nextIdx] = updated
+      else s.prices.rules.push(updated)
+      recountRuleProducts(s.prices, s.products)
     })
-    return { brand: brand!, meta: store.brands.meta }
+    return updated!
+  },
+
+  async deletePriceRule(id: string) {
+    mutate((s) => {
+      const before = s.prices.rules.length
+      s.prices.rules = s.prices.rules.filter((r) => r.id !== id)
+      if (s.prices.rules.length === before) throw new Error('Правило не знайдено')
+      recountRuleProducts(s.prices, s.products)
+    })
+    return { ok: true }
   },
 
   async retryIntegration(id: string) {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type Product } from '@/api/client'
 import { Button, Input, PageHeader, Select, StatusChip, StockDot, chipTone } from '@/components/ui'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 type Tab = 'all' | 'low' | 'oos' | 'reserved'
 
@@ -29,6 +30,8 @@ export function StockPage() {
   useEffect(() => {
     void load()
   }, [])
+
+  useEscapeKey(panelOpen, () => setPanelOpen(false))
 
   const filtered = useMemo(() => {
     return products.filter((p) => {

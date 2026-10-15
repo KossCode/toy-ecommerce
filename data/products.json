@@ -2,7 +2,7 @@
   {
     "sku": "TM-10018",
     "name": "Конструктор LEGO City «Пожежна частина»",
-    "brand": "LEGO",
+    "brand": "",
     "category": "Конструктори",
     "status": "Активний",
     "price": 1890,
@@ -34,12 +34,12 @@
     "updatedAt": "2026-10-15T06:47:14",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": false
+    "brandMissing": true
   },
   {
     "sku": "TM-10018-R",
     "name": "Конструктор LEGO City «Пожежна частина» (червоний)",
-    "brand": "LEGO",
+    "brand": "",
     "category": "Конструктори",
     "status": "Активний",
     "price": 1890,
@@ -71,12 +71,12 @@
     "updatedAt": "2026-10-06T12:00:00",
     "updatedBy": "Олена",
     "duplicateOf": "TM-10018",
-    "brandMissing": false
+    "brandMissing": true
   },
   {
     "sku": "TM-10042",
     "name": "М’яка іграшка «Ведмедик Тео», 31 см",
-    "brand": "Тигрес",
+    "brand": "",
     "category": "М’які іграшки",
     "status": "Активний",
     "price": 1100,
@@ -109,7 +109,7 @@
     "updatedAt": "2026-10-05T11:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": false
+    "brandMissing": true
   },
   {
     "sku": "TM-10077",
@@ -189,7 +189,7 @@
   {
     "sku": "TM-10120",
     "name": "Дерев’яний пазл Cubika «Лісова стежка», 48 дет.",
-    "brand": "Cubika",
+    "brand": "",
     "category": "Пазли",
     "status": "Активний",
     "price": 420,
@@ -221,7 +221,7 @@
     "updatedAt": "2026-09-28T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": false,
+    "brandMissing": true,
     "awaiting": true
   },
   {
@@ -264,7 +264,7 @@
   {
     "sku": "TM-10188",
     "name": "Машинка інерційна Hot Wheels",
-    "brand": "Hot Wheels",
+    "brand": "",
     "category": "Машинки та транспорт",
     "status": "Активний",
     "price": 349,
@@ -296,7 +296,7 @@
     "updatedAt": "2026-10-03T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": false
+    "brandMissing": true
   },
   {
     "sku": "TM-10204",
