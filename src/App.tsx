@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { CrmLayout } from '@/layouts/CrmLayout'
 import { OverviewPage } from '@/pages/OverviewPage'
 import { OrdersPage } from '@/pages/OrdersPage'
@@ -11,7 +11,7 @@ import { StubPage } from '@/pages/StubPage'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route element={<CrmLayout />}>
           <Route index element={<OverviewPage />} />
@@ -32,6 +32,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }

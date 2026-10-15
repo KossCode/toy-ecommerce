@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type OrderListItem, type Product } from '@/api/client'
+import { BulkActionBar } from '@/components/BulkActionBar'
 import { Button, Input, PageHeader, Select, StatusChip, chipTone } from '@/components/ui'
 import { formatDateTime, money } from '@/lib/format'
 
@@ -115,20 +116,14 @@ export function OrdersPage() {
         </button>
       </div>
 
-      {selected.length > 0 ? (
-        <div className="mb-2 flex items-center gap-3 rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2 text-sm text-white">
-          <span>Вибрано {selected.length}</span>
-          <Button variant="secondary" className="h-8 bg-white/10 text-white border-white/30">
-            Створити накладні
-          </Button>
-          <Button variant="secondary" className="h-8 bg-white/10 text-white border-white/30">
-            Змінити статус
-          </Button>
-          <button type="button" className="ml-auto underline" onClick={() => setSelected([])}>
-            Зняти виділення
-          </button>
-        </div>
-      ) : null}
+      <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
+        <Button variant="secondary" className="h-8 border-white/30 bg-white/10 text-white">
+          Створити накладні
+        </Button>
+        <Button variant="secondary" className="h-8 border-white/30 bg-white/10 text-white">
+          Змінити статус
+        </Button>
+      </BulkActionBar>
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
         <table className="w-full min-w-[900px] text-left text-sm">

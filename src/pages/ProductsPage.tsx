@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type Product } from '@/api/client'
+import { BulkActionBar } from '@/components/BulkActionBar'
 import { Button, Input, PageHeader, Select, StatusChip, StockDot, chipTone } from '@/components/ui'
 import { money } from '@/lib/format'
 
@@ -100,18 +101,12 @@ export function ProductsPage() {
         </button>
       </div>
 
-      {selected.length > 0 ? (
-        <div className="mb-2 flex flex-wrap items-center gap-3 rounded-[var(--radius)] bg-[var(--primary)] px-3 py-2 text-sm text-white">
-          <span>Вибрано {selected.length}</span>
-          <span>Змінити ціну</span>
-          <span>Змінити кількість</span>
-          <span>Увімкнути на майданчику</span>
-          <span>Вимкнути на майданчику</span>
-          <button type="button" className="ml-auto underline" onClick={() => setSelected([])}>
-            Зняти виділення
-          </button>
-        </div>
-      ) : null}
+      <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
+        <span>Змінити ціну</span>
+        <span>Змінити кількість</span>
+        <span>Увімкнути на майданчику</span>
+        <span>Вимкнути на майданчику</span>
+      </BulkActionBar>
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
         <table className="w-full min-w-[1000px] text-left text-sm">

@@ -1,3 +1,8 @@
+import { browserApi } from './browserStore'
+
+const useBrowserApi =
+  import.meta.env.VITE_USE_BROWSER_API === 'true' || import.meta.env.PROD
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
@@ -10,7 +15,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export const api = {
+const httpApi = {
   getOverview: () => request<OverviewPayload>('/overview'),
   getProducts: () => request<Product[]>('/products'),
   getProduct: (sku: string) => request<Product>(`/products/${sku}`),
@@ -36,6 +41,8 @@ export const api = {
       body: '{}',
     }),
 }
+
+export const api = useBrowserApi ? browserApi : httpApi
 
 export type MarketplacePrice = {
   price: number
