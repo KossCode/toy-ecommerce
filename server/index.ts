@@ -298,6 +298,7 @@ app.post('/api/orders', (req, res) => {
     customerName,
     customerPhone,
     city,
+    warehouse = 'Основний',
     delivery = 'Нова Пошта',
     deliveryAddress,
     deliveryType,
@@ -310,6 +311,7 @@ app.post('/api/orders', (req, res) => {
     customerName: string
     customerPhone?: string
     city?: string
+    warehouse?: string
     delivery?: string
     deliveryAddress?: string
     deliveryType?: string
@@ -369,6 +371,7 @@ app.post('/api/orders', (req, res) => {
     city: city ?? null,
     status: 'Підтверджено',
     confirmDeadlineMinutes: null,
+    warehouse,
     delivery,
     deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
     payment,
@@ -381,7 +384,7 @@ app.post('/api/orders', (req, res) => {
     history: [
       {
         at: nowIso(),
-        text: `Створено вручну (${channel}) · ${delivery} · ${payment}`,
+        text: `Створено вручну (${channel}) · склад «${warehouse}» · ${delivery} · ${payment}`,
         who: 'Олена',
       },
       ...orderItems.map((i) => ({

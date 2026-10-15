@@ -329,6 +329,7 @@ export const browserApi = {
         throw new Error('Оберіть Нову Пошту або Міст Експрес')
       }
       const payment = body.payment ?? 'Під час отримання'
+      const warehouse = body.warehouse ?? 'Основний'
       const addressParts = [
         body.deliveryType || null,
         body.deliveryAddress?.trim() || null,
@@ -344,6 +345,7 @@ export const browserApi = {
         city: body.city ?? null,
         status: 'Підтверджено',
         confirmDeadlineMinutes: null,
+        warehouse,
         delivery,
         deliveryAddress: addressParts.length ? addressParts.join(' · ') : null,
         payment,
@@ -356,7 +358,7 @@ export const browserApi = {
         history: [
           {
             at: nowIso(),
-            text: `Створено вручну (${body.channel ?? 'Instagram'}) · ${delivery} · ${payment}`,
+            text: `Створено вручну (${body.channel ?? 'Instagram'}) · склад «${warehouse}» · ${delivery} · ${payment}`,
             who: 'Олена',
           },
           ...orderItems.map((i) => ({

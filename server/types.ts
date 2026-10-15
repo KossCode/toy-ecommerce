@@ -54,6 +54,7 @@ export type Order = {
   city: string | null
   status: string
   confirmDeadlineMinutes: number | null
+  warehouse?: string | null
   delivery: string
   deliveryAddress: string | null
   payment: string

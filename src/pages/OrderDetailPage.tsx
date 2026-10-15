@@ -147,6 +147,7 @@ export function OrderDetailPage() {
               <Row label="Клієнт" value={order.customerName ?? '—'} />
               <Row label="Телефон" value={order.customerPhone ?? '—'} />
               <Row label="Місто" value={order.city ?? '—'} />
+              <Row label="Склад відвантаження" value={order.warehouse ?? 'Основний'} />
               <Row label="Доставка" value={order.delivery} />
               <Row label="Адреса" value={order.deliveryAddress ?? '—'} />
               <Row label="Оплата" value={order.payment} />
