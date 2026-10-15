@@ -314,37 +314,39 @@ export function ProductPage() {
               </Panel>
               <Panel title="Ціни на майданчиках">
                 {prices ? (
-                  <table className="w-full text-sm">
-                    <thead className="text-[var(--text-secondary)]">
-                      <tr className="border-b border-[var(--border)]">
-                        <th className="pb-2 text-left font-medium">Майданчик</th>
-                        <th className="pb-2 text-right font-medium">Ціна</th>
-                        <th className="pb-2 text-left font-medium">Правило</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(
-                        [
-                          ['Rozetka', prices.rozetka],
-                          ['Epicentr', prices.epicentr],
-                          ['Prom', prices.prom],
-                        ] as const
-                      ).map(([name, row]) => (
-                        <tr key={name} className="border-b border-[var(--border)] last:border-0">
-                          <td className="py-2">{name}</td>
-                          <td className="py-2 text-right">
-                            <div>{money(row.price)}</div>
-                            {row.oldPrice ? (
-                              <div className="text-xs text-[var(--text-secondary)] line-through">
-                                {money(row.oldPrice)}
-                              </div>
-                            ) : null}
-                          </td>
-                          <td className="py-2 text-[var(--text-secondary)]">{row.rule}</td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[320px] table-fixed text-sm">
+                      <thead className="text-[var(--text-secondary)]">
+                        <tr className="border-b border-[var(--border)]">
+                          <th className="w-[28%] py-2 pr-3 text-left font-medium">Майданчик</th>
+                          <th className="w-[32%] py-2 px-3 text-right font-medium">Ціна</th>
+                          <th className="w-[40%] py-2 pl-3 text-left font-medium">Правило</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {(
+                          [
+                            ['Rozetka', prices.rozetka],
+                            ['Epicentr', prices.epicentr],
+                            ['Prom', prices.prom],
+                          ] as const
+                        ).map(([name, row]) => (
+                          <tr key={name} className="border-b border-[var(--border)] last:border-0">
+                            <td className="py-2.5 pr-3">{name}</td>
+                            <td className="py-2.5 px-3 text-right tabular-nums">
+                              <div>{money(row.price)}</div>
+                              {row.oldPrice ? (
+                                <div className="text-xs text-[var(--text-secondary)] line-through">
+                                  {money(row.oldPrice)}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="py-2.5 pl-3 text-[var(--text-secondary)]">{row.rule}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : null}
               </Panel>
             </>

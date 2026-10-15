@@ -60,14 +60,14 @@ export function OrderDetailPage() {
         }
         actions={
           <>
-            {order.status === 'Нове' ? (
+            {order.status === 'Нове' || order.status === 'Чернетка' ? (
               <Button
                 onClick={async () => {
                   await api.confirmOrder(order.id)
                   await load()
                 }}
               >
-                Підтвердити
+                {order.status === 'Чернетка' ? 'Підтвердити і зарезервувати' : 'Підтвердити'}
               </Button>
             ) : null}
             {order.status === 'Підтверджено' ? (
@@ -147,6 +147,7 @@ export function OrderDetailPage() {
               <Row label="Клієнт" value={order.customerName ?? '—'} />
               <Row label="Телефон" value={order.customerPhone ?? '—'} />
               <Row label="Місто" value={order.city ?? '—'} />
+              <Row label="Склад відвантаження" value={order.warehouse ?? 'Основний'} />
               <Row label="Доставка" value={order.delivery} />
               <Row label="Адреса" value={order.deliveryAddress ?? '—'} />
               <Row label="Оплата" value={order.payment} />

@@ -24,6 +24,7 @@ export function StatusChip({
 
 export function chipTone(label: string): 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'primary' {
   if (['Активний', 'Активна', 'Працює', 'Доставлено', 'В наявності'].includes(label)) return 'success'
+  if (['Чернетка'].includes(label)) return 'neutral'
   if (['Нове', 'На модерації', 'Під замовлення', 'Очікується'].includes(label)) return 'info'
   if (['Є питання', 'Закінчується', 'Часткова', '1 помилка', 'Не готовий'].some((x) => label.includes(x)))
     return 'warning'
@@ -74,16 +75,27 @@ export function Select({ className = '', ...props }: SelectHTMLAttributes<HTMLSe
   )
 }
 
-export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function Textarea({
+  className = '',
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className="min-h-28 w-full rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 py-2 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+      className={`min-h-28 w-full rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 py-2 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 ${className}`}
       {...props}
     />
   )
 }
 
-export function Panel({ title, children, className = '' }: { title?: string; children: ReactNode; className?: string }) {
+export function Panel({
+  title,
+  children,
+  className = '',
+}: {
+  title?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
   return (
     <section className={`rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] ${className}`}>
       {title ? (

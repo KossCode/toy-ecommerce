@@ -135,6 +135,8 @@ export type Order = {
   city: string | null
   status: string
   confirmDeadlineMinutes: number | null
+  /** Склад відвантаження (поки один — «Основний») */
+  warehouse?: string | null
   delivery: string
   deliveryAddress: string | null
   payment: string
@@ -162,6 +164,8 @@ export type CreateOrderBody = {
   customerName: string
   customerPhone?: string
   city?: string
+  /** Склад відвантаження — зараз лише «Основний» (квартира) */
+  warehouse?: string
   /** Carrier shown in the orders table: Нова Пошта | Міст Експрес */
   delivery?: string
   /** Branch / address / locker details */
@@ -175,6 +179,8 @@ export type CreateOrderBody = {
    * COD → післяплата on waybill when TTN is created (stage 5).
    */
   payment?: string
+  /** Чернетка — без резерву; Нове / Підтверджено — резервує залишок */
+  status?: 'Чернетка' | 'Нове' | 'Підтверджено'
   comment?: string
   items: { sku: string; qty: number }[]
 }
