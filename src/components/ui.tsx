@@ -83,7 +83,15 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   )
 }
 
-export function Panel({ title, children, className = '' }: { title?: string; children: ReactNode; className?: string }) {
+export function Panel({
+  title,
+  children,
+  className = '',
+}: {
+  title?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
   return (
     <section className={`rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] ${className}`}>
       {title ? (

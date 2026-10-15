@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type OrderListItem, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
-import { Button, Input, PageHeader, Select, StatusChip, chipTone } from '@/components/ui'
+import { Button, Input, PageHeader, Panel, Select, StatusChip, chipTone } from '@/components/ui'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
 
@@ -296,202 +296,282 @@ function CreateOrderModal({
     setLines((prev) => (prev.length <= 1 ? prev : prev.filter((line) => line.key !== key)))
   }
 
+  const detailLabel =
+    deliveryType === 'Адреса' ? 'Адреса' : deliveryType === 'Поштомат' ? 'Поштомат' : 'Відділення'
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-auto rounded-[var(--radius)] bg-white p-5 shadow-lg">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-[var(--radius)] bg-white p-5 shadow-lg">
         <h2 className="text-lg font-semibold">Створити замовлення</h2>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Ручний канал (Instagram Direct тощо). Резервує залишок. ТТН НП/МЄ — пізніше; зараз
           зберігаємо спосіб доставки й оплати для накладної.
         </p>
-        <div className="mt-4 space-y-3">
-          <label className="block text-sm">
-            <span className="mb-1 block text-[var(--text-secondary)]">Клієнт</span>
-            <Input
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Імʼя отримувача"
-              autoFocus
-            />
-          </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Телефон</span>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+380…"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Місто</span>
-              <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Київ" />
-            </label>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Служба доставки</span>
-              <Select
-                className="w-full"
-                value={carrier}
-                onChange={(e) => setCarrier(e.target.value as (typeof CARRIERS)[number])}
-              >
-                {CARRIERS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Тип доставки</span>
-              <Select
-                className="w-full"
-                value={deliveryType}
-                onChange={(e) => setDeliveryType(e.target.value as (typeof DELIVERY_TYPES)[number])}
-              >
-                {DELIVERY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </div>
+        <div className="mt-4 space-y-4">
+          <Panel title="Клієнт">
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="w-36 py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Імʼя
+                  </th>
+                  <td className="py-2">
+                    <Input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Імʼя отримувача"
+                      autoFocus
+                    />
+                  </td>
+                </tr>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Телефон
+                  </th>
+                  <td className="py-2">
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+380…"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <th className="py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Місто
+                  </th>
+                  <td className="py-2">
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Київ"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </Panel>
 
-          <label className="block text-sm">
-            <span className="mb-1 block text-[var(--text-secondary)]">
-              {deliveryType === 'Адреса'
-                ? 'Адреса'
-                : deliveryType === 'Поштомат'
-                  ? 'Поштомат'
-                  : 'Відділення'}
-            </span>
-            <Input
-              value={deliveryDetail}
-              onChange={(e) => setDeliveryDetail(e.target.value)}
-              placeholder={detailPlaceholder}
-            />
-          </label>
+          <Panel title="Доставка і оплата">
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="w-36 py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Служба
+                  </th>
+                  <td className="py-2">
+                    <Select
+                      className="w-full"
+                      value={carrier}
+                      onChange={(e) => setCarrier(e.target.value as (typeof CARRIERS)[number])}
+                    >
+                      {CARRIERS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                  <th className="w-28 py-2 pl-4 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Тип
+                  </th>
+                  <td className="py-2">
+                    <Select
+                      className="w-full"
+                      value={deliveryType}
+                      onChange={(e) =>
+                        setDeliveryType(e.target.value as (typeof DELIVERY_TYPES)[number])
+                      }
+                    >
+                      {DELIVERY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                </tr>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    {detailLabel}
+                  </th>
+                  <td className="py-2" colSpan={3}>
+                    <Input
+                      value={deliveryDetail}
+                      onChange={(e) => setDeliveryDetail(e.target.value)}
+                      placeholder={detailPlaceholder}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <th className="py-2 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Платник
+                  </th>
+                  <td className="py-2">
+                    <Select
+                      className="w-full"
+                      value={deliveryPayer}
+                      onChange={(e) =>
+                        setDeliveryPayer(e.target.value as (typeof DELIVERY_PAYERS)[number])
+                      }
+                    >
+                      {DELIVERY_PAYERS.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                  <th className="py-2 pl-4 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                    Оплата
+                  </th>
+                  <td className="py-2">
+                    <Select
+                      className="w-full"
+                      value={payment}
+                      onChange={(e) => setPayment(e.target.value as (typeof PAYMENTS)[number])}
+                    >
+                      {PAYMENTS.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </Select>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {payment === 'Накладений платіж' ? (
+              <p className="mt-3 text-xs text-[var(--text-secondary)]">
+                Накладений платіж (післяплата / COD) піде в ТТН {carrier} при створенні накладної —
+                сума = залишок по замовленню.
+              </p>
+            ) : null}
+          </Panel>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Платник доставки</span>
-              <Select
-                className="w-full"
-                value={deliveryPayer}
-                onChange={(e) =>
-                  setDeliveryPayer(e.target.value as (typeof DELIVERY_PAYERS)[number])
-                }
-              >
-                {DELIVERY_PAYERS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Оплата</span>
-              <Select
-                className="w-full"
-                value={payment}
-                onChange={(e) => setPayment(e.target.value as (typeof PAYMENTS)[number])}
-              >
-                {PAYMENTS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </div>
-
-          {payment === 'Накладений платіж' ? (
-            <p className="text-xs text-[var(--text-secondary)]">
-              Накладений платіж (післяплата / COD) піде в ТТН {carrier} при створенні накладної —
-              сума = залишок по замовленню.
-            </p>
-          ) : null}
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Товари</span>
-              <Button
-                type="button"
-                variant="quiet"
-                disabled={products.length === 0}
-                onClick={addLine}
-              >
-                + Додати позицію
-              </Button>
-            </div>
+          <Panel
+            title={
+              <div className="flex items-center justify-between gap-2">
+                <span>Товари</span>
+                <Button
+                  type="button"
+                  variant="quiet"
+                  className="h-auto py-0 font-medium"
+                  disabled={products.length === 0}
+                  onClick={addLine}
+                >
+                  + Додати позицію
+                </Button>
+              </div>
+            }
+          >
             {products.length === 0 ? (
               <p className="text-sm text-[var(--error)]">Немає товарів у наявності</p>
             ) : (
-              lines.map((line, index) => {
-                const product = products.find((p) => p.sku === line.sku)
-                const needed = qtyBySku.get(line.sku) ?? line.qty
-                const overstock = product ? needed > product.available : false
-                return (
-                  <div
-                    key={line.key}
-                    className="grid grid-cols-[1fr_72px_auto] items-end gap-2 rounded-[var(--radius)] border border-[var(--border)] p-2"
-                  >
-                    <label className="block text-sm">
-                      <span className="mb-1 block text-[var(--text-secondary)]">
-                        Позиція {index + 1}
-                      </span>
-                      <Select
-                        className="w-full"
-                        value={line.sku}
-                        onChange={(e) => updateLine(line.key, { sku: e.target.value })}
-                      >
-                        {products.map((p) => (
-                          <option key={p.sku} value={p.sku}>
-                            {p.sku} · {p.name} (доступно {p.available})
-                          </option>
-                        ))}
-                      </Select>
-                    </label>
-                    <label className="block text-sm">
-                      <span className="mb-1 block text-[var(--text-secondary)]">К-сть</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={product?.available}
-                        value={line.qty}
-                        onChange={(e) =>
-                          updateLine(line.key, { qty: Math.max(1, Number(e.target.value) || 1) })
-                        }
-                      />
-                    </label>
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      className="mb-0.5 text-[var(--error)]"
-                      disabled={lines.length <= 1}
-                      onClick={() => removeLine(line.key)}
-                    >
-                      Прибрати
-                    </Button>
-                    {overstock ? (
-                      <p className="col-span-3 text-xs text-[var(--error)]">
-                        Доступно лише {product?.available} шт.
-                        {needed !== line.qty ? ` (у рядках разом ${needed})` : ''}
-                      </p>
-                    ) : null}
-                  </div>
-                )
-              })
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-sm">
+                    <thead className="text-[var(--text-secondary)]">
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="w-8 pb-2 text-left font-medium">#</th>
+                        <th className="pb-2 text-left font-medium">Товар</th>
+                        <th className="w-24 pb-2 text-right font-medium">Ціна</th>
+                        <th className="w-20 pb-2 text-right font-medium">К-сть</th>
+                        <th className="w-28 pb-2 text-right font-medium">Сума</th>
+                        <th className="w-10 pb-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lines.map((line, index) => {
+                        const product = products.find((p) => p.sku === line.sku)
+                        const needed = qtyBySku.get(line.sku) ?? line.qty
+                        const overstock = product ? needed > product.available : false
+                        const rowSum = (product?.price ?? 0) * Math.max(0, line.qty || 0)
+                        return (
+                          <tr
+                            key={line.key}
+                            className="border-b border-[var(--border)] last:border-0"
+                          >
+                            <td className="py-2 align-middle text-[var(--text-secondary)]">
+                              {index + 1}
+                            </td>
+                            <td className="py-2 align-middle">
+                              <Select
+                                className="w-full max-w-md"
+                                value={line.sku}
+                                onChange={(e) => updateLine(line.key, { sku: e.target.value })}
+                              >
+                                {products.map((p) => (
+                                  <option key={p.sku} value={p.sku}>
+                                    {p.sku} · {p.name}
+                                  </option>
+                                ))}
+                              </Select>
+                              {product ? (
+                                <div
+                                  className={`mt-1 text-xs ${
+                                    overstock
+                                      ? 'text-[var(--error)]'
+                                      : 'text-[var(--text-secondary)]'
+                                  }`}
+                                >
+                                  {overstock
+                                    ? `Доступно лише ${product.available} шт.${
+                                        needed !== line.qty ? ` (у рядках разом ${needed})` : ''
+                                      }`
+                                    : `доступно ${product.available} шт.`}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="py-2 align-middle text-right tabular-nums">
+                              {product ? money(product.price) : '—'}
+                            </td>
+                            <td className="py-2 align-middle">
+                              <Input
+                                className="ml-auto w-16 px-2 text-right"
+                                type="number"
+                                min={1}
+                                max={product?.available}
+                                value={line.qty}
+                                onChange={(e) =>
+                                  updateLine(line.key, {
+                                    qty: Math.max(1, Number(e.target.value) || 1),
+                                  })
+                                }
+                              />
+                            </td>
+                            <td className="py-2 align-middle text-right font-medium tabular-nums">
+                              {money(rowSum)}
+                            </td>
+                            <td className="py-2 align-middle text-right">
+                              <Button
+                                type="button"
+                                variant="quiet"
+                                className="h-8 px-1 text-[var(--error)]"
+                                disabled={lines.length <= 1}
+                                onClick={() => removeLine(line.key)}
+                                aria-label="Прибрати позицію"
+                              >
+                                ×
+                              </Button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3 flex justify-end text-base font-semibold">
+                  Разом: {money(lineTotal)}
+                </div>
+              </>
             )}
-            <div className="text-right text-sm">
-              Разом: <strong>{money(lineTotal)}</strong>
-            </div>
-          </div>
+          </Panel>
+
           {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
         </div>
+
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
             Скасувати
