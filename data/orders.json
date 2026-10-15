@@ -1,0 +1,379 @@
+[
+  {
+    "id": "TM-10483",
+    "channel": "Instagram",
+    "externalId": null,
+    "createdAt": "2026-10-15T06:39:09",
+    "customerName": "Тест Інста",
+    "customerPhone": "+380 00 000 00 00",
+    "city": "Київ",
+    "status": "Підтверджено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": null,
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10188",
+        "name": "Машинка інерційна Hot Wheels",
+        "qty": 1,
+        "price": 349,
+        "oldPrice": null
+      }
+    ],
+    "total": 349,
+    "history": [
+      {
+        "at": "2026-10-15T06:39:09",
+        "text": "Створено вручну (Instagram)",
+        "who": "Олена"
+      },
+      {
+        "at": "2026-10-15T06:39:09",
+        "text": "Зарезервовано 1 шт. TM-10188",
+        "who": "Система"
+      }
+    ]
+  },
+  {
+    "id": "TM-10482",
+    "channel": "Epicentr",
+    "externalId": "7731025",
+    "createdAt": "2026-10-07T10:02:00",
+    "customerName": "Клієнт Epicentr",
+    "customerPhone": null,
+    "city": "—",
+    "status": "Підтверджено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": null,
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10018",
+        "name": "Конструктор LEGO City «Пожежна частина»",
+        "qty": 1,
+        "price": 2050,
+        "oldPrice": 2480
+      }
+    ],
+    "total": 2050,
+    "history": [
+      {
+        "at": "2026-10-07T10:02:00",
+        "text": "Створено на Epicentr",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-07T10:02:00",
+        "text": "Зарезервовано 1 шт. TM-10018",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-15T06:41:29",
+        "text": "Підтверджено",
+        "who": "Олена"
+      }
+    ]
+  },
+  {
+    "id": "TM-10481",
+    "channel": "Rozetka",
+    "externalId": "891204557",
+    "createdAt": "2026-10-07T09:15:00",
+    "customerName": "Марина Коваль",
+    "customerPhone": "+380 67 000 00 01",
+    "city": "Київ",
+    "status": "Нове",
+    "confirmDeadlineMinutes": 1260,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Київ, Відділення №25",
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": "Подзвоніть, будь ласка, перед відправкою",
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10018",
+        "name": "Конструктор LEGO City «Пожежна частина»",
+        "qty": 1,
+        "price": 2050,
+        "oldPrice": 2480
+      }
+    ],
+    "total": 2050,
+    "history": [
+      {
+        "at": "2026-10-07T09:15:00",
+        "text": "Створено на Rozetka",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-07T09:16:00",
+        "text": "Зарезервовано 1 шт. TM-10018",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-07T09:16:00",
+        "text": "Надіслано залишок на Prom, Epicentr",
+        "who": "Система"
+      }
+    ]
+  },
+  {
+    "id": "TM-10480",
+    "channel": "Prom",
+    "externalId": "412977310",
+    "createdAt": "2026-10-07T08:47:00",
+    "customerName": "Ігор Мельник",
+    "customerPhone": "+380 50 000 00 02",
+    "city": "Львів",
+    "status": "Відправлено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Львів, Відділення №12",
+    "payment": "Оплачено онлайн",
+    "ttn": "20450000000001",
+    "ttnStatus": "У дорозі",
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10077",
+        "name": "Настільна гра «Сімейний квіз»",
+        "qty": 1,
+        "price": 649,
+        "oldPrice": null
+      }
+    ],
+    "total": 649,
+    "history": [
+      {
+        "at": "2026-10-07T08:47:00",
+        "text": "Створено на Prom",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-07T08:50:00",
+        "text": "Відправлено, ТТН 20450000000001",
+        "who": "Олена"
+      }
+    ]
+  },
+  {
+    "id": "TM-10479",
+    "channel": "Prom",
+    "externalId": "412971882",
+    "createdAt": "2026-10-06T21:30:00",
+    "customerName": "Оксана Бондар",
+    "customerPhone": "+380 63 000 00 03",
+    "city": "Одеса",
+    "status": "Підтверджено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Одеса, Відділення №8",
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10042",
+        "name": "М’яка іграшка «Ведмедик Тео», 31 см",
+        "qty": 1,
+        "price": 1100,
+        "oldPrice": null
+      },
+      {
+        "sku": "TM-10188",
+        "name": "Машинка інерційна Hot Wheels",
+        "qty": 2,
+        "price": 349,
+        "oldPrice": null
+      }
+    ],
+    "total": 1798,
+    "history": [
+      {
+        "at": "2026-10-06T21:30:00",
+        "text": "Створено на Prom",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-06T21:45:00",
+        "text": "Підтверджено",
+        "who": "Олена"
+      }
+    ]
+  },
+  {
+    "id": "TM-10478",
+    "channel": "Epicentr",
+    "externalId": "7730811",
+    "createdAt": "2026-10-06T19:12:00",
+    "customerName": "Андрій Ткаченко",
+    "customerPhone": "+380 97 000 00 04",
+    "city": "Дніпро",
+    "status": "Підтверджено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Дніпро, Відділення №3",
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10018",
+        "name": "Конструктор LEGO City «Пожежна частина»",
+        "qty": 1,
+        "price": 2050,
+        "oldPrice": 2480
+      }
+    ],
+    "total": 2050,
+    "history": [
+      {
+        "at": "2026-10-06T19:12:00",
+        "text": "Створено на Epicentr",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-06T19:20:00",
+        "text": "Підтверджено",
+        "who": "Олена"
+      }
+    ]
+  },
+  {
+    "id": "TM-10477",
+    "channel": "Rozetka",
+    "externalId": "891188020",
+    "createdAt": "2026-10-06T16:05:00",
+    "customerName": "Наталія Савчук",
+    "customerPhone": "+380 66 000 00 05",
+    "city": "Вінниця",
+    "status": "Скасовано",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Вінниця, Відділення №2",
+    "payment": "Під час отримання",
+    "ttn": null,
+    "ttnStatus": null,
+    "comment": null,
+    "cancelReason": "покупець відмовився",
+    "items": [
+      {
+        "sku": "TM-10155",
+        "name": "Набір для творчості «Акварельний ранок»",
+        "qty": 2,
+        "price": 600,
+        "oldPrice": null
+      }
+    ],
+    "total": 1200,
+    "history": [
+      {
+        "at": "2026-10-06T16:05:00",
+        "text": "Створено на Rozetka",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-06T16:20:00",
+        "text": "Скасовано: покупець відмовився",
+        "who": "Олена"
+      }
+    ]
+  },
+  {
+    "id": "TM-10476",
+    "channel": "Rozetka",
+    "externalId": "891170433",
+    "createdAt": "2026-10-05T12:40:00",
+    "customerName": "Віктор Лисенко",
+    "customerPhone": "+380 93 000 00 06",
+    "city": "Харків",
+    "status": "Доставлено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Харків, Відділення №15",
+    "payment": "Оплачено онлайн",
+    "ttn": "20450000000002",
+    "ttnStatus": "Отримано",
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10188",
+        "name": "Машинка інерційна Hot Wheels",
+        "qty": 1,
+        "price": 400,
+        "oldPrice": null
+      }
+    ],
+    "total": 400,
+    "history": [
+      {
+        "at": "2026-10-05T12:40:00",
+        "text": "Створено на Rozetka",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-05T18:00:00",
+        "text": "Доставлено",
+        "who": "Система"
+      }
+    ]
+  },
+  {
+    "id": "TM-10475",
+    "channel": "Prom",
+    "externalId": "412950164",
+    "createdAt": "2026-10-04T18:22:00",
+    "customerName": "Марина Коваль",
+    "customerPhone": "+380 67 000 00 01",
+    "city": "Київ",
+    "status": "Доставлено",
+    "confirmDeadlineMinutes": null,
+    "delivery": "Нова Пошта",
+    "deliveryAddress": "Київ, Відділення №25",
+    "payment": "Оплачено онлайн",
+    "ttn": "20450000000003",
+    "ttnStatus": "Отримано",
+    "comment": null,
+    "cancelReason": null,
+    "items": [
+      {
+        "sku": "TM-10120",
+        "name": "Дерев’яний пазл Cubika «Лісова стежка», 48 дет.",
+        "qty": 1,
+        "price": 420,
+        "oldPrice": null
+      }
+    ],
+    "total": 420,
+    "history": [
+      {
+        "at": "2026-10-04T18:22:00",
+        "text": "Створено на Prom",
+        "who": "Система"
+      },
+      {
+        "at": "2026-10-05T12:00:00",
+        "text": "Доставлено",
+        "who": "Система"
+      }
+    ]
+  }
+]

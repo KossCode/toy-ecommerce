@@ -1,0 +1,342 @@
+import cors from 'cors'
+import express from 'express'
+import { readJson, writeJson } from './store'
+import type { IntegrationsFile, Meta, Order, Product } from './types'
+
+const app = express()
+const PORT = 3001
+
+app.use(cors())
+app.use(express.json())
+
+function nowIso() {
+  return new Date().toISOString().slice(0, 19)
+}
+
+function formatDeadline(minutes: number | null) {
+  if (minutes == null) return null
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h <= 0) return `підтвердити за ${m} хв`
+  return `підтвердити за ${h} год ${m} хв`
+}
+
+app.get('/api/meta', (_req, res) => {
+  res.json(readJson<Meta>('meta.json'))
+})
+
+app.get('/api/overview', (_req, res) => {
+  const meta = readJson<Meta>('meta.json')
+  const orders = readJson<Order[]>('orders.json')
+  const products = readJson<Product[]>('products.json')
+  const integrations = readJson<IntegrationsFile>('integrations.json')
+
+  const todo = orders
+    .filter((o) => o.status === 'Нове' || o.status === 'Підтверджено')
+    .sort((a, b) => {
+      const am = a.confirmDeadlineMinutes ?? 99999
+      const bm = b.confirmDeadlineMinutes ?? 99999
+      if (a.status === 'Нове' && b.status !== 'Нове') return -1
+      if (b.status === 'Нове' && a.status !== 'Нове') return 1
+      return am - bm
+    })
+    .slice(0, 4)
+    .map((o) => ({
+      id: o.id,
+      channel: o.channel,
+      customerName: o.customerName,
+      total: o.total,
+      status: o.status,
+      action:
+        o.status === 'Нове'
+          ? formatDeadline(o.confirmDeadlineMinutes) ?? 'Підтвердити'
+          : 'Створити накладну',
+      actionKind: o.status === 'Нове' ? 'confirm' : 'ttn',
+      urgent: o.status === 'Нове' && (o.confirmDeadlineMinutes ?? 9999) < 120,
+    }))
+
+  const low = products.find((p) => p.stockLabel === 'Закінчується')
+
+  res.json({
+    meta,
+    todo,
+    integrations: integrations.marketplaces.map((m) => ({
+      id: m.id,
+      name: m.name,
+      tabTone: m.tabTone,
+      summary:
+        m.id === 'epicentr' && m.errorBanner
+          ? `Помилка о 09:12`
+          : m.id === 'rozetka'
+            ? 'Синхронізовано о 10:05 · 1 помилка модерації'
+            : 'Синхронізовано о 10:05',
+      hasRetry: Boolean(m.errorBanner),
+    })),
+    lowStockSample: low
+      ? { sku: low.sku, name: low.name, available: low.available }
+      : null,
+  })
+})
+
+app.get('/api/products', (_req, res) => {
+  res.json(readJson<Product[]>('products.json'))
+})
+
+app.get('/api/products/:sku', (req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const product = products.find((p) => p.sku === req.params.sku)
+  if (!product) {
+    res.status(404).json({ error: 'Товар не знайдено' })
+    return
+  }
+  res.json(product)
+})
+
+app.patch('/api/products/:sku', (req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const idx = products.findIndex((p) => p.sku === req.params.sku)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Товар не знайдено' })
+    return
+  }
+  const allowed = [
+    'name',
+    'description',
+    'brand',
+    'category',
+    'model',
+    'barcode',
+    'country',
+    'weightKg',
+    'dimensionsCm',
+    'status',
+    'price',
+    'oldPrice',
+  ] as const
+  const next = { ...products[idx] }
+  for (const key of allowed) {
+    if (key in req.body) {
+      // @ts-expect-error dynamic assign
+      next[key] = req.body[key]
+    }
+  }
+  next.brandMissing = !next.brand
+  next.updatedAt = nowIso()
+  next.updatedBy = 'Олена'
+  products[idx] = next
+  writeJson('products.json', products)
+  res.json(next)
+})
+
+app.get('/api/orders', (_req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  res.json(
+    orders.map((o) => ({
+      ...o,
+      confirmLabel: formatDeadline(o.confirmDeadlineMinutes),
+      itemsLabel:
+        o.items.length === 1
+          ? `${o.items[0].sku} × ${o.items[0].qty}`
+          : `${o.items.length} товари`,
+    })),
+  )
+})
+
+app.get('/api/orders/:id', (req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  const order = orders.find((o) => o.id === req.params.id)
+  if (!order) {
+    res.status(404).json({ error: 'Замовлення не знайдено' })
+    return
+  }
+  const products = readJson<Product[]>('products.json')
+  const stock = order.items.map((item) => {
+    const p = products.find((x) => x.sku === item.sku)
+    return { sku: item.sku, available: p?.available ?? 0 }
+  })
+  res.json({
+    ...order,
+    confirmLabel: formatDeadline(order.confirmDeadlineMinutes),
+    stock,
+  })
+})
+
+app.post('/api/orders', (req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  const products = readJson<Product[]>('products.json')
+  const {
+    channel = 'Instagram',
+    customerName,
+    customerPhone,
+    city,
+    deliveryAddress,
+    payment = 'Під час отримання',
+    comment,
+    items,
+  } = req.body as {
+    channel?: string
+    customerName: string
+    customerPhone?: string
+    city?: string
+    deliveryAddress?: string
+    payment?: string
+    comment?: string
+    items: { sku: string; qty: number }[]
+  }
+
+  if (!customerName || !items?.length) {
+    res.status(400).json({ error: 'Потрібні клієнт і склад' })
+    return
+  }
+
+  const maxNum = orders.reduce((max, o) => {
+    const n = Number(o.id.replace('TM-', ''))
+    return Number.isFinite(n) ? Math.max(max, n) : max
+  }, 10482)
+  const id = `TM-${maxNum + 1}`
+
+  const orderItems = items.map((row) => {
+    const p = products.find((x) => x.sku === row.sku)
+    if (!p) throw new Error(`Немає товару ${row.sku}`)
+    return {
+      sku: p.sku,
+      name: p.name,
+      qty: row.qty,
+      price: p.price,
+      oldPrice: p.oldPrice,
+    }
+  })
+
+  for (const row of orderItems) {
+    const p = products.find((x) => x.sku === row.sku)!
+    p.reserve += row.qty
+    p.available = Math.max(0, p.total - p.reserve)
+  }
+  writeJson('products.json', products)
+
+  const total = orderItems.reduce((s, i) => s + i.price * i.qty, 0)
+  const order: Order = {
+    id,
+    channel,
+    externalId: null,
+    createdAt: nowIso(),
+    customerName,
+    customerPhone: customerPhone ?? null,
+    city: city ?? null,
+    status: 'Підтверджено',
+    confirmDeadlineMinutes: null,
+    delivery: 'Нова Пошта',
+    deliveryAddress: deliveryAddress ?? null,
+    payment,
+    ttn: null,
+    ttnStatus: null,
+    comment: comment ?? null,
+    cancelReason: null,
+    items: orderItems,
+    total,
+    history: [
+      {
+        at: nowIso(),
+        text: `Створено вручну (${channel})`,
+        who: 'Олена',
+      },
+      ...orderItems.map((i) => ({
+        at: nowIso(),
+        text: `Зарезервовано ${i.qty} шт. ${i.sku}`,
+        who: 'Система',
+      })),
+    ],
+  }
+
+  orders.unshift(order)
+  writeJson('orders.json', orders)
+  res.status(201).json(order)
+})
+
+app.post('/api/orders/:id/confirm', (req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  const idx = orders.findIndex((o) => o.id === req.params.id)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Замовлення не знайдено' })
+    return
+  }
+  const order = orders[idx]
+  if (order.status !== 'Нове') {
+    res.status(400).json({ error: 'Можна підтвердити лише нове' })
+    return
+  }
+  order.status = 'Підтверджено'
+  order.confirmDeadlineMinutes = null
+  if (!order.customerName && order.channel === 'Epicentr') {
+    order.customerName = 'Клієнт Epicentr'
+    order.city = order.city ?? '—'
+  }
+  order.history.push({ at: nowIso(), text: 'Підтверджено', who: 'Олена' })
+  orders[idx] = order
+  writeJson('orders.json', orders)
+  res.json(order)
+})
+
+app.post('/api/orders/:id/cancel', (req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  const products = readJson<Product[]>('products.json')
+  const idx = orders.findIndex((o) => o.id === req.params.id)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Замовлення не знайдено' })
+    return
+  }
+  const order = orders[idx]
+  if (order.status === 'Скасовано' || order.status === 'Доставлено') {
+    res.status(400).json({ error: 'Неможливо скасувати' })
+    return
+  }
+  const reason = (req.body?.reason as string) || 'скасовано менеджером'
+  if (order.status === 'Нове' || order.status === 'Підтверджено') {
+    for (const item of order.items) {
+      const p = products.find((x) => x.sku === item.sku)
+      if (p) {
+        p.reserve = Math.max(0, p.reserve - item.qty)
+        p.available = Math.max(0, p.total - p.reserve)
+      }
+    }
+    writeJson('products.json', products)
+  }
+  order.status = 'Скасовано'
+  order.cancelReason = reason
+  order.confirmDeadlineMinutes = null
+  order.history.push({
+    at: nowIso(),
+    text: `Скасовано: ${reason}`,
+    who: 'Олена',
+  })
+  orders[idx] = order
+  writeJson('orders.json', orders)
+  res.json(order)
+})
+
+app.get('/api/integrations', (_req, res) => {
+  res.json(readJson<IntegrationsFile>('integrations.json'))
+})
+
+app.post('/api/integrations/:id/retry', (req, res) => {
+  const data = readJson<IntegrationsFile>('integrations.json')
+  const mp = data.marketplaces.find((m) => m.id === req.params.id)
+  if (!mp) {
+    res.status(404).json({ error: 'Немає площадки' })
+    return
+  }
+  mp.errorBanner = null
+  mp.tabLabel = 'працює'
+  mp.tabTone = 'ok'
+  const flow = mp.flows.find((f) => f.name === 'Ціни і наявність')
+  if (flow) {
+    flow.status = 'Працює'
+    flow.when = `надіслано о ${new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  writeJson('integrations.json', data)
+  res.json(mp)
+})
+
+app.listen(PORT, () => {
+  console.log(`CRM mock API http://localhost:${PORT}`)
+})

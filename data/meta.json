@@ -1,0 +1,23 @@
+{
+  "user": { "name": "Олена", "role": "Власник" },
+  "todayLabel": "Сьогодні, 7 жовтня 2026",
+  "todayIso": "2026-10-07",
+  "counts": {
+    "productsTotal": 248,
+    "ordersTotal": 214,
+    "lowStock": 12,
+    "drafts": 18,
+    "notOnMarketplaces": 11,
+    "notReady": 42,
+    "outOfStock": 9
+  },
+  "overview": {
+    "needConfirm": 2,
+    "needConfirmHint": "найближче — за 1 год 20 хв",
+    "awaitingShip": 2,
+    "awaitingShipHint": "потрібно зібрати",
+    "ordersToday": 3,
+    "ordersTodayHint": "на 4 749 грн",
+    "lowStockHint": "товарів з 248"
+  }
+}
