@@ -54,14 +54,11 @@ const httpApi = {
       method: 'POST',
       body: '{}',
     }),
-  getBrands: () => request<BrandsFile>('/brands'),
-  createBrand: (body: { name: string }) =>
-    request<Brand>('/brands', { method: 'POST', body: JSON.stringify(body) }),
-  recheckBrand: (id: string) =>
-    request<{ brand: Brand; meta: BrandsFile['meta'] }>(`/brands/${id}/recheck`, {
-      method: 'POST',
-      body: '{}',
-    }),
+  getPrices: () => request<PricesFile>('/prices'),
+  previewPriceRule: (body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>) =>
+    request<PricePreview>('/prices/preview', { method: 'POST', body: JSON.stringify(body) }),
+  createPriceRule: (body: Partial<PriceRule> & Pick<PriceRule, 'marketplace' | 'scope' | 'kind'>) =>
+    request<PriceRule>('/prices', { method: 'POST', body: JSON.stringify(body) }),
 }
 
 export const api = useBrowserApi ? browserApi : httpApi
@@ -248,31 +245,32 @@ export type CategoriesFile = {
   categories: Category[]
 }
 
-export type BrandMapping = {
-  status: 'mapped' | 'missing_dictionary' | 'missing_prom' | 'dash'
-  label: string
-  value: string | null
-  hint?: string
-  letter?: string
-}
-
-export type Brand = {
+export type PriceRule = {
   id: string
-  name: string
+  marketplace: 'rozetka' | 'epicentr' | 'prom'
+  marketplaceLabel: string
+  scope: 'default' | 'category' | 'product'
+  scopeLabel: string
+  scopeLevel: string
+  scopeValue: string | null
+  kind: 'percent' | 'amount' | 'exact' | 'base'
+  value: number | null
+  ruleLabel: string
+  rounding: 'up_10' | 'none'
+  roundingLabel: string
   productCount: number
-  unnamed: boolean
-  mappings: {
-    rozetka: BrandMapping
-    epicentr: BrandMapping
-    prom: BrandMapping
-  }
 }
 
-export type BrandsFile = {
+export type PricesFile = {
   meta: {
-    total: number
-    needsAttention: number
-    dictionariesUpdatedAt: string
+    ruleCount: number
+    rozetkaThresholdNote: string
   }
-  brands: Brand[]
+  rules: PriceRule[]
+}
+
+export type PricePreview = {
+  count: number
+  jumps: number
+  examples: { sku: string; name: string; base: number; before: number; after: number }[]
 }

@@ -137,31 +137,26 @@ export type CategoriesFile = {
   categories: Category[]
 }
 
-export type BrandMapping = {
-  status: 'mapped' | 'missing_dictionary' | 'missing_prom' | 'dash'
-  label: string
-  value: string | null
-  hint?: string
-  letter?: string
-}
-
-export type Brand = {
+export type PriceRule = {
   id: string
-  name: string
+  marketplace: 'rozetka' | 'epicentr' | 'prom'
+  marketplaceLabel: string
+  scope: 'default' | 'category' | 'product'
+  scopeLabel: string
+  scopeLevel: string
+  scopeValue: string | null
+  kind: 'percent' | 'amount' | 'exact' | 'base'
+  value: number | null
+  ruleLabel: string
+  rounding: 'up_10' | 'none'
+  roundingLabel: string
   productCount: number
-  unnamed: boolean
-  mappings: {
-    rozetka: BrandMapping
-    epicentr: BrandMapping
-    prom: BrandMapping
-  }
 }
 
-export type BrandsFile = {
+export type PricesFile = {
   meta: {
-    total: number
-    needsAttention: number
-    dictionariesUpdatedAt: string
+    ruleCount: number
+    rozetkaThresholdNote: string
   }
-  brands: Brand[]
+  rules: PriceRule[]
 }

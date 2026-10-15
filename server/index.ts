@@ -2,13 +2,13 @@ import cors from 'cors'
 import express from 'express'
 import { readJson, writeJson } from './store'
 import type {
-  Brand,
-  BrandsFile,
   CategoriesFile,
   Category,
   IntegrationsFile,
   Meta,
   Order,
+  PriceRule,
+  PricesFile,
   Product,
 } from './types'
 
@@ -47,28 +47,55 @@ function roundUpTo10(n: number) {
   return Math.ceil(n / 10) * 10
 }
 
+function pickRule(rules: PriceRule[], marketplace: PriceRule['marketplace'], product: Product) {
+  const pool = rules.filter((r) => r.marketplace === marketplace)
+  return (
+    pool.find((r) => r.scope === 'product' && r.scopeValue === product.sku) ??
+    pool.find((r) => r.scope === 'category' && r.scopeValue === product.category) ??
+    pool.find((r) => r.scope === 'default') ??
+    null
+  )
+}
+
+function applyPriceRule(base: number, rule: PriceRule | null) {
+  if (!rule || rule.kind === 'base') {
+    return { price: base, ruleLabel: rule?.ruleLabel ?? 'Як базова ціна' }
+  }
+  if (rule.kind === 'exact') {
+    return { price: rule.value ?? base, ruleLabel: rule.ruleLabel }
+  }
+  let next = base
+  if (rule.kind === 'percent') next = base * (1 + (rule.value ?? 0) / 100)
+  if (rule.kind === 'amount') next = base + (rule.value ?? 0)
+  if (rule.rounding === 'up_10') next = roundUpTo10(next)
+  return { price: next, ruleLabel: rule.ruleLabel }
+}
+
 function marketplacePrices(product: Product) {
+  const rules = readJson<PricesFile>('prices.json').rules
   const base = product.price
   const old = product.oldPrice
-  let rozetka = product.brand === 'LEGO' ? roundUpTo10(base * 1.08) : roundUpTo10(base * 1.12)
-  let epicentr =
-    product.sku === 'TM-10188' ? 399 : roundUpTo10(base * 1.08)
-  const prom = base
-  const rozetkaOld = old
-    ? product.brand === 'LEGO'
-      ? roundUpTo10(old * 1.08)
-      : roundUpTo10(old * 1.12)
-    : null
-  const epicentrOld = old && product.sku !== 'TM-10188' ? roundUpTo10(old * 1.08) : old
+  const rz = applyPriceRule(base, pickRule(rules, 'rozetka', product))
+  const ep = applyPriceRule(base, pickRule(rules, 'epicentr', product))
+  const pr = applyPriceRule(base, pickRule(rules, 'prom', product))
+  const rzOld = old ? applyPriceRule(old, pickRule(rules, 'rozetka', product)).price : null
+  const epOld =
+    old && pickRule(rules, 'epicentr', product)?.kind !== 'exact'
+      ? applyPriceRule(old, pickRule(rules, 'epicentr', product)).price
+      : old
   return {
-    rozetka: { price: rozetka, oldPrice: rozetkaOld, rule: product.brand === 'LEGO' ? '+8%, вгору до 10' : '+12%, вгору до 10' },
-    epicentr: {
-      price: epicentr,
-      oldPrice: epicentrOld,
-      rule: product.sku === 'TM-10188' ? 'Точна ціна' : '+8%, вгору до 10',
-    },
-    prom: { price: prom, oldPrice: old, rule: 'Як базова ціна' },
+    rozetka: { price: rz.price, oldPrice: rzOld, rule: rz.ruleLabel },
+    epicentr: { price: ep.price, oldPrice: epOld, rule: ep.ruleLabel },
+    prom: { price: pr.price, oldPrice: old, rule: pr.ruleLabel },
   }
+}
+
+function recountRuleProducts(data: PricesFile, products: Product[]) {
+  for (const rule of data.rules) {
+    const matching = products.filter((p) => pickRule(data.rules, rule.marketplace, p)?.id === rule.id)
+    rule.productCount = matching.length
+  }
+  data.meta.ruleCount = data.rules.length
 }
 
 app.get('/api/meta', (_req, res) => {
@@ -486,58 +513,109 @@ app.post('/api/categories/refresh-dictionaries', (_req, res) => {
   res.json(data)
 })
 
-function brandNeedsAttention(b: Brand) {
-  if (b.unnamed) return true
-  return Object.values(b.mappings).some(
-    (m) => m.status === 'missing_dictionary' || m.status === 'missing_prom',
-  )
-}
-
-app.get('/api/brands', (_req, res) => {
-  res.json(readJson<BrandsFile>('brands.json'))
+app.get('/api/prices', (_req, res) => {
+  const data = readJson<PricesFile>('prices.json')
+  const products = readJson<Product[]>('products.json')
+  recountRuleProducts(data, products)
+  writeJson('prices.json', data)
+  res.json(data)
 })
 
-app.post('/api/brands', (req, res) => {
-  const data = readJson<BrandsFile>('brands.json')
-  const name = String(req.body?.name ?? '').trim()
-  if (!name) {
-    res.status(400).json({ error: 'Потрібна назва' })
-    return
+app.post('/api/prices/preview', (req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const draft = req.body as Partial<PriceRule> & {
+    marketplace: PriceRule['marketplace']
+    scope: PriceRule['scope']
+    kind: PriceRule['kind']
   }
-  if (data.brands.some((b) => b.name.toLowerCase() === name.toLowerCase())) {
-    res.status(400).json({ error: 'Такий бренд уже є' })
-    return
-  }
-  const mapped = { status: 'mapped' as const, label: 'Зіставлено', value: name }
-  const created: Brand = {
-    id: `brand-${Date.now()}`,
-    name,
+  const temp: PriceRule = {
+    id: 'preview',
+    marketplace: draft.marketplace,
+    marketplaceLabel:
+      draft.marketplace === 'rozetka' ? 'Rozetka' : draft.marketplace === 'epicentr' ? 'Epicentr' : 'Prom',
+    scope: draft.scope,
+    scopeLabel: draft.scopeLabel ?? '—',
+    scopeLevel:
+      draft.scope === 'default' ? 'Майданчик' : draft.scope === 'category' ? 'Категорія' : 'Товар',
+    scopeValue: draft.scopeValue ?? null,
+    kind: draft.kind,
+    value: draft.value ?? null,
+    ruleLabel: draft.ruleLabel ?? '',
+    rounding: draft.rounding ?? 'none',
+    roundingLabel: draft.roundingLabel ?? '—',
     productCount: 0,
-    unnamed: false,
-    mappings: { rozetka: { ...mapped }, epicentr: { ...mapped }, prom: { ...mapped } },
   }
-  data.brands.push(created)
-  data.meta.total = data.brands.length
-  data.meta.needsAttention = data.brands.filter(brandNeedsAttention).length
-  writeJson('brands.json', data)
-  res.status(201).json(created)
+  const existing = readJson<PricesFile>('prices.json').rules.filter(
+    (r) => !(r.marketplace === temp.marketplace && r.scope === temp.scope && r.scopeValue === temp.scopeValue),
+  )
+  const withDraft = [...existing, temp]
+  const affected = products.filter((p) => pickRule(withDraft, temp.marketplace, p)?.id === 'preview')
+  const examples = affected.slice(0, 5).map((p) => {
+    const beforeRule = pickRule(existing, temp.marketplace, p)
+    const before = applyPriceRule(p.price, beforeRule)
+    const after = applyPriceRule(p.price, temp)
+    return {
+      sku: p.sku,
+      name: p.name,
+      base: p.price,
+      before: before.price,
+      after: after.price,
+    }
+  })
+  const jumps =
+    temp.marketplace === 'rozetka'
+      ? examples.filter((e) => e.after > e.before * 1.5 || e.after < e.before / 2).length
+      : 0
+  res.json({ count: affected.length, jumps, examples })
 })
 
-app.post('/api/brands/:id/recheck', (req, res) => {
-  const data = readJson<BrandsFile>('brands.json')
-  const brand = data.brands.find((b) => b.id === req.params.id)
-  if (!brand) {
-    res.status(404).json({ error: 'Бренд не знайдено' })
+app.post('/api/prices', (req, res) => {
+  const data = readJson<PricesFile>('prices.json')
+  const products = readJson<Product[]>('products.json')
+  const body = req.body as Partial<PriceRule>
+  if (!body.marketplace || !body.scope || !body.kind) {
+    res.status(400).json({ error: 'Неповні дані правила' })
     return
   }
-  data.meta.dictionariesUpdatedAt = new Date().toLocaleString('uk-UA', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  writeJson('brands.json', data)
-  res.json({ brand, meta: data.meta })
+  const ruleLabel =
+    body.kind === 'base'
+      ? 'Як базова ціна'
+      : body.kind === 'exact'
+        ? `Точна ціна ${body.value} грн`
+        : body.kind === 'percent'
+          ? `+${body.value}%`
+          : `+${body.value} грн`
+  const created: PriceRule = {
+    id: `price-${Date.now()}`,
+    marketplace: body.marketplace,
+    marketplaceLabel:
+      body.marketplace === 'rozetka' ? 'Rozetka' : body.marketplace === 'epicentr' ? 'Epicentr' : 'Prom',
+    scope: body.scope,
+    scopeLabel:
+      body.scope === 'default'
+        ? 'За замовчуванням'
+        : String(body.scopeLabel || body.scopeValue || '—'),
+    scopeLevel: body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+    scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
+    kind: body.kind,
+    value: body.value ?? null,
+    ruleLabel,
+    rounding: body.rounding ?? 'none',
+    roundingLabel: body.rounding === 'up_10' ? 'вгору до 10 грн' : '—',
+    productCount: 0,
+  }
+  data.rules = data.rules.filter(
+    (r) =>
+      !(
+        r.marketplace === created.marketplace &&
+        r.scope === created.scope &&
+        r.scopeValue === created.scopeValue
+      ),
+  )
+  data.rules.push(created)
+  recountRuleProducts(data, products)
+  writeJson('prices.json', data)
+  res.status(201).json(created)
 })
 
 app.get('/api/integrations', (_req, res) => {

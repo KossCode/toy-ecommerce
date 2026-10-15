@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "ruleCount": 5,
+    "rozetkaThresholdNote": "CRM попереджає, якщо ціна зростає більш ніж у 1,5 раза або падає більш ніж у 2 рази: після таких змін Rozetka може вимкнути товар до підтвердження в кабінеті."
+  },
+  "rules": [
+    {
+      "id": "rz-default",
+      "marketplace": "rozetka",
+      "marketplaceLabel": "Rozetka",
+      "scope": "default",
+      "scopeLabel": "За замовчуванням",
+      "scopeLevel": "Майданчик",
+      "scopeValue": null,
+      "kind": "percent",
+      "value": 12,
+      "ruleLabel": "+12%",
+      "rounding": "up_10",
+      "roundingLabel": "вгору до 10 грн",
+      "productCount": 184
+    },
+    {
+      "id": "rz-constructors",
+      "marketplace": "rozetka",
+      "marketplaceLabel": "Rozetka",
+      "scope": "category",
+      "scopeLabel": "Конструктори",
+      "scopeLevel": "Категорія",
+      "scopeValue": "Конструктори",
+      "kind": "percent",
+      "value": 8,
+      "ruleLabel": "+8%",
+      "rounding": "up_10",
+      "roundingLabel": "вгору до 10 грн",
+      "productCount": 64
+    },
+    {
+      "id": "ep-default",
+      "marketplace": "epicentr",
+      "marketplaceLabel": "Epicentr",
+      "scope": "default",
+      "scopeLabel": "За замовчуванням",
+      "scopeLevel": "Майданчик",
+      "scopeValue": null,
+      "kind": "percent",
+      "value": 8,
+      "ruleLabel": "+8%",
+      "rounding": "up_10",
+      "roundingLabel": "вгору до 10 грн",
+      "productCount": 247
+    },
+    {
+      "id": "ep-tm-10188",
+      "marketplace": "epicentr",
+      "marketplaceLabel": "Epicentr",
+      "scope": "product",
+      "scopeLabel": "TM-10188",
+      "scopeLevel": "Товар",
+      "scopeValue": "TM-10188",
+      "kind": "exact",
+      "value": 399,
+      "ruleLabel": "Точна ціна 399 грн",
+      "rounding": "none",
+      "roundingLabel": "—",
+      "productCount": 1
+    },
+    {
+      "id": "prom-default",
+      "marketplace": "prom",
+      "marketplaceLabel": "Prom",
+      "scope": "default",
+      "scopeLabel": "За замовчуванням",
+      "scopeLevel": "Майданчик",
+      "scopeValue": null,
+      "kind": "base",
+      "value": null,
+      "ruleLabel": "Як базова ціна",
+      "rounding": "none",
+      "roundingLabel": "—",
+      "productCount": 248
+    }
+  ]
+}
