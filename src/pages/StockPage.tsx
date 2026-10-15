@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type Product } from '@/api/client'
-import { Button, Input, PageHeader, Select, StatusChip, StockDot, chipTone } from '@/components/ui'
+import {
+  Button,
+  FilterTab,
+  Input,
+  ListFilters,
+  PageHeader,
+  Select,
+  StatusChip,
+  StockDot,
+  chipTone,
+} from '@/components/ui'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 type Tab = 'all' | 'low' | 'oos' | 'reserved'
@@ -80,26 +90,24 @@ export function StockPage() {
         actions={<Button onClick={() => openEdit()}>Змінити залишок</Button>}
       />
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
+      <ListFilters
+        tabs={tabs.map((t) => (
+          <FilterTab
             key={t.id}
-            type="button"
+            active={tab === t.id}
             onClick={() => navigate(t.id === 'all' ? '/stock' : `/stock?tab=${t.id}`)}
-            className={`rounded-full px-3 py-1.5 text-sm ${
-              tab === t.id
-                ? 'bg-[var(--primary)] text-white'
-                : 'border border-[var(--border)] bg-white'
-            }`}
           >
-            {t.label} {t.count}
-          </button>
+            {t.label}
+            <span className={tab === t.id ? 'opacity-80' : 'text-[var(--text-secondary)]'}>
+              {' '}
+              {t.count}
+            </span>
+          </FilterTab>
         ))}
-      </div>
-
-      <div className="mb-2 flex flex-wrap gap-2">
+        footer="Доступно = всього − резерв. На майданчики йде доступно. Нове замовлення резервує залишок одразу."
+      >
         <Input
-          className="max-w-xs"
+          className="min-w-[200px] max-w-xs flex-1"
           placeholder="Назва або артикул"
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -110,15 +118,14 @@ export function StockPage() {
         <Select defaultValue="">
           <option value="">Наявність</option>
         </Select>
-        <button type="button" className="text-sm text-[var(--primary)]" onClick={() => setQ('')}>
+        <button
+          type="button"
+          className="ml-auto text-sm text-[var(--primary)] hover:underline"
+          onClick={() => setQ('')}
+        >
           Скинути
         </button>
-      </div>
-
-      <p className="mb-3 text-sm text-[var(--text-secondary)]">
-        Доступно = всього − резерв. На майданчики йде доступно. Нове замовлення резервує залишок
-        одразу.
-      </p>
+      </ListFilters>
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
         <table className="w-full min-w-[900px] text-left text-sm">

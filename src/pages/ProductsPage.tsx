@@ -2,7 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
-import { Button, Input, PageHeader, Select, StatusChip, StockDot, chipTone } from '@/components/ui'
+import {
+  Button,
+  FilterTab,
+  Input,
+  ListFilters,
+  PageHeader,
+  Select,
+  StatusChip,
+  StockDot,
+  chipTone,
+} from '@/components/ui'
 import { money } from '@/lib/format'
 
 type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos'
@@ -65,35 +75,29 @@ export function ProductsPage() {
         }
       />
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
+      <ListFilters
+        tabs={tabs.map((t) => (
+          <FilterTab
             key={t.id}
-            type="button"
+            active={tab === t.id}
             onClick={() => navigate(t.id === 'all' ? '/products' : `/products?tab=${t.id}`)}
-            className={`rounded-full px-3 py-1.5 text-sm ${
-              tab === t.id
-                ? 'bg-[var(--primary)] text-white'
-                : 'border border-[var(--border)] bg-white'
-            }`}
           >
-            {t.label} {t.count}
-          </button>
+            {t.label}
+            <span className={tab === t.id ? 'opacity-80' : 'text-[var(--text-secondary)]'}>
+              {' '}
+              {t.count}
+            </span>
+          </FilterTab>
         ))}
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-2">
+      >
         <Input
-          className="max-w-xs"
+          className="min-w-[200px] max-w-xs flex-1"
           placeholder="Назва, артикул або штрихкод"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <Select defaultValue="">
           <option value="">Категорія</option>
-        </Select>
-        <Select defaultValue="">
-          <option value="">Бренд</option>
         </Select>
         <Select defaultValue="">
           <option value="">Статус</option>
@@ -104,10 +108,14 @@ export function ProductsPage() {
         <Select defaultValue="">
           <option value="">Синхронізація</option>
         </Select>
-        <button type="button" className="text-sm text-[var(--primary)]" onClick={() => setQ('')}>
+        <button
+          type="button"
+          className="ml-auto text-sm text-[var(--primary)] hover:underline"
+          onClick={() => setQ('')}
+        >
           Скинути
         </button>
-      </div>
+      </ListFilters>
 
       <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
         <span>Змінити ціну</span>

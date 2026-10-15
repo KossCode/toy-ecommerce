@@ -7,7 +7,16 @@ import {
   type PricesFile,
   type Product,
 } from '@/api/client'
-import { Button, Input, PageHeader, Panel, Select, StatusChip } from '@/components/ui'
+import {
+  Button,
+  FilterTab,
+  Input,
+  ListFilters,
+  PageHeader,
+  Panel,
+  Select,
+  StatusChip,
+} from '@/components/ui'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { money } from '@/lib/format'
 
@@ -167,8 +176,8 @@ export function PricesPage() {
         actions={<Button onClick={openCreate}>Додати правило</Button>}
       />
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {(
+      <ListFilters
+        tabs={(
           [
             { id: 'all' as const, label: 'Усі' },
             { id: 'rozetka' as const, label: 'Rozetka' },
@@ -176,25 +185,16 @@ export function PricesPage() {
             { id: 'prom' as const, label: 'Prom' },
           ] as const
         ).map((t) => (
-          <button
+          <FilterTab
             key={t.id}
-            type="button"
+            active={tab === t.id}
             onClick={() => setParams(t.id === 'all' ? {} : { tab: t.id })}
-            className={`rounded-full px-3 py-1.5 text-sm ${
-              tab === t.id
-                ? 'bg-[var(--primary)] text-white'
-                : 'border border-[var(--border)] bg-white text-[var(--text)]'
-            }`}
           >
             {t.label}
-          </button>
+          </FilterTab>
         ))}
-      </div>
-
-      <p className="mb-3 text-sm text-[var(--text-secondary)]">
-        Діє найточніше правило: товар → категорія → за замовчуванням. Клік по рядку — редагування з
-        попереднім переглядом.
-      </p>
+        footer="Діє найточніше правило: товар → категорія → за замовчуванням. Клік по рядку — редагування з попереднім переглядом."
+      />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
