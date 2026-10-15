@@ -1,5 +1,9 @@
 export function money(n: number) {
-  return `${n.toLocaleString('uk-UA')} грн`
+  const hasCents = Math.round(n * 100) % 100 !== 0
+  return `${n.toLocaleString('uk-UA', {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: 2,
+  })} грн`
 }
 
 export function formatDateTime(iso: string) {

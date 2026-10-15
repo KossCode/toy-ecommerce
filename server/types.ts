@@ -148,7 +148,7 @@ export type PriceRule = {
   kind: 'percent' | 'amount' | 'exact' | 'base'
   value: number | null
   ruleLabel: string
-  rounding: 'up_10' | 'none'
+  rounding: 'none' | 'up_10' | 'down_10' | 'up_100' | 'down_100' | 'to_99'
   roundingLabel: string
   productCount: number
 }

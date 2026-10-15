@@ -392,6 +392,10 @@ export function PricesPage() {
                   }
                 >
                   <option value="up_10">Вгору до 10 грн</option>
+                  <option value="down_10">Вниз до 10 грн</option>
+                  <option value="up_100">Вгору до 100 грн</option>
+                  <option value="down_100">Вниз до 100 грн</option>
+                  <option value="to_99">До *.99</option>
                   <option value="none">Без округлення</option>
                 </Select>
               </label>

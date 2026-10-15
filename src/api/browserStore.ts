@@ -56,8 +56,38 @@ function recalcStock(product: Product) {
   else product.stockLabel = 'В наявності'
 }
 
-function roundUpTo10(n: number) {
-  return Math.ceil(n / 10) * 10
+function applyRounding(n: number, rounding: PriceRule['rounding']) {
+  switch (rounding) {
+    case 'up_10':
+      return Math.ceil(n / 10) * 10
+    case 'down_10':
+      return Math.floor(n / 10) * 10
+    case 'up_100':
+      return Math.ceil(n / 100) * 100
+    case 'down_100':
+      return Math.floor(n / 100) * 100
+    case 'to_99':
+      return Math.max(0.99, Math.ceil(n) - 0.01)
+    default:
+      return Math.round(n * 100) / 100
+  }
+}
+
+function roundingLabelOf(rounding: PriceRule['rounding']) {
+  switch (rounding) {
+    case 'up_10':
+      return 'вгору до 10 грн'
+    case 'down_10':
+      return 'вниз до 10 грн'
+    case 'up_100':
+      return 'вгору до 100 грн'
+    case 'down_100':
+      return 'вниз до 100 грн'
+    case 'to_99':
+      return 'до *.99'
+    default:
+      return '—'
+  }
 }
 
 function pickRule(rules: PriceRule[], marketplace: PriceRule['marketplace'], product: Product) {
@@ -80,7 +110,7 @@ function applyPriceRule(base: number, rule: PriceRule | null) {
   let next = base
   if (rule.kind === 'percent') next = base * (1 + (rule.value ?? 0) / 100)
   if (rule.kind === 'amount') next = base + (rule.value ?? 0)
-  if (rule.rounding === 'up_10') next = roundUpTo10(next)
+  next = applyRounding(next, rule.rounding)
   return { price: next, ruleLabel: rule.ruleLabel }
 }
 
@@ -547,7 +577,7 @@ export const browserApi = {
         value: body.value ?? null,
         ruleLabel,
         rounding: body.rounding ?? 'none',
-        roundingLabel: body.rounding === 'up_10' ? 'вгору до 10 грн' : '—',
+        roundingLabel: roundingLabelOf(body.rounding ?? 'none'),
         productCount: 0,
       }
       s.prices.rules = s.prices.rules.filter(
@@ -601,7 +631,7 @@ export const browserApi = {
         value: body.value ?? null,
         ruleLabel,
         rounding: body.rounding ?? 'none',
-        roundingLabel: body.rounding === 'up_10' ? 'вгору до 10 грн' : '—',
+        roundingLabel: roundingLabelOf(body.rounding ?? 'none'),
       }
       s.prices.rules = s.prices.rules.filter(
         (r) =>
