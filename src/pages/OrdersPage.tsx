@@ -249,7 +249,9 @@ function CreateOrderModal({
   const [section, setSection] = useState<'items' | 'delivery'>('items')
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>('Instagram')
   const [warehouse, setWarehouse] = useState<(typeof WAREHOUSES)[number]>('Основний')
-  const [customerName, setCustomerName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [middleName, setMiddleName] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
   const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('Під час отримання')
@@ -257,6 +259,8 @@ function CreateOrderModal({
   const [carrier, setCarrier] = useState<(typeof CARRIERS)[number]>('Нова Пошта')
   const [deliveryType, setDeliveryType] = useState<(typeof DELIVERY_TYPES)[number]>('Відділення')
   const [deliveryDetail, setDeliveryDetail] = useState('')
+  const [deliveryHouse, setDeliveryHouse] = useState('')
+  const [deliveryFlat, setDeliveryFlat] = useState('')
   const [deliveryPayer, setDeliveryPayer] =
     useState<(typeof DELIVERY_PAYERS)[number]>('Отримувач')
   const [lines, setLines] = useState<{ key: string; sku: string; qty: number }[]>([
@@ -267,15 +271,22 @@ function CreateOrderModal({
 
   useEscapeKey(true, onClose)
 
+  /** ПІБ як у НП RecipientName / ContactPerson */
+  const customerName = [lastName, firstName, middleName]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(' ')
+
+  const isAddress = deliveryType === 'Адреса'
   const detailPlaceholder =
     deliveryType === 'Адреса'
-      ? 'Вулиця, будинок, квартира'
+      ? 'Вулиця (без будинку)'
       : deliveryType === 'Поштомат'
-        ? 'Номер поштомату'
-        : 'Наприклад, Відділення №25'
+        ? 'Номер поштомату, напр. 4501'
+        : 'Номер відділення, напр. 25'
 
   const detailLabel =
-    deliveryType === 'Адреса' ? 'Адреса' : deliveryType === 'Поштомат' ? 'Поштомат' : 'Відділення'
+    deliveryType === 'Адреса' ? 'Вулиця' : deliveryType === 'Поштомат' ? 'Поштомат' : 'Відділення'
 
   const lineTotal = lines.reduce((sum, line) => {
     const p = products.find((x) => x.sku === line.sku)
@@ -325,15 +336,20 @@ function CreateOrderModal({
       for (const line of lines) {
         merged.set(line.sku, (merged.get(line.sku) ?? 0) + line.qty)
       }
+      const addressParts = [
+        deliveryDetail.trim() || null,
+        isAddress && deliveryHouse.trim() ? `буд. ${deliveryHouse.trim()}` : null,
+        isAddress && deliveryFlat.trim() ? `кв. ${deliveryFlat.trim()}` : null,
+      ].filter(Boolean)
       const order = await api.createOrder({
         channel,
         warehouse,
-        customerName: customerName.trim(),
+        customerName,
         customerPhone: phone.trim() || undefined,
         city: city.trim() || undefined,
         delivery: carrier,
         deliveryType,
-        deliveryAddress: deliveryDetail.trim() || undefined,
+        deliveryAddress: addressParts.length ? addressParts.join(', ') : undefined,
         deliveryPayer,
         payment,
         comment: comment.trim() || undefined,
@@ -366,12 +382,28 @@ function CreateOrderModal({
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block text-sm">
-              <span className="mb-1 block text-[var(--text-secondary)]">Клієнт</span>
+              <span className="mb-1 block text-[var(--text-secondary)]">Прізвище</span>
               <Input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Імʼя отримувача"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Шевченко"
                 autoFocus
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">Імʼя</span>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Олена"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-[var(--text-secondary)]">По батькові</span>
+              <Input
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                placeholder="необовʼязково"
               />
             </label>
             <label className="block text-sm">
@@ -429,6 +461,10 @@ function CreateOrderModal({
               </Select>
             </label>
           </div>
+          <p className="mt-2 text-xs text-[var(--text-secondary)]">
+            Для ТТН НП потрібні ПІБ + телефон у форматі +380…; місто й відділення краще з довідника
+            (REF) — поки вводимо текстом.
+          </p>
         </div>
 
         <div className="flex items-center gap-1 border-b border-[var(--border)] px-5">
@@ -621,6 +657,29 @@ function CreateOrderModal({
                         />
                       </td>
                     </tr>
+                    {isAddress ? (
+                      <tr className="border-b border-[var(--border)]">
+                        <th className="py-2.5 pr-3 text-left font-medium text-[var(--text-secondary)]">
+                          Буд. / кв.
+                        </th>
+                        <td className="py-2.5">
+                          <div className="flex gap-2">
+                            <Input
+                              className="w-28"
+                              value={deliveryHouse}
+                              onChange={(e) => setDeliveryHouse(e.target.value)}
+                              placeholder="Буд."
+                            />
+                            <Input
+                              className="w-28"
+                              value={deliveryFlat}
+                              onChange={(e) => setDeliveryFlat(e.target.value)}
+                              placeholder="Кв."
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
                     <tr>
                       <th className="py-2.5 pr-3 text-left font-medium text-[var(--text-secondary)]">
                         Платник доставки
@@ -660,10 +719,10 @@ function CreateOrderModal({
                   Коментар (для себе / комплектації)
                 </span>
                 <Textarea
-                  className="min-h-24"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="Наприклад: передзвонити перед відправкою, подарункове пакування…"
+                  rows={3}
                 />
               </label>
             </div>
@@ -683,7 +742,9 @@ function CreateOrderModal({
               Скасувати
             </Button>
             <Button
-              disabled={saving || !customerName.trim() || !itemsValid}
+              disabled={
+                saving || !lastName.trim() || !firstName.trim() || !phone.trim() || !itemsValid
+              }
               onClick={() => void submit()}
             >
               Створити
