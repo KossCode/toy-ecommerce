@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { api, type Product } from '@/api/client'
 import { Button, Input, Select, Textarea } from '@/components/ui'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { money } from '@/lib/format'
 
@@ -96,6 +97,7 @@ function ProductPickerModal({
 }) {
   const [q, setQ] = useState('')
   useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -105,15 +107,19 @@ function ProductPickerModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-black/50 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault()
       }}
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Вибір товару"
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
+        className="flex h-[min(80vh,640px)] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
           <div>
@@ -139,9 +145,9 @@ function ProductPickerModal({
             placeholder="Пошук за назвою, артикулом або штрихкодом"
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-modal-scroll>
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-[var(--bg)] text-[var(--text-secondary)]">
+            <thead className="sticky top-0 z-[1] bg-[var(--bg)] text-[var(--text-secondary)]">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">Товар</th>
                 <th className="px-3 py-2 text-right font-medium">Ціна</th>
@@ -216,6 +222,7 @@ export function CreateOrderModal({
   const [saving, setSaving] = useState(false)
 
   useEscapeKey(true, pickingFor ? () => setPickingFor(null) : onClose)
+  useBodyScrollLock(true)
 
   const customerName = [lastName, firstName, middleName]
     .map((s) => s.trim())
@@ -322,13 +329,17 @@ export function CreateOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/45 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-stretch justify-center overflow-hidden bg-black/45 p-0 sm:items-center sm:p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault()
       }}
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-labelledby="create-order-title"
         className="flex h-full w-full max-w-6xl flex-col overflow-hidden bg-white shadow-xl sm:h-[min(92vh,880px)] sm:rounded-[var(--radius)]"
       >
@@ -466,7 +477,7 @@ export function CreateOrderModal({
               ) : null}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4" data-modal-scroll>
               {section === 'items' ? (
                 products.length === 0 ? (
                   <p className="text-sm text-[var(--error)]">Немає товарів у наявності</p>
@@ -704,7 +715,7 @@ export function CreateOrderModal({
           </div>
 
           <aside className="flex shrink-0 flex-col border-t border-[var(--border)] bg-[var(--bg)]/60 lg:border-t-0 lg:border-l">
-            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5" data-modal-scroll>
               <div>
                 <div className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
                   Разом

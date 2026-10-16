@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type OrderDetail } from '@/api/client'
 import { Button, PageHeader, Panel, StatusChip, chipTone } from '@/components/ui'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateLong, formatDateTime, money } from '@/lib/format'
 
@@ -28,6 +29,7 @@ export function OrderDetailPage() {
   }, [id])
 
   useEscapeKey(cancelOpen, () => setCancelOpen(false))
+  useBodyScrollLock(cancelOpen)
 
   if (error) return <p className="text-[var(--error)]">{error}</p>
   if (!order) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
