@@ -51,7 +51,7 @@ export function OrdersPage() {
     | 'status'
     | 'delivery'
     | 'total'
-  const { sortKey, sortDir, toggle } = useTableSort<OrderSortKey>('createdAt', 'desc')
+  const { sortKey, sortDir, toggle: toggleSort } = useTableSort<OrderSortKey>('createdAt', 'desc')
 
   async function load() {
     const [o, p] = await Promise.all([api.getOrders(), api.getProducts()])
@@ -199,44 +199,44 @@ export function OrdersPage() {
                 label="Номер"
                 active={sortKey === 'id'}
                 dir={sortDir}
-                onClick={() => toggle('id')}
+                onClick={() => toggleSort('id')}
               />
               <SortableTh
                 label="Створено"
                 active={sortKey === 'createdAt'}
                 dir={sortDir}
-                onClick={() => toggle('createdAt')}
+                onClick={() => toggleSort('createdAt')}
               />
               <SortableTh
                 label="Клієнт"
                 active={sortKey === 'customer'}
                 dir={sortDir}
-                onClick={() => toggle('customer')}
+                onClick={() => toggleSort('customer')}
               />
               <SortableTh
                 label="Склад"
                 active={sortKey === 'warehouse'}
                 dir={sortDir}
-                onClick={() => toggle('warehouse')}
+                onClick={() => toggleSort('warehouse')}
               />
               <SortableTh
                 label="Статус"
                 active={sortKey === 'status'}
                 dir={sortDir}
-                onClick={() => toggle('status')}
+                onClick={() => toggleSort('status')}
               />
               <SortableTh
                 label="Доставка"
                 active={sortKey === 'delivery'}
                 dir={sortDir}
-                onClick={() => toggle('delivery')}
+                onClick={() => toggleSort('delivery')}
               />
               <SortableTh
                 label="Сума"
                 align="right"
                 active={sortKey === 'total'}
                 dir={sortDir}
-                onClick={() => toggle('total')}
+                onClick={() => toggleSort('total')}
               />
             </tr>
           </thead>
