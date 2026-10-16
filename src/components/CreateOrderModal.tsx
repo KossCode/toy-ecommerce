@@ -19,7 +19,8 @@ const PAYMENTS = [
 const CREATE_STATUSES = ['Чернетка', 'Нове', 'Підтверджено'] as const
 
 type CreateStatus = (typeof CREATE_STATUSES)[number]
-type Line = { key: string; sku: string; qty: number }
+/** price — unit price in грн; null until a product is chosen */
+type Line = { key: string; sku: string; qty: number; price: number | null }
 
 function Field({
   label,
@@ -216,7 +217,7 @@ export function CreateOrderModal({
   const [deliveryFlat, setDeliveryFlat] = useState('')
   const [deliveryPayer, setDeliveryPayer] =
     useState<(typeof DELIVERY_PAYERS)[number]>('Отримувач')
-  const [lines, setLines] = useState<Line[]>([{ key: 'line-1', sku: '', qty: 1 }])
+  const [lines, setLines] = useState<Line[]>([{ key: 'line-1', sku: '', qty: 1, price: null }])
   const [pickingFor, setPickingFor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -241,8 +242,8 @@ export function CreateOrderModal({
     deliveryType === 'Адреса' ? 'Вулиця' : deliveryType === 'Поштомат' ? 'Поштомат' : 'Відділення'
 
   const lineTotal = lines.reduce((sum, line) => {
-    const p = products.find((x) => x.sku === line.sku)
-    return sum + (p?.price ?? 0) * Math.max(0, line.qty || 0)
+    if (!line.sku || line.price == null) return sum
+    return sum + line.price * Math.max(0, line.qty || 0)
   }, 0)
 
   const qtyBySku = lines.reduce((map, line) => {
@@ -258,7 +259,9 @@ export function CreateOrderModal({
   const filledLines = lines.filter((l) => l.sku)
   const itemsValid =
     filledLines.length > 0 &&
-    filledLines.every((line) => line.qty >= 1) &&
+    filledLines.every(
+      (line) => line.qty >= 1 && line.price != null && line.price >= 0 && Number.isFinite(line.price),
+    ) &&
     (orderStatus === 'Чернетка' || stockOk)
 
   const phoneOk = /^\+?380\d{9}$/.test(phone.replace(/[\s()-]/g, ''))
@@ -277,7 +280,7 @@ export function CreateOrderModal({
   }
 
   function addLine() {
-    setLines((prev) => [...prev, { key: `line-${Date.now()}`, sku: '', qty: 1 }])
+    setLines((prev) => [...prev, { key: `line-${Date.now()}`, sku: '', qty: 1, price: null }])
   }
 
   function removeLine(key: string) {
@@ -288,10 +291,6 @@ export function CreateOrderModal({
     try {
       setSaving(true)
       setError(null)
-      const merged = new Map<string, number>()
-      for (const line of filledLines) {
-        merged.set(line.sku, (merged.get(line.sku) ?? 0) + line.qty)
-      }
       const addressParts = [
         deliveryDetail.trim() || null,
         isAddress && deliveryHouse.trim() ? `буд. ${deliveryHouse.trim()}` : null,
@@ -310,7 +309,11 @@ export function CreateOrderModal({
         payment,
         status: orderStatus,
         comment: comment.trim() || undefined,
-        items: [...merged.entries()].map(([sku, qty]) => ({ sku, qty })),
+        items: filledLines.map((line) => ({
+          sku: line.sku,
+          qty: line.qty,
+          price: line.price ?? undefined,
+        })),
       })
       onCreated(order.id)
     } catch (e) {
@@ -499,7 +502,10 @@ export function CreateOrderModal({
                           const product = products.find((p) => p.sku === line.sku)
                           const needed = line.sku ? (qtyBySku.get(line.sku) ?? line.qty) : 0
                           const overstock = product ? needed > product.available : false
-                          const rowSum = (product?.price ?? 0) * Math.max(0, line.qty || 0)
+                          const unit = line.price ?? 0
+                          const rowSum = unit * Math.max(0, line.qty || 0)
+                          const priceOverridden =
+                            product != null && line.price != null && line.price !== product.price
                           return (
                             <tr
                               key={line.key}
@@ -552,8 +558,36 @@ export function CreateOrderModal({
                                   </div>
                                 ) : null}
                               </td>
-                              <td className="px-3 py-2.5 align-middle text-right tabular-nums">
-                                {product ? money(product.price) : '—'}
+                              <td className="px-3 py-2.5 align-middle text-right">
+                                <Input
+                                  className="ml-auto w-[5.5rem] px-2 text-right tabular-nums"
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={line.price ?? ''}
+                                  disabled={!line.sku}
+                                  title={
+                                    product
+                                      ? `Каталог: ${money(product.price)}`
+                                      : undefined
+                                  }
+                                  onChange={(e) => {
+                                    const raw = e.target.value
+                                    if (raw === '') {
+                                      updateLine(line.key, { price: null })
+                                      return
+                                    }
+                                    const n = Number(raw)
+                                    updateLine(line.key, {
+                                      price: Number.isFinite(n) ? Math.max(0, n) : line.price,
+                                    })
+                                  }}
+                                />
+                                {priceOverridden ? (
+                                  <div className="mt-0.5 text-[10px] text-[var(--text-secondary)]">
+                                    каталог {money(product.price)}
+                                  </div>
+                                ) : null}
                               </td>
                               <td className="px-3 py-2.5 align-middle">
                                 <Input
@@ -571,7 +605,7 @@ export function CreateOrderModal({
                                 />
                               </td>
                               <td className="px-3 py-2.5 align-middle text-right font-medium tabular-nums">
-                                {product ? money(rowSum) : '—'}
+                                {line.sku && line.price != null ? money(rowSum) : '—'}
                               </td>
                               <td className="px-2 py-2.5 align-middle text-right">
                                 <button
@@ -799,7 +833,8 @@ export function CreateOrderModal({
           channel={channel}
           onClose={() => setPickingFor(null)}
           onPick={(sku) => {
-            updateLine(pickingFor, { sku })
+            const p = products.find((x) => x.sku === sku)
+            updateLine(pickingFor, { sku, price: p?.price ?? 0 })
             setPickingFor(null)
           }}
         />

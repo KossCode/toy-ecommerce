@@ -186,7 +186,8 @@ export type CreateOrderBody = {
   /** Чернетка — без резерву; Нове / Підтверджено — резервує залишок */
   status?: 'Чернетка' | 'Нове' | 'Підтверджено'
   comment?: string
-  items: { sku: string; qty: number }[]
+  /** Optional unit price override (грн). If omitted, catalog price is used. */
+  items: { sku: string; qty: number; price?: number }[]
 }
 
 export type OverviewPayload = {
