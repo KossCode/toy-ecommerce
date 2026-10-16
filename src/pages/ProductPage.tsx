@@ -25,7 +25,8 @@ import {
 const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Маркетплейси', 'Історія'] as const
 
 export function ProductPage() {
-  const { sku = '' } = useParams()
+  const { sku: skuParam = '' } = useParams()
+  const sku = decodeURIComponent(skuParam)
   const [product, setProduct] = useState<Product | null>(null)
   const [draft, setDraft] = useState<Partial<Product>>({})
   const [tab, setTab] = useState<(typeof tabs)[number]>('Основне')
