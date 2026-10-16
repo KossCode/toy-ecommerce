@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, type Product } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
+import { StockEditDrawer } from '@/components/StockEditDrawer'
 import {
   Button,
   FilterTab,
@@ -17,7 +18,7 @@ import {
 import { money } from '@/lib/format'
 import { compareValues, useTableSort } from '@/lib/tableSort'
 
-type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos'
+type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos' | 'reserved'
 
 /** Маркетплейси з інтеграцій (Instagram — лише канал замовлень, не лістинг). */
 const MARKETPLACES = [
@@ -48,6 +49,7 @@ export function ProductsPage() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkNotice, setBulkNotice] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [stockSku, setStockSku] = useState<string | null>(null)
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
@@ -59,6 +61,7 @@ export function ProductsPage() {
     | 'category'
     | 'status'
     | 'price'
+    | 'total'
     | 'available'
     | 'stockLabel'
     | 'rozetka'
@@ -92,7 +95,14 @@ export function ProductsPage() {
       if (tab === 'off' && !isOffMarketplace(p)) return false
       if (tab === 'notReady' && p.syncStatus !== 'Є питання') return false
       if (tab === 'low' && p.stockLabel !== 'Закінчується') return false
-      if (tab === 'oos' && p.stockLabel !== 'Немає в наявності') return false
+      if (
+        tab === 'oos' &&
+        p.stockLabel !== 'Немає в наявності' &&
+        p.stockLabel !== 'Очікується'
+      ) {
+        return false
+      }
+      if (tab === 'reserved' && p.reserve <= 0) return false
       if (categoryFilter && p.category !== categoryFilter) return false
       if (hasBrandFilter) {
         const brand = brandFilter ?? ''
@@ -114,6 +124,8 @@ export function ProductsPage() {
           return p.status
         case 'price':
           return p.price
+        case 'total':
+          return p.total
         case 'available':
           return p.available
         case 'stockLabel':
@@ -173,7 +185,14 @@ export function ProductsPage() {
     {
       id: 'oos',
       label: 'Немає в наявності',
-      count: products.filter((p) => p.stockLabel === 'Немає в наявності').length,
+      count: products.filter(
+        (p) => p.stockLabel === 'Немає в наявності' || p.stockLabel === 'Очікується',
+      ).length,
+    },
+    {
+      id: 'reserved',
+      label: 'З резервом',
+      count: products.filter((p) => p.reserve > 0).length,
     },
   ]
 
@@ -207,6 +226,7 @@ export function ProductsPage() {
             </span>
           </FilterTab>
         ))}
+        footer="Доступно = всього − резерв. На маркетплейси йде доступно; нове замовлення резервує залишок."
       >
         <Input
           className="min-w-[200px] max-w-xs flex-1"
@@ -245,8 +265,14 @@ export function ProductsPage() {
         <button type="button" className="underline-offset-2 hover:underline">
           Змінити ціну
         </button>
-        <button type="button" className="underline-offset-2 hover:underline">
-          Змінити кількість
+        <button
+          type="button"
+          className="underline-offset-2 hover:underline"
+          onClick={() => {
+            if (selected[0]) setStockSku(selected[0])
+          }}
+        >
+          Змінити залишок
         </button>
         <Select
           className="h-8 border-white/35 bg-white/10 text-white"
@@ -316,6 +342,13 @@ export function ProductsPage() {
                 onClick={() => toggle('price')}
               />
               <SortableTh
+                label="Всього"
+                align="right"
+                active={sortKey === 'total'}
+                dir={sortDir}
+                onClick={() => toggle('total')}
+              />
+              <SortableTh
                 label="Доступно"
                 align="right"
                 active={sortKey === 'available'}
@@ -339,6 +372,7 @@ export function ProductsPage() {
                   onClick={() => toggle(m.id)}
                 />
               ))}
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -388,9 +422,18 @@ export function ProductsPage() {
                     </div>
                   ) : null}
                 </td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{p.total}</td>
                 <td className="px-3 py-2.5 text-right">
-                  <div>{p.available} шт.</div>
-                  <div className="text-xs text-[var(--text-secondary)]">резерв {p.reserve}</div>
+                  <div className="tabular-nums">{p.available} шт.</div>
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    {p.reserve > 0 ? (
+                      <Link className="text-[var(--primary)] hover:underline" to="/orders">
+                        резерв {p.reserve}
+                      </Link>
+                    ) : (
+                      <>резерв {p.reserve}</>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2.5">
                   <StockDot label={p.stockLabel} />
@@ -405,6 +448,11 @@ export function ProductsPage() {
                     </td>
                   )
                 })}
+                <td className="px-3 py-2.5 text-right">
+                  <Button variant="quiet" className="h-8 px-2" onClick={() => setStockSku(p.sku)}>
+                    Залишок
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -414,6 +462,15 @@ export function ProductsPage() {
         1–{filtered.length} з {filtered.length}
         {filtered.length !== products.length ? ` (усього ${products.length})` : ''}
       </div>
+
+      {stockSku ? (
+        <StockEditDrawer
+          products={products}
+          initialSku={stockSku}
+          onClose={() => setStockSku(null)}
+          onSaved={() => load()}
+        />
+      ) : null}
     </div>
   )
 }

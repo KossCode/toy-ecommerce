@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
 import { CrmLayout } from '@/layouts/CrmLayout'
 import { OverviewPage } from '@/pages/OverviewPage'
 import { OrdersPage } from '@/pages/OrdersPage'
@@ -6,10 +6,17 @@ import { OrderDetailPage } from '@/pages/OrderDetailPage'
 import { ProductsPage } from '@/pages/ProductsPage'
 import { ProductPage } from '@/pages/ProductPage'
 import { IntegrationsPage } from '@/pages/IntegrationsPage'
-import { StockPage } from '@/pages/StockPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { PricesPage } from '@/pages/PricesPage'
 import { StubPage } from '@/pages/StubPage'
+
+/** Old «Наявність» URLs → products (tabs low/oos/reserved preserved). */
+function StockRedirect() {
+  const [params] = useSearchParams()
+  const tab = params.get('tab')
+  const keep = tab === 'low' || tab === 'oos' || tab === 'reserved'
+  return <Navigate to={keep ? `/products?tab=${tab}` : '/products'} replace />
+}
 
 export default function App() {
   return (
@@ -23,7 +30,7 @@ export default function App() {
           <Route path="products/:sku" element={<ProductPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
-          <Route path="stock" element={<StockPage />} />
+          <Route path="stock" element={<StockRedirect />} />
           <Route path="prices" element={<PricesPage />} />
           <Route path="customers" element={<StubPage title="Клієнти" />} />
           <Route path="promotions" element={<StubPage title="Акції" />} />

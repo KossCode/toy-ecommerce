@@ -5,7 +5,6 @@ const primaryNav = [
   { to: '/orders', label: 'Замовлення', badge: 2 },
   { to: '/products', label: 'Товари' },
   { to: '/categories', label: 'Категорії' },
-  { to: '/stock', label: 'Наявність' },
   { to: '/prices', label: 'Ціни' },
   { to: '/integrations', label: 'Інтеграції' },
 ]
