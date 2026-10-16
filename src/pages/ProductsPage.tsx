@@ -27,17 +27,24 @@ const MARKETPLACES = [
   { id: 'prom' as const, label: 'Prom' },
 ]
 
-function channelTone(label: string) {
-  if (label === 'Активний') return 'success' as const
-  if (label === 'Вимкнено' || label === '—') return 'neutral' as const
-  return 'warning' as const
-}
-
 function isOffMarketplace(p: Product) {
   return MARKETPLACES.every((m) => {
     const v = p.channels[m.id] ?? '—'
     return v === '—' || v === 'Вимкнено'
   })
+}
+
+const CHANNEL_LABELS: Record<string, string> = {
+  rozetka: 'Rozetka',
+  epicentr: 'Epicentr',
+  prom: 'Prom',
+  site: 'Сайт',
+}
+
+function channelSummary(p: Product) {
+  return Object.entries(p.channels)
+    .map(([id, status]) => `${CHANNEL_LABELS[id] ?? id}: ${status}`)
+    .join(' · ')
 }
 
 export function ProductsPage() {
@@ -64,9 +71,7 @@ export function ProductsPage() {
     | 'total'
     | 'available'
     | 'stockLabel'
-    | 'rozetka'
-    | 'epicentr'
-    | 'prom'
+    | 'syncStatus'
   const { sortKey, sortDir, toggle } = useTableSort<ProductSortKey>('name')
 
   async function load() {
@@ -130,10 +135,8 @@ export function ProductsPage() {
           return p.available
         case 'stockLabel':
           return p.stockLabel
-        case 'rozetka':
-        case 'epicentr':
-        case 'prom':
-          return p.channels[sortKey] ?? '—'
+        case 'syncStatus':
+          return p.syncStatus
       }
     }
     return [...rows].sort((a, b) => compareValues(valueOf(a), valueOf(b), sortDir))
@@ -311,7 +314,7 @@ export function ProductsPage() {
       ) : null}
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
-        <table className="w-full min-w-[1100px] text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
             <tr>
               <th className="w-10 px-3 py-2" />
@@ -361,17 +364,12 @@ export function ProductsPage() {
                 dir={sortDir}
                 onClick={() => toggle('stockLabel')}
               />
-              {MARKETPLACES.map((m) => (
-                <SortableTh
-                  key={m.id}
-                  label={m.label}
-                  align="center"
-                  className="px-2"
-                  active={sortKey === m.id}
-                  dir={sortDir}
-                  onClick={() => toggle(m.id)}
-                />
-              ))}
+              <SortableTh
+                label="Синхронізація"
+                active={sortKey === 'syncStatus'}
+                dir={sortDir}
+                onClick={() => toggle('syncStatus')}
+              />
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -438,16 +436,15 @@ export function ProductsPage() {
                 <td className="px-3 py-2.5">
                   <StockDot label={p.stockLabel} />
                 </td>
-                {MARKETPLACES.map((m) => {
-                  const status = p.channels[m.id] ?? '—'
-                  return (
-                    <td key={m.id} className="px-2 py-2.5 text-center" title={`${m.label}: ${status}`}>
-                      <StatusChip tone={channelTone(status)}>
-                        {status === 'Активний' ? '✓' : status === 'Вимкнено' ? 'вимк' : status}
-                      </StatusChip>
-                    </td>
-                  )
-                })}
+                <td className="px-3 py-2.5" title={channelSummary(p)}>
+                  <Link
+                    to={`/products/${encodeURIComponent(p.sku)}`}
+                    className="inline-flex"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <StatusChip tone={chipTone(p.syncStatus)}>{p.syncStatus}</StatusChip>
+                  </Link>
+                </td>
                 <td className="px-3 py-2.5 text-right">
                   <Button variant="quiet" className="h-8 px-2" onClick={() => setStockSku(p.sku)}>
                     Залишок

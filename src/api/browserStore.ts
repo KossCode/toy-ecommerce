@@ -61,13 +61,18 @@ function deriveSyncStatus(product: Product) {
     product.syncStatus = '—'
     return
   }
-  const vals = ['rozetka', 'epicentr', 'prom'].map((k) => product.channels[k] ?? '—')
-  const active = vals.filter((v) => v === 'Активний').length
-  const bad = vals.filter((v) => !['Активний', '—', 'Вимкнено'].includes(v))
-  if (bad.length) product.syncStatus = 'Є питання'
-  else if (active === 3) product.syncStatus = 'Активна'
-  else if (active === 0) product.syncStatus = '—'
-  else product.syncStatus = 'Часткова'
+  // Any channel keys (Rozetka / Prom / Epicentr / site later) — not a fixed count of 3.
+  const vals = Object.values(product.channels ?? {})
+  const enabled = vals.filter((v) => v !== '—' && v !== 'Вимкнено')
+  if (enabled.length === 0) {
+    product.syncStatus = '—'
+    return
+  }
+  const active = enabled.filter((v) => v === 'Активний').length
+  const problem = enabled.length - active
+  if (problem === 0) product.syncStatus = 'Активна'
+  else if (active === 0) product.syncStatus = 'Помилка'
+  else product.syncStatus = 'Є питання'
 }
 
 function applyRounding(n: number, rounding: PriceRule['rounding']) {
