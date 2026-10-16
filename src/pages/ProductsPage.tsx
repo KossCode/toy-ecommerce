@@ -17,10 +17,16 @@ import { money } from '@/lib/format'
 
 type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos'
 
+/** Маркетплейси з інтеграцій (Instagram — лише канал замовлень, не лістинг). */
+const MARKETPLACES = ['Rozetka', 'Epicentr', 'Prom'] as const
+
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<string[]>([])
+  const [bulkMarketplace, setBulkMarketplace] =
+    useState<(typeof MARKETPLACES)[number]>('Rozetka')
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null)
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
@@ -61,7 +67,7 @@ export function ProductsPage() {
     },
     {
       id: 'off',
-      label: 'Не на площадках',
+      label: 'Не на маркетплейсах',
       count: products.filter((p) => p.syncStatus === '—').length,
     },
     {
@@ -137,12 +143,59 @@ export function ProductsPage() {
         </button>
       </ListFilters>
 
-      <BulkActionBar count={selected.length} onClear={() => setSelected([])}>
-        <span>Змінити ціну</span>
-        <span>Змінити кількість</span>
-        <span>Увімкнути на площадці</span>
-        <span>Вимкнути на площадці</span>
+      <BulkActionBar
+        count={selected.length}
+        onClear={() => {
+          setSelected([])
+          setBulkNotice(null)
+        }}
+      >
+        <button type="button" className="underline-offset-2 hover:underline">
+          Змінити ціну
+        </button>
+        <button type="button" className="underline-offset-2 hover:underline">
+          Змінити кількість
+        </button>
+        <Select
+          className="h-8 border-white/35 bg-white/10 text-white"
+          value={bulkMarketplace}
+          onChange={(e) =>
+            setBulkMarketplace(e.target.value as (typeof MARKETPLACES)[number])
+          }
+          aria-label="Маркетплейс для bulk-дії"
+        >
+          {MARKETPLACES.map((m) => (
+            <option key={m} value={m} className="text-[var(--text)]">
+              {m}
+            </option>
+          ))}
+        </Select>
+        <button
+          type="button"
+          className="underline-offset-2 hover:underline"
+          onClick={() =>
+            setBulkNotice(
+              `Увімкнено на ${bulkMarketplace}: ${selected.length} товар(ів) (мок)`,
+            )
+          }
+        >
+          Увімкнути
+        </button>
+        <button
+          type="button"
+          className="underline-offset-2 hover:underline"
+          onClick={() =>
+            setBulkNotice(
+              `Вимкнено на ${bulkMarketplace}: ${selected.length} товар(ів) (мок)`,
+            )
+          }
+        >
+          Вимкнути
+        </button>
       </BulkActionBar>
+      {bulkNotice ? (
+        <p className="-mt-2 mb-3 text-sm text-[var(--text-secondary)]">{bulkNotice}</p>
+      ) : null}
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
         <table className="w-full min-w-[1000px] text-left text-sm">

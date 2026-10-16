@@ -658,7 +658,7 @@ function buildPriceRule(body: Partial<PriceRule>, id: string): PriceRule | null 
       body.scope === 'default'
         ? 'За замовчуванням'
         : String(body.scopeLabel || body.scopeValue || '—'),
-    scopeLevel: body.scope === 'default' ? 'Площадка' : body.scope === 'category' ? 'Категорія' : 'Товар',
+    scopeLevel: body.scope === 'default' ? 'Маркетплейс' : body.scope === 'category' ? 'Категорія' : 'Товар',
     scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
     kind: body.kind,
     value: body.value ?? null,
@@ -791,7 +791,7 @@ app.post('/api/integrations/:id/retry', (req, res) => {
   const data = readJson<IntegrationsFile>('integrations.json')
   const mp = data.marketplaces.find((m) => m.id === req.params.id)
   if (!mp) {
-    res.status(404).json({ error: 'Немає площадки' })
+    res.status(404).json({ error: 'Немає маркетплейси' })
     return
   }
   mp.errorBanner = null

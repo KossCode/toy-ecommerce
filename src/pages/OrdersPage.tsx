@@ -128,7 +128,7 @@ export function OrdersPage() {
       >
         <Input
           className="min-w-[220px] max-w-sm flex-1"
-          placeholder="Номер, телефон або номер на площадці"
+          placeholder="Номер, телефон або номер на маркетплейсі"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

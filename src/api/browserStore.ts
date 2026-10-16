@@ -587,7 +587,7 @@ export const browserApi = {
       scope: draft.scope,
       scopeLabel: draft.scopeLabel ?? '—',
       scopeLevel:
-        draft.scope === 'default' ? 'Площадка' : draft.scope === 'category' ? 'Категорія' : 'Товар',
+        draft.scope === 'default' ? 'Маркетплейс' : draft.scope === 'category' ? 'Категорія' : 'Товар',
       scopeValue: draft.scopeValue ?? null,
       kind: draft.kind,
       value: draft.value ?? null,
@@ -652,7 +652,7 @@ export const browserApi = {
             ? 'За замовчуванням'
             : String(body.scopeLabel || body.scopeValue || '—'),
         scopeLevel:
-          body.scope === 'default' ? 'Площадка' : body.scope === 'category' ? 'Категорія' : 'Товар',
+          body.scope === 'default' ? 'Маркетплейс' : body.scope === 'category' ? 'Категорія' : 'Товар',
         scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
         kind: body.kind,
         value: body.value ?? null,
@@ -706,7 +706,7 @@ export const browserApi = {
             ? 'За замовчуванням'
             : String(body.scopeLabel || body.scopeValue || '—'),
         scopeLevel:
-          body.scope === 'default' ? 'Площадка' : body.scope === 'category' ? 'Категорія' : 'Товар',
+          body.scope === 'default' ? 'Маркетплейс' : body.scope === 'category' ? 'Категорія' : 'Товар',
         scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
         kind: body.kind,
         value: body.value ?? null,
@@ -745,7 +745,7 @@ export const browserApi = {
     let mp: IntegrationsFile['marketplaces'][0] | null = null
     mutate((s) => {
       const found = s.integrations.marketplaces.find((m) => m.id === id)
-      if (!found) throw new Error('Немає площадки')
+      if (!found) throw new Error('Немає маркетплейси')
       found.errorBanner = null
       found.tabLabel = 'працює'
       found.tabTone = 'ok'

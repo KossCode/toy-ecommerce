@@ -143,7 +143,7 @@ export function OrderDetailPage() {
         <div className="space-y-4">
           <Panel title="Клієнт і доставка">
             <dl className="space-y-2 text-sm">
-              <Row label="Номер на площадці" value={order.externalId ?? '—'} />
+              <Row label="Номер на маркетплейсі" value={order.externalId ?? '—'} />
               <Row label="Клієнт" value={order.customerName ?? '—'} />
               <Row label="Телефон" value={order.customerPhone ?? '—'} />
               <Row label="Місто" value={order.city ?? '—'} />
