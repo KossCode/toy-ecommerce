@@ -137,7 +137,7 @@ export function ListFilters({
   footer?: ReactNode
 }) {
   return (
-    <div className="mb-4 rounded-[var(--radius)] border border-[var(--border)] bg-white shadow-[0_1px_0_rgba(16,24,40,0.03)]">
+    <div className="mb-3 rounded-[var(--radius)] border border-[var(--border)] bg-white shadow-[0_1px_0_rgba(16,24,40,0.03)]">
       {tabs ? (
         <div className="flex flex-wrap gap-1 border-b border-[var(--border)] px-3 py-2">{tabs}</div>
       ) : null}

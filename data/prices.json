@@ -10,14 +10,14 @@
       "marketplaceLabel": "Rozetka",
       "scope": "default",
       "scopeLabel": "За замовчуванням",
-      "scopeLevel": "Майданчик",
+      "scopeLevel": "Маркетплейс",
       "scopeValue": null,
       "kind": "percent",
       "value": 12,
       "ruleLabel": "+12%",
       "rounding": "up_10",
       "roundingLabel": "вгору до 10 грн",
-      "productCount": 184
+      "productCount": 10
     },
     {
       "id": "rz-constructors",
@@ -32,7 +32,7 @@
       "ruleLabel": "+8%",
       "rounding": "up_10",
       "roundingLabel": "вгору до 10 грн",
-      "productCount": 64
+      "productCount": 3
     },
     {
       "id": "ep-default",
@@ -40,14 +40,14 @@
       "marketplaceLabel": "Epicentr",
       "scope": "default",
       "scopeLabel": "За замовчуванням",
-      "scopeLevel": "Майданчик",
+      "scopeLevel": "Маркетплейс",
       "scopeValue": null,
       "kind": "percent",
       "value": 8,
       "ruleLabel": "+8%",
       "rounding": "up_10",
       "roundingLabel": "вгору до 10 грн",
-      "productCount": 247
+      "productCount": 10
     },
     {
       "id": "ep-tm-10188",
@@ -70,14 +70,14 @@
       "marketplaceLabel": "Prom",
       "scope": "default",
       "scopeLabel": "За замовчуванням",
-      "scopeLevel": "Майданчик",
+      "scopeLevel": "Маркетплейс",
       "scopeValue": null,
       "kind": "base",
       "value": null,
       "ruleLabel": "Як базова ціна",
       "rounding": "none",
       "roundingLabel": "—",
-      "productCount": 248
+      "productCount": 10
     }
   ]
 }

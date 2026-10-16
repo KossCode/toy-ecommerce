@@ -162,10 +162,38 @@ app.get('/api/overview', (_req, res) => {
       urgent: o.status === 'Нове' && (o.confirmDeadlineMinutes ?? 9999) < 120,
     }))
 
-  const low = products.find((p) => p.stockLabel === 'Закінчується')
+  const lowStockList = products.filter((p) => p.stockLabel === 'Закінчується')
+  const low = lowStockList[0]
+  const needConfirm = orders.filter((o) => o.status === 'Нове').length
+  const awaitingShip = orders.filter((o) => o.status === 'Підтверджено').length
+  const today = meta.todayIso.slice(0, 10)
+  const ordersTodayList = orders.filter((o) => o.createdAt.startsWith(today))
+  const ordersTodaySum = ordersTodayList.reduce((s, o) => s + o.total, 0)
 
   res.json({
-    meta,
+    meta: {
+      ...meta,
+      counts: {
+        productsTotal: products.length,
+        ordersTotal: orders.length,
+        lowStock: lowStockList.length,
+        drafts: products.filter((p) => p.status === 'Чернетка').length,
+        notOnMarketplaces: products.filter((p) => p.syncStatus === '—').length,
+        notReady: products.filter((p) => p.syncStatus === 'Є питання').length,
+        outOfStock: products.filter((p) => p.stockLabel === 'Немає в наявності').length,
+      },
+      overview: {
+        ...meta.overview,
+        needConfirm,
+        awaitingShip,
+        ordersToday: ordersTodayList.length,
+        ordersTodayHint: ordersTodayList.length
+          ? `на ${ordersTodaySum.toLocaleString('uk-UA')} грн`
+          : 'немає',
+        lowStock: lowStockList.length,
+        lowStockHint: `з ${products.length} товарів`,
+      },
+    },
     todo,
     integrations: integrations.marketplaces.map((m) => ({
       id: m.id,
@@ -630,7 +658,7 @@ function buildPriceRule(body: Partial<PriceRule>, id: string): PriceRule | null 
       body.scope === 'default'
         ? 'За замовчуванням'
         : String(body.scopeLabel || body.scopeValue || '—'),
-    scopeLevel: body.scope === 'default' ? 'Майданчик' : body.scope === 'category' ? 'Категорія' : 'Товар',
+    scopeLevel: body.scope === 'default' ? 'Маркетплейс' : body.scope === 'category' ? 'Категорія' : 'Товар',
     scopeValue: body.scope === 'default' ? null : (body.scopeValue ?? null),
     kind: body.kind,
     value: body.value ?? null,
@@ -763,7 +791,7 @@ app.post('/api/integrations/:id/retry', (req, res) => {
   const data = readJson<IntegrationsFile>('integrations.json')
   const mp = data.marketplaces.find((m) => m.id === req.params.id)
   if (!mp) {
-    res.status(404).json({ error: 'Немає площадки' })
+    res.status(404).json({ error: 'Немає маркетплейси' })
     return
   }
   mp.errorBanner = null

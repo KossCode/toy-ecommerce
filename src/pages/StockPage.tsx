@@ -62,10 +62,14 @@ export function StockPage() {
     ? Math.max(0, newTotal - selected.reserve)
     : 0
 
+  const lowCount = products.filter((p) => p.stockLabel === 'Закінчується').length
+  const oosCount = products.filter(
+    (p) => p.stockLabel === 'Немає в наявності' || p.stockLabel === 'Очікується',
+  ).length
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'all', label: 'Усі', count: 248 },
-    { id: 'low', label: 'Закінчуються', count: 12 },
-    { id: 'oos', label: 'Немає в наявності', count: 9 },
+    { id: 'all', label: 'Усі', count: products.length },
+    { id: 'low', label: 'Закінчуються', count: lowCount },
+    { id: 'oos', label: 'Немає в наявності', count: oosCount },
     {
       id: 'reserved',
       label: 'З резервом',
@@ -86,7 +90,7 @@ export function StockPage() {
     <div>
       <PageHeader
         title="Наявність"
-        meta="248 товарів · 12 закінчуються · 9 немає"
+        meta={`${products.length} товарів · ${lowCount} закінчуються · ${oosCount} немає / очікується`}
         actions={<Button onClick={() => openEdit()}>Змінити залишок</Button>}
       />
 
@@ -104,7 +108,7 @@ export function StockPage() {
             </span>
           </FilterTab>
         ))}
-        footer="Доступно = всього − резерв. На майданчики йде доступно. Нове замовлення резервує залишок одразу."
+        footer="Доступно = всього − резерв. На маркетплейси передається доступно. Нове замовлення резервує залишок одразу."
       >
         <Input
           className="min-w-[200px] max-w-xs flex-1"
