@@ -2,38 +2,214 @@
   "meta": {
     "topLevelCount": 10,
     "productTotal": 10,
-    "dictionariesUpdatedAt": "07.10, 06:00"
+    "dictionariesUpdatedAt": "16.10, 19:40"
   },
   "marketplaceLeaves": {
     "rozetka": [
-      { "id": "97420", "name": "Дитячі конструктори" },
-      { "id": "97410", "name": "Ляльки" },
-      { "id": "97430", "name": "Машинки" },
-      { "id": "97440", "name": "Настільні ігри" },
-      { "id": "97450", "name": "Творчість і рукоділля" },
-      { "id": "97460", "name": "Пазли" },
-      { "id": "97470", "name": "М’які іграшки" },
-      { "id": "97480", "name": "Іграшки для немовлят" }
+      {
+        "id": "97420",
+        "name": "Дитячі конструктори"
+      },
+      {
+        "id": "97410",
+        "name": "Ляльки"
+      },
+      {
+        "id": "97430",
+        "name": "Машинки"
+      },
+      {
+        "id": "97440",
+        "name": "Настільні ігри"
+      },
+      {
+        "id": "97450",
+        "name": "Творчість і рукоділля"
+      },
+      {
+        "id": "97460",
+        "name": "Пазли"
+      },
+      {
+        "id": "97470",
+        "name": "М’які іграшки"
+      },
+      {
+        "id": "97480",
+        "name": "Іграшки для немовлят"
+      }
     ],
     "epicentr": [
-      { "id": "ep-constructors", "name": "Конструктори", "attributeSet": "toys-base" },
-      { "id": "ep-dolls", "name": "Ляльки та пупси", "attributeSet": "toys-base" },
-      { "id": "ep-cars", "name": "Транспорт", "attributeSet": "toys-base" },
-      { "id": "ep-board", "name": "Настільні ігри", "attributeSet": "toys-base" },
-      { "id": "ep-craft", "name": "Творчість", "attributeSet": "toys-base" },
-      { "id": "ep-puzzles", "name": "Пазли", "attributeSet": "toys-base" },
-      { "id": "ep-soft", "name": "М’які іграшки", "attributeSet": "toys-base" },
-      { "id": "ep-baby", "name": "Для немовлят", "attributeSet": "toys-base" }
+      {
+        "id": "ep-constructors",
+        "name": "Конструктори",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-dolls",
+        "name": "Ляльки та пупси",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-cars",
+        "name": "Транспорт",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-board",
+        "name": "Настільні ігри",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-craft",
+        "name": "Творчість",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-puzzles",
+        "name": "Пазли",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-soft",
+        "name": "М’які іграшки",
+        "attributeSet": "toys-base"
+      },
+      {
+        "id": "ep-baby",
+        "name": "Для немовлят",
+        "attributeSet": "toys-base"
+      }
     ],
     "prom": [
-      { "id": "portal-1001", "name": "Конструктори" },
-      { "id": "portal-1002", "name": "Ляльки" },
-      { "id": "portal-1003", "name": "Машинки та транспорт" },
-      { "id": "portal-1004", "name": "Настільні ігри" },
-      { "id": "portal-1005", "name": "Творчість" },
-      { "id": "portal-1006", "name": "Пазли" },
-      { "id": "portal-1007", "name": "М’які іграшки" },
-      { "id": "portal-1008", "name": "Для немовлят" }
+      {
+        "id": "2614",
+        "name": "Конструктори"
+      },
+      {
+        "id": "2605",
+        "name": "Ляльки, пупси"
+      },
+      {
+        "id": "2606",
+        "name": "Іграшкові машинки, літачки, техніка"
+      },
+      {
+        "id": "180607",
+        "name": "Настільні ігри"
+      },
+      {
+        "id": "15011904",
+        "name": "Товари для дитячої творчості"
+      },
+      {
+        "id": "180613",
+        "name": "Пазли і головоломки"
+      },
+      {
+        "id": "2604",
+        "name": "М'які іграшки"
+      },
+      {
+        "id": "150102",
+        "name": "Іграшки для найменших"
+      },
+      {
+        "id": "2610",
+        "name": "Іграшки, загальне"
+      },
+      {
+        "id": "2602",
+        "name": "Розвиваючі та навчальні іграшки"
+      },
+      {
+        "id": "2631",
+        "name": "Іграшки для ванної"
+      },
+      {
+        "id": "2656",
+        "name": "Іграшки-антистрес"
+      },
+      {
+        "id": "2653",
+        "name": "Іграшковий посуд"
+      },
+      {
+        "id": "2607",
+        "name": "Іграшкові пістолети, арбалети та шаблі"
+      },
+      {
+        "id": "2638",
+        "name": "Ігрові фігурки, роботи трансформери"
+      },
+      {
+        "id": "2608",
+        "name": "Інтерактивні дитячі іграшки"
+      },
+      {
+        "id": "2634",
+        "name": "Аксесуари для ляльок та пупсів"
+      },
+      {
+        "id": "2655",
+        "name": "Дзиги та спінери"
+      },
+      {
+        "id": "264702",
+        "name": "Дитяча мозаїка"
+      },
+      {
+        "id": "2636",
+        "name": "Дитячі залізниці, автотреки"
+      },
+      {
+        "id": "264703",
+        "name": "Дитячі мікроскопи та телескопи"
+      },
+      {
+        "id": "2627",
+        "name": "Дитячі іграшки-каталки"
+      },
+      {
+        "id": "2654",
+        "name": "Дитячі ігрові кухні"
+      },
+      {
+        "id": "2630",
+        "name": "Збірні моделі та аксесуари до них"
+      },
+      {
+        "id": "2623",
+        "name": "Коляски для ляльок та пупсів"
+      },
+      {
+        "id": "2617",
+        "name": "Комплектуючі для радіокерованих іграшок та моделей"
+      },
+      {
+        "id": "2641",
+        "name": "Комплектуючі та аксесуари для іграшок"
+      },
+      {
+        "id": "2635",
+        "name": "Музичні іграшки"
+      },
+      {
+        "id": "2622",
+        "name": "Наукові ігри, набори для дослідів"
+      },
+      {
+        "id": "2613",
+        "name": "Радіокеровані іграшки"
+      },
+      {
+        "id": "2652",
+        "name": "Розвиваючі та ігрові килимки"
+      },
+      {
+        "id": "2629",
+        "name": "Тематичні ігрові набори"
+      }
     ]
   },
   "categories": [
@@ -44,13 +220,21 @@
       "productCount": 72,
       "sortOrder": 0,
       "mappings": {
-        "rozetka": { "leafId": "97420", "name": "Дитячі конструктори", "secondary": "ID 97420" },
+        "rozetka": {
+          "leafId": "97420",
+          "name": "Дитячі конструктори",
+          "secondary": "ID 97420"
+        },
         "epicentr": {
           "leafId": "ep-constructors",
           "name": "Конструктори",
           "secondary": "code ep-constructors · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1001", "name": "Конструктори", "secondary": "portal_id portal-1001" }
+        "prom": {
+          "leafId": "2614",
+          "name": "Конструктори",
+          "secondary": "portal_id 2614"
+        }
       }
     },
     {
@@ -60,13 +244,21 @@
       "productCount": 40,
       "sortOrder": 0,
       "mappings": {
-        "rozetka": { "leafId": "97420", "name": "Дитячі конструктори", "secondary": "ID 97420" },
+        "rozetka": {
+          "leafId": "97420",
+          "name": "Дитячі конструктори",
+          "secondary": "ID 97420"
+        },
         "epicentr": {
           "leafId": "ep-constructors",
           "name": "Конструктори",
           "secondary": "code ep-constructors · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1001", "name": "Конструктори", "secondary": "portal_id portal-1001" }
+        "prom": {
+          "leafId": "2614",
+          "name": "Конструктори",
+          "secondary": "portal_id 2614"
+        }
       }
     },
     {
@@ -76,9 +268,21 @@
       "productCount": 14,
       "sortOrder": 1,
       "mappings": {
-        "rozetka": { "leafId": "97420", "name": "Дитячі конструктори", "secondary": "ID 97420" },
-        "epicentr": { "leafId": null, "name": null, "secondary": null },
-        "prom": { "leafId": "portal-1001", "name": "Конструктори", "secondary": "portal_id portal-1001" }
+        "rozetka": {
+          "leafId": "97420",
+          "name": "Дитячі конструктори",
+          "secondary": "ID 97420"
+        },
+        "epicentr": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
+        "prom": {
+          "leafId": "2614",
+          "name": "Конструктори",
+          "secondary": "portal_id 2614"
+        }
       }
     },
     {
@@ -88,13 +292,21 @@
       "productCount": 10,
       "sortOrder": 2,
       "mappings": {
-        "rozetka": { "leafId": null, "name": null, "secondary": null },
+        "rozetka": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
         "epicentr": {
           "leafId": "ep-constructors",
           "name": "Конструктори",
           "secondary": "code ep-constructors · attribute set toys-base"
         },
-        "prom": { "leafId": null, "name": null, "secondary": null }
+        "prom": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        }
       }
     },
     {
@@ -104,13 +316,21 @@
       "productCount": 8,
       "sortOrder": 3,
       "mappings": {
-        "rozetka": { "leafId": "97420", "name": "Дитячі конструктори", "secondary": "ID 97420" },
+        "rozetka": {
+          "leafId": "97420",
+          "name": "Дитячі конструктори",
+          "secondary": "ID 97420"
+        },
         "epicentr": {
           "leafId": "ep-constructors",
           "name": "Конструктори",
           "secondary": "code ep-constructors · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1001", "name": "Конструктори", "secondary": "portal_id portal-1001" }
+        "prom": {
+          "leafId": "2614",
+          "name": "Конструктори",
+          "secondary": "portal_id 2614"
+        }
       }
     },
     {
@@ -120,13 +340,21 @@
       "productCount": 34,
       "sortOrder": 1,
       "mappings": {
-        "rozetka": { "leafId": "97410", "name": "Ляльки", "secondary": "ID 97410" },
+        "rozetka": {
+          "leafId": "97410",
+          "name": "Ляльки",
+          "secondary": "ID 97410"
+        },
         "epicentr": {
           "leafId": "ep-dolls",
           "name": "Ляльки та пупси",
           "secondary": "code ep-dolls · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1002", "name": "Ляльки", "secondary": "portal_id portal-1002" }
+        "prom": {
+          "leafId": "2605",
+          "name": "Ляльки, пупси",
+          "secondary": "portal_id 2605"
+        }
       }
     },
     {
@@ -136,13 +364,21 @@
       "productCount": 38,
       "sortOrder": 2,
       "mappings": {
-        "rozetka": { "leafId": "97430", "name": "Машинки", "secondary": "ID 97430" },
+        "rozetka": {
+          "leafId": "97430",
+          "name": "Машинки",
+          "secondary": "ID 97430"
+        },
         "epicentr": {
           "leafId": "ep-cars",
           "name": "Транспорт",
           "secondary": "code ep-cars · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1003", "name": "Машинки та транспорт", "secondary": "portal_id portal-1003" }
+        "prom": {
+          "leafId": "2606",
+          "name": "Іграшкові машинки, літачки, техніка",
+          "secondary": "portal_id 2606"
+        }
       }
     },
     {
@@ -152,13 +388,21 @@
       "productCount": 22,
       "sortOrder": 3,
       "mappings": {
-        "rozetka": { "leafId": "97440", "name": "Настільні ігри", "secondary": "ID 97440" },
+        "rozetka": {
+          "leafId": "97440",
+          "name": "Настільні ігри",
+          "secondary": "ID 97440"
+        },
         "epicentr": {
           "leafId": "ep-board",
           "name": "Настільні ігри",
           "secondary": "code ep-board · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1004", "name": "Настільні ігри", "secondary": "portal_id portal-1004" }
+        "prom": {
+          "leafId": "180607",
+          "name": "Настільні ігри",
+          "secondary": "portal_id 180607"
+        }
       }
     },
     {
@@ -168,13 +412,21 @@
       "productCount": 26,
       "sortOrder": 4,
       "mappings": {
-        "rozetka": { "leafId": "97450", "name": "Творчість і рукоділля", "secondary": "ID 97450" },
+        "rozetka": {
+          "leafId": "97450",
+          "name": "Творчість і рукоділля",
+          "secondary": "ID 97450"
+        },
         "epicentr": {
           "leafId": "ep-craft",
           "name": "Творчість",
           "secondary": "code ep-craft · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1005", "name": "Творчість", "secondary": "portal_id portal-1005" }
+        "prom": {
+          "leafId": "15011904",
+          "name": "Товари для дитячої творчості",
+          "secondary": "portal_id 15011904"
+        }
       }
     },
     {
@@ -184,13 +436,21 @@
       "productCount": 18,
       "sortOrder": 5,
       "mappings": {
-        "rozetka": { "leafId": "97460", "name": "Пазли", "secondary": "ID 97460" },
+        "rozetka": {
+          "leafId": "97460",
+          "name": "Пазли",
+          "secondary": "ID 97460"
+        },
         "epicentr": {
           "leafId": "ep-puzzles",
           "name": "Пазли",
           "secondary": "code ep-puzzles · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1006", "name": "Пазли", "secondary": "portal_id portal-1006" }
+        "prom": {
+          "leafId": "180613",
+          "name": "Пазли і головоломки",
+          "secondary": "portal_id 180613"
+        }
       }
     },
     {
@@ -200,13 +460,21 @@
       "productCount": 20,
       "sortOrder": 6,
       "mappings": {
-        "rozetka": { "leafId": "97470", "name": "М’які іграшки", "secondary": "ID 97470" },
+        "rozetka": {
+          "leafId": "97470",
+          "name": "М’які іграшки",
+          "secondary": "ID 97470"
+        },
         "epicentr": {
           "leafId": "ep-soft",
           "name": "М’які іграшки",
           "secondary": "code ep-soft · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1007", "name": "М’які іграшки", "secondary": "portal_id portal-1007" }
+        "prom": {
+          "leafId": "2604",
+          "name": "М'які іграшки",
+          "secondary": "portal_id 2604"
+        }
       }
     },
     {
@@ -216,13 +484,21 @@
       "productCount": 12,
       "sortOrder": 7,
       "mappings": {
-        "rozetka": { "leafId": "97480", "name": "Іграшки для немовлят", "secondary": "ID 97480" },
+        "rozetka": {
+          "leafId": "97480",
+          "name": "Іграшки для немовлят",
+          "secondary": "ID 97480"
+        },
         "epicentr": {
           "leafId": "ep-baby",
           "name": "Для немовлят",
           "secondary": "code ep-baby · attribute set toys-base"
         },
-        "prom": { "leafId": "portal-1008", "name": "Для немовлят", "secondary": "portal_id portal-1008" }
+        "prom": {
+          "leafId": "150102",
+          "name": "Іграшки для найменших",
+          "secondary": "portal_id 150102"
+        }
       }
     },
     {
@@ -232,9 +508,21 @@
       "productCount": 4,
       "sortOrder": 8,
       "mappings": {
-        "rozetka": { "leafId": null, "name": null, "secondary": null },
-        "epicentr": { "leafId": null, "name": null, "secondary": null },
-        "prom": { "leafId": null, "name": null, "secondary": null }
+        "rozetka": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
+        "epicentr": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
+        "prom": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        }
       }
     },
     {
@@ -244,9 +532,21 @@
       "productCount": 2,
       "sortOrder": 9,
       "mappings": {
-        "rozetka": { "leafId": null, "name": null, "secondary": null },
-        "epicentr": { "leafId": null, "name": null, "secondary": null },
-        "prom": { "leafId": null, "name": null, "secondary": null }
+        "rozetka": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
+        "epicentr": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        },
+        "prom": {
+          "leafId": null,
+          "name": null,
+          "secondary": null
+        }
       }
     }
   ]

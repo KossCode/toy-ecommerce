@@ -18,6 +18,7 @@ const PAYMENTS = [
 const CREATE_STATUSES = ['Чернетка', 'Нове', 'Підтверджено'] as const
 
 type CreateStatus = (typeof CREATE_STATUSES)[number]
+type Line = { key: string; sku: string; qty: number }
 
 function Field({
   label,
@@ -82,6 +83,106 @@ function Segmented<T extends string>({
   )
 }
 
+function ProductPickerModal({
+  products,
+  channel,
+  onPick,
+  onClose,
+}: {
+  products: Product[]
+  channel: string
+  onPick: (sku: string) => void
+  onClose: () => void
+}) {
+  const [q, setQ] = useState('')
+  useEscapeKey(true, onClose)
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    if (!s) return products
+    return products.filter((p) => `${p.sku} ${p.name} ${p.barcode}`.toLowerCase().includes(s))
+  }, [products, q])
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div
+        role="dialog"
+        aria-label="Вибір товару"
+        className="flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
+          <div>
+            <h3 className="font-semibold">Оберіть товар</h3>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Канал замовлення: {channel} · показано доступний залишок і базову ціну
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded px-2 text-lg text-[var(--text-secondary)] hover:bg-[var(--bg)]"
+            onClick={onClose}
+            aria-label="Закрити"
+          >
+            ×
+          </button>
+        </div>
+        <div className="border-b border-[var(--border)] px-4 py-2">
+          <Input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Пошук за назвою, артикулом або штрихкодом"
+          />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-[var(--bg)] text-[var(--text-secondary)]">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">Товар</th>
+                <th className="px-3 py-2 text-right font-medium">Ціна</th>
+                <th className="px-3 py-2 text-right font-medium">Доступно</th>
+                <th className="w-20 px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p.sku} className="border-t border-[var(--border)] hover:bg-[var(--bg)]/70">
+                  <td className="px-4 py-2.5">
+                    <div className="font-medium">{p.name || 'Без назви'}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">
+                      {p.sku}
+                      {p.category ? ` · ${p.category}` : ''}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{money(p.price)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{p.available} шт.</td>
+                  <td className="px-3 py-2.5 text-right">
+                    <Button type="button" className="h-8" onClick={() => onPick(p.sku)}>
+                      Обрати
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-[var(--text-secondary)]">
+                    Нічого не знайдено
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function CreateOrderModal({
   products,
   onClose,
@@ -91,31 +192,30 @@ export function CreateOrderModal({
   onClose: () => void
   onCreated: (id: string) => void
 }) {
+  const [section, setSection] = useState<'items' | 'delivery'>('items')
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>('Instagram')
   const [warehouse, setWarehouse] = useState<(typeof WAREHOUSES)[number]>('Основний')
   const [lastName, setLastName] = useState('')
   const [firstName, setFirstName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [phone, setPhone] = useState('')
-  const [city, setCity] = useState('')
   const [payment, setPayment] = useState<(typeof PAYMENTS)[number]>('Під час отримання')
   const [orderStatus, setOrderStatus] = useState<CreateStatus>('Чернетка')
   const [comment, setComment] = useState('')
   const [carrier, setCarrier] = useState<(typeof CARRIERS)[number]>('Нова Пошта')
   const [deliveryType, setDeliveryType] = useState<(typeof DELIVERY_TYPES)[number]>('Відділення')
+  const [deliveryCity, setDeliveryCity] = useState('')
   const [deliveryDetail, setDeliveryDetail] = useState('')
   const [deliveryHouse, setDeliveryHouse] = useState('')
   const [deliveryFlat, setDeliveryFlat] = useState('')
   const [deliveryPayer, setDeliveryPayer] =
     useState<(typeof DELIVERY_PAYERS)[number]>('Отримувач')
-  const [productQuery, setProductQuery] = useState('')
-  const [lines, setLines] = useState<{ key: string; sku: string; qty: number }[]>([
-    { key: 'line-1', sku: products[0]?.sku ?? '', qty: 1 },
-  ])
+  const [lines, setLines] = useState<Line[]>([{ key: 'line-1', sku: '', qty: 1 }])
+  const [pickingFor, setPickingFor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEscapeKey(true, onClose)
+  useEscapeKey(true, pickingFor ? () => setPickingFor(null) : onClose)
 
   const customerName = [lastName, firstName, middleName]
     .map((s) => s.trim())
@@ -148,9 +248,10 @@ export function CreateOrderModal({
     const p = products.find((x) => x.sku === sku)
     return Boolean(p && qty <= p.available)
   })
+  const filledLines = lines.filter((l) => l.sku)
   const itemsValid =
-    lines.length > 0 &&
-    lines.every((line) => line.sku && line.qty >= 1) &&
+    filledLines.length > 0 &&
+    filledLines.every((line) => line.qty >= 1) &&
     (orderStatus === 'Чернетка' || stockOk)
 
   const phoneOk = /^\+?380\d{9}$/.test(phone.replace(/[\s()-]/g, ''))
@@ -164,28 +265,12 @@ export function CreateOrderModal({
         ? 'Резерв залишку, чекає підтвердження'
         : 'Одразу «До відправлення» з резервом'
 
-  const filteredProducts = useMemo(() => {
-    const q = productQuery.trim().toLowerCase()
-    if (!q) return products
-    return products.filter((p) =>
-      `${p.sku} ${p.name} ${p.barcode}`.toLowerCase().includes(q),
-    )
-  }, [products, productQuery])
-
-  function updateLine(key: string, patch: Partial<{ sku: string; qty: number }>) {
+  function updateLine(key: string, patch: Partial<Line>) {
     setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)))
   }
 
-  function addLine(sku?: string) {
-    const used = new Set(lines.map((l) => l.sku))
-    const next =
-      (sku ? products.find((p) => p.sku === sku) : null) ??
-      products.find((p) => !used.has(p.sku)) ??
-      products[0]
-    setLines((prev) => [
-      ...prev,
-      { key: `line-${Date.now()}`, sku: next?.sku ?? '', qty: 1 },
-    ])
+  function addLine() {
+    setLines((prev) => [...prev, { key: `line-${Date.now()}`, sku: '', qty: 1 }])
   }
 
   function removeLine(key: string) {
@@ -197,7 +282,7 @@ export function CreateOrderModal({
       setSaving(true)
       setError(null)
       const merged = new Map<string, number>()
-      for (const line of lines) {
+      for (const line of filledLines) {
         merged.set(line.sku, (merged.get(line.sku) ?? 0) + line.qty)
       }
       const addressParts = [
@@ -210,7 +295,7 @@ export function CreateOrderModal({
         warehouse,
         customerName,
         customerPhone: phone.trim() || undefined,
-        city: city.trim() || undefined,
+        city: deliveryCity.trim() || undefined,
         delivery: carrier,
         deliveryType,
         deliveryAddress: addressParts.length ? addressParts.join(', ') : undefined,
@@ -265,8 +350,8 @@ export function CreateOrderModal({
         </header>
 
         <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_280px]">
-          <div className="min-h-0 overflow-y-auto px-5 py-5">
-            <section className="space-y-4">
+          <div className="flex min-h-0 flex-col">
+            <section className="shrink-0 space-y-3 border-b border-[var(--border)] px-5 py-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">Клієнт</h3>
                 <span className="text-xs text-[var(--text-secondary)]">для ТТН: ПІБ + +380…</span>
@@ -298,8 +383,8 @@ export function CreateOrderModal({
                   />
                 </Field>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Телефон" className="lg:col-span-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Телефон" className="lg:col-span-1">
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -307,7 +392,9 @@ export function CreateOrderModal({
                     inputMode="tel"
                     autoComplete="tel"
                     className={
-                      phone.trim() && !phoneOk ? 'border-[var(--warning)] focus:border-[var(--warning)]' : ''
+                      phone.trim() && !phoneOk
+                        ? 'border-[var(--warning)] focus:border-[var(--warning)]'
+                        : ''
                     }
                   />
                   {phone.trim() && !phoneOk ? (
@@ -315,14 +402,6 @@ export function CreateOrderModal({
                       Краще формат +380XXXXXXXXX
                     </span>
                   ) : null}
-                </Field>
-                <Field label="Місто">
-                  <Input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="Київ"
-                    autoComplete="address-level2"
-                  />
                 </Field>
                 <Field label="Канал">
                   <Select
@@ -333,255 +412,6 @@ export function CreateOrderModal({
                     {CHANNELS.map((c) => (
                       <option key={c} value={c}>
                         {c}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            </section>
-
-            <hr className="my-6 border-[var(--border)]" />
-
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Товари</h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    className="h-8 w-48 text-sm"
-                    value={productQuery}
-                    onChange={(e) => setProductQuery(e.target.value)}
-                    placeholder="Пошук артикула…"
-                    aria-label="Пошук товару"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-8"
-                    disabled={products.length === 0}
-                    onClick={() => addLine()}
-                  >
-                    + Позиція
-                  </Button>
-                </div>
-              </div>
-
-              {products.length === 0 ? (
-                <p className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-4 py-6 text-sm text-[var(--error)]">
-                  Немає товарів у наявності
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
-                      <tr className="border-b border-[var(--border)]">
-                        <th className="w-8 px-3 py-2 text-left font-medium">#</th>
-                        <th className="px-3 py-2 text-left font-medium">Товар</th>
-                        <th className="w-24 px-3 py-2 text-right font-medium">Ціна</th>
-                        <th className="w-24 px-3 py-2 text-right font-medium">К-сть</th>
-                        <th className="w-28 px-3 py-2 text-right font-medium">Сума</th>
-                        <th className="w-10 px-2 py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lines.map((line, index) => {
-                        const product = products.find((p) => p.sku === line.sku)
-                        const needed = qtyBySku.get(line.sku) ?? line.qty
-                        const overstock = product ? needed > product.available : false
-                        const rowSum = (product?.price ?? 0) * Math.max(0, line.qty || 0)
-                        const options =
-                          product && !filteredProducts.some((p) => p.sku === product.sku)
-                            ? [product, ...filteredProducts]
-                            : filteredProducts.length
-                              ? filteredProducts
-                              : products
-                        return (
-                          <tr
-                            key={line.key}
-                            className="border-b border-[var(--border)] last:border-0"
-                          >
-                            <td className="px-3 py-2.5 align-middle text-[var(--text-secondary)]">
-                              {index + 1}
-                            </td>
-                            <td className="px-3 py-2.5 align-middle">
-                              <Select
-                                className="w-full max-w-md"
-                                value={line.sku}
-                                onChange={(e) => updateLine(line.key, { sku: e.target.value })}
-                              >
-                                {options.map((p) => (
-                                  <option key={p.sku} value={p.sku}>
-                                    {p.sku} · {p.name}
-                                  </option>
-                                ))}
-                              </Select>
-                              {product ? (
-                                <div
-                                  className={`mt-1 text-xs ${
-                                    overstock
-                                      ? 'text-[var(--error)]'
-                                      : 'text-[var(--text-secondary)]'
-                                  }`}
-                                >
-                                  {overstock
-                                    ? `Доступно лише ${product.available} шт.${
-                                        needed !== line.qty ? ` (разом у рядках ${needed})` : ''
-                                      }`
-                                    : `доступно ${product.available} шт. · ${warehouse}`}
-                                </div>
-                              ) : null}
-                            </td>
-                            <td className="px-3 py-2.5 align-middle text-right tabular-nums">
-                              {product ? money(product.price) : '—'}
-                            </td>
-                            <td className="px-3 py-2.5 align-middle">
-                              <Input
-                                className="ml-auto w-16 px-2 text-right"
-                                type="number"
-                                min={1}
-                                max={product?.available}
-                                value={line.qty}
-                                onChange={(e) =>
-                                  updateLine(line.key, {
-                                    qty: Math.max(1, Number(e.target.value) || 1),
-                                  })
-                                }
-                              />
-                            </td>
-                            <td className="px-3 py-2.5 align-middle text-right font-medium tabular-nums">
-                              {money(rowSum)}
-                            </td>
-                            <td className="px-2 py-2.5 align-middle text-right">
-                              <button
-                                type="button"
-                                className="h-8 w-8 rounded-[var(--radius)] text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--error)] disabled:opacity-40"
-                                disabled={lines.length <= 1}
-                                onClick={() => removeLine(line.key)}
-                                aria-label="Прибрати позицію"
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {productQuery.trim() && filteredProducts.length > 0 && filteredProducts.length <= 6 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {filteredProducts.slice(0, 6).map((p) => (
-                    <button
-                      key={p.sku}
-                      type="button"
-                      onClick={() => {
-                        addLine(p.sku)
-                        setProductQuery('')
-                      }}
-                      className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--text-secondary)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                    >
-                      + {p.sku}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </section>
-
-            <hr className="my-6 border-[var(--border)]" />
-
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold">Доставка</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Служба">
-                  <Select
-                    className="w-full"
-                    value={carrier}
-                    onChange={(e) => setCarrier(e.target.value as (typeof CARRIERS)[number])}
-                  >
-                    {CARRIERS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Платник">
-                  <Select
-                    className="w-full"
-                    value={deliveryPayer}
-                    onChange={(e) =>
-                      setDeliveryPayer(e.target.value as (typeof DELIVERY_PAYERS)[number])
-                    }
-                  >
-                    {DELIVERY_PAYERS.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-
-              <div>
-                <div className="mb-1 text-sm text-[var(--text-secondary)]">Тип</div>
-                <Segmented
-                  ariaLabel="Тип доставки"
-                  value={deliveryType}
-                  onChange={setDeliveryType}
-                  options={DELIVERY_TYPES.map((t) => ({ id: t, label: t }))}
-                />
-              </div>
-
-              <div className={`grid gap-3 ${isAddress ? 'sm:grid-cols-[1fr_5.5rem_5.5rem]' : ''}`}>
-                <Field label={detailLabel}>
-                  <Input
-                    value={deliveryDetail}
-                    onChange={(e) => setDeliveryDetail(e.target.value)}
-                    placeholder={detailPlaceholder}
-                  />
-                </Field>
-                {isAddress ? (
-                  <>
-                    <Field label="Буд.">
-                      <Input
-                        value={deliveryHouse}
-                        onChange={(e) => setDeliveryHouse(e.target.value)}
-                        placeholder="12"
-                      />
-                    </Field>
-                    <Field label="Кв.">
-                      <Input
-                        value={deliveryFlat}
-                        onChange={(e) => setDeliveryFlat(e.target.value)}
-                        placeholder="45"
-                      />
-                    </Field>
-                  </>
-                ) : null}
-              </div>
-
-              {payment === 'Накладений платіж' ? (
-                <p className="text-xs text-[var(--text-secondary)]">
-                  COD піде в ТТН {carrier} при створенні накладної — сума = залишок по замовленню.
-                </p>
-              ) : null}
-            </section>
-
-            <hr className="my-6 border-[var(--border)]" />
-
-            <section className="space-y-3 pb-2">
-              <h3 className="text-sm font-semibold">Додатково</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Склад відвантаження">
-                  <Select
-                    className="w-full"
-                    value={warehouse}
-                    onChange={(e) => setWarehouse(e.target.value as (typeof WAREHOUSES)[number])}
-                  >
-                    {WAREHOUSES.map((w) => (
-                      <option key={w} value={w}>
-                        {w}
                       </option>
                     ))}
                   </Select>
@@ -600,18 +430,277 @@ export function CreateOrderModal({
                   </Select>
                 </Field>
               </div>
-              <Field label="Коментар" hint="для себе / комплектації">
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Передзвонити перед відправкою, подарункове пакування…"
-                  rows={2}
-                  className="min-h-[4.5rem]"
-                />
-              </Field>
             </section>
 
-            {error ? <p className="mt-4 text-sm text-[var(--error)]">{error}</p> : null}
+            <div className="flex items-center gap-1 border-b border-[var(--border)] px-5">
+              {(
+                [
+                  { id: 'items' as const, label: `Товари · ${filledLines.length}` },
+                  {
+                    id: 'delivery' as const,
+                    label: deliveryCity.trim()
+                      ? `Доставка · ${deliveryCity.trim()}`
+                      : 'Доставка',
+                  },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSection(t.id)}
+                  className={`relative -mb-px border-b-2 px-3 py-2.5 text-sm font-medium transition ${
+                    section === t.id
+                      ? 'border-[var(--primary)] text-[var(--primary)]'
+                      : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+              {section === 'items' ? (
+                <div className="ml-auto py-1.5">
+                  <Button type="button" variant="quiet" onClick={addLine}>
+                    + Позиція
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {section === 'items' ? (
+                products.length === 0 ? (
+                  <p className="text-sm text-[var(--error)]">Немає товарів у наявності</p>
+                ) : (
+                  <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">
+                    <table className="w-full text-sm">
+                      <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
+                        <tr className="border-b border-[var(--border)]">
+                          <th className="w-8 px-3 py-2 text-left font-medium">#</th>
+                          <th className="px-3 py-2 text-left font-medium">Товар</th>
+                          <th className="w-24 px-3 py-2 text-right font-medium">Ціна</th>
+                          <th className="w-24 px-3 py-2 text-right font-medium">К-сть</th>
+                          <th className="w-28 px-3 py-2 text-right font-medium">Сума</th>
+                          <th className="w-10 px-2 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lines.map((line, index) => {
+                          const product = products.find((p) => p.sku === line.sku)
+                          const needed = line.sku ? (qtyBySku.get(line.sku) ?? line.qty) : 0
+                          const overstock = product ? needed > product.available : false
+                          const rowSum = (product?.price ?? 0) * Math.max(0, line.qty || 0)
+                          return (
+                            <tr
+                              key={line.key}
+                              className="border-b border-[var(--border)] last:border-0"
+                            >
+                              <td className="px-3 py-2.5 align-middle text-[var(--text-secondary)]">
+                                {index + 1}
+                              </td>
+                              <td className="px-3 py-2.5 align-middle">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    className="min-w-0 flex-1 rounded-[var(--radius)] border border-[var(--border)] px-3 py-2 text-left hover:border-[var(--primary)]"
+                                    onClick={() => setPickingFor(line.key)}
+                                  >
+                                    {product ? (
+                                      <>
+                                        <div className="truncate font-medium">{product.name}</div>
+                                        <div className="text-xs text-[var(--text-secondary)]">
+                                          {product.sku}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <span className="text-[var(--text-secondary)]">
+                                        Оберіть товар…
+                                      </span>
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="h-9 w-9 shrink-0 rounded-[var(--radius)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg)]"
+                                    onClick={() => setPickingFor(line.key)}
+                                    aria-label="Відкрити список товарів"
+                                    title="Список товарів"
+                                  >
+                                    ⋯
+                                  </button>
+                                </div>
+                                {product ? (
+                                  <div
+                                    className={`mt-1 text-xs ${
+                                      overstock
+                                        ? 'text-[var(--error)]'
+                                        : 'text-[var(--text-secondary)]'
+                                    }`}
+                                  >
+                                    {overstock
+                                      ? `Доступно лише ${product.available} шт.`
+                                      : `доступно ${product.available} шт. · ${warehouse}`}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-2.5 align-middle text-right tabular-nums">
+                                {product ? money(product.price) : '—'}
+                              </td>
+                              <td className="px-3 py-2.5 align-middle">
+                                <Input
+                                  className="ml-auto w-16 px-2 text-right"
+                                  type="number"
+                                  min={1}
+                                  max={product?.available}
+                                  value={line.qty}
+                                  disabled={!line.sku}
+                                  onChange={(e) =>
+                                    updateLine(line.key, {
+                                      qty: Math.max(1, Number(e.target.value) || 1),
+                                    })
+                                  }
+                                />
+                              </td>
+                              <td className="px-3 py-2.5 align-middle text-right font-medium tabular-nums">
+                                {product ? money(rowSum) : '—'}
+                              </td>
+                              <td className="px-2 py-2.5 align-middle text-right">
+                                <button
+                                  type="button"
+                                  className="h-8 w-8 rounded-[var(--radius)] text-[var(--text-secondary)] hover:bg-[var(--bg)] hover:text-[var(--error)] disabled:opacity-40"
+                                  disabled={lines.length <= 1}
+                                  onClick={() => removeLine(line.key)}
+                                  aria-label="Прибрати позицію"
+                                >
+                                  ×
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                <div className="mx-auto max-w-2xl space-y-4">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Місто й адреса доставки — окремо від контактів клієнта: куди відправляємо саме
+                    це замовлення.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Служба">
+                      <Select
+                        className="w-full"
+                        value={carrier}
+                        onChange={(e) => setCarrier(e.target.value as (typeof CARRIERS)[number])}
+                      >
+                        {CARRIERS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="Платник">
+                      <Select
+                        className="w-full"
+                        value={deliveryPayer}
+                        onChange={(e) =>
+                          setDeliveryPayer(e.target.value as (typeof DELIVERY_PAYERS)[number])
+                        }
+                      >
+                        {DELIVERY_PAYERS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  </div>
+
+                  <Field label="Місто доставки">
+                    <Input
+                      value={deliveryCity}
+                      onChange={(e) => setDeliveryCity(e.target.value)}
+                      placeholder="Київ"
+                    />
+                  </Field>
+
+                  <div>
+                    <div className="mb-1 text-sm text-[var(--text-secondary)]">Тип</div>
+                    <Segmented
+                      ariaLabel="Тип доставки"
+                      value={deliveryType}
+                      onChange={setDeliveryType}
+                      options={DELIVERY_TYPES.map((t) => ({ id: t, label: t }))}
+                    />
+                  </div>
+
+                  <div
+                    className={`grid gap-3 ${isAddress ? 'sm:grid-cols-[1fr_5.5rem_5.5rem]' : ''}`}
+                  >
+                    <Field label={detailLabel}>
+                      <Input
+                        value={deliveryDetail}
+                        onChange={(e) => setDeliveryDetail(e.target.value)}
+                        placeholder={detailPlaceholder}
+                      />
+                    </Field>
+                    {isAddress ? (
+                      <>
+                        <Field label="Буд.">
+                          <Input
+                            value={deliveryHouse}
+                            onChange={(e) => setDeliveryHouse(e.target.value)}
+                            placeholder="12"
+                          />
+                        </Field>
+                        <Field label="Кв.">
+                          <Input
+                            value={deliveryFlat}
+                            onChange={(e) => setDeliveryFlat(e.target.value)}
+                            placeholder="45"
+                          />
+                        </Field>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <Field label="Склад відвантаження">
+                    <Select
+                      className="w-full"
+                      value={warehouse}
+                      onChange={(e) =>
+                        setWarehouse(e.target.value as (typeof WAREHOUSES)[number])
+                      }
+                    >
+                      {WAREHOUSES.map((w) => (
+                        <option key={w} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  <Field label="Коментар" hint="для себе / комплектації">
+                    <Textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Передзвонити перед відправкою…"
+                      rows={2}
+                      className="min-h-[4.5rem]"
+                    />
+                  </Field>
+
+                  {payment === 'Накладений платіж' ? (
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      COD піде в ТТН {carrier} при створенні накладної.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {error ? <p className="mt-3 text-sm text-[var(--error)]">{error}</p> : null}
+            </div>
           </div>
 
           <aside className="flex shrink-0 flex-col border-t border-[var(--border)] bg-[var(--bg)]/60 lg:border-t-0 lg:border-l">
@@ -624,8 +713,12 @@ export function CreateOrderModal({
                   {money(lineTotal)}
                 </div>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  {lines.length}{' '}
-                  {lines.length === 1 ? 'позиція' : lines.length < 5 ? 'позиції' : 'позицій'}
+                  {filledLines.length}{' '}
+                  {filledLines.length === 1
+                    ? 'позиція'
+                    : filledLines.length < 5
+                      ? 'позиції'
+                      : 'позицій'}
                 </p>
               </div>
 
@@ -638,12 +731,6 @@ export function CreateOrderModal({
                   options={CREATE_STATUSES.map((s) => ({
                     id: s,
                     label: s,
-                    hint:
-                      s === 'Чернетка'
-                        ? 'Без резерву'
-                        : s === 'Нове'
-                          ? 'З резервом'
-                          : 'Підтверджено одразу',
                   }))}
                 />
               </div>
@@ -651,36 +738,29 @@ export function CreateOrderModal({
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-2">
                   <dt className="text-[var(--text-secondary)]">Клієнт</dt>
-                  <dd className="truncate text-right font-medium">
-                    {customerName || '—'}
-                  </dd>
+                  <dd className="truncate text-right font-medium">{customerName || '—'}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt className="text-[var(--text-secondary)]">Канал</dt>
                   <dd className="font-medium">{channel}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <dt className="text-[var(--text-secondary)]">Склад</dt>
-                  <dd className="font-medium">{warehouse}</dd>
-                </div>
-                <div className="flex justify-between gap-2">
                   <dt className="text-[var(--text-secondary)]">Доставка</dt>
                   <dd className="max-w-[9rem] truncate text-right font-medium">
-                    {[carrier, deliveryType, deliveryDetail.trim() || null]
+                    {[carrier, deliveryCity.trim() || null, deliveryType]
                       .filter(Boolean)
-                      .join(' · ') || '—'}
+                      .join(' · ')}
                   </dd>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <dt className="text-[var(--text-secondary)]">Оплата</dt>
-                  <dd className="max-w-[9rem] truncate text-right font-medium">{payment}</dd>
                 </div>
               </dl>
 
-              {!itemsValid && orderStatus !== 'Чернетка' && !stockOk ? (
-                <p className="text-xs text-[var(--error)]">
-                  Недостатньо залишку для статусу «{orderStatus}». Зменшіть кількість або збережіть
-                  як чернетку.
+              {!itemsValid ? (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {filledLines.length === 0
+                    ? 'Додайте хоча б один товар через «⋯».'
+                    : !stockOk && orderStatus !== 'Чернетка'
+                      ? `Недостатньо залишку для статусу «${orderStatus}».`
+                      : null}
                 </p>
               ) : null}
               {!customerOk ? (
@@ -701,6 +781,18 @@ export function CreateOrderModal({
           </aside>
         </div>
       </div>
+
+      {pickingFor ? (
+        <ProductPickerModal
+          products={products}
+          channel={channel}
+          onClose={() => setPickingFor(null)}
+          onPick={(sku) => {
+            updateLine(pickingFor, { sku })
+            setPickingFor(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
