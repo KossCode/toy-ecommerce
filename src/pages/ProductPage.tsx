@@ -11,6 +11,7 @@ import {
   Textarea,
   chipTone,
 } from '@/components/ui'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
 import {
@@ -569,6 +570,7 @@ function CategoryPickerModal({
 }) {
   const [q, setQ] = useState('')
   useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
 
   const byParent = useMemo(() => {
     const map = new Map<string | null, Category[]>()
@@ -609,15 +611,19 @@ function CategoryPickerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/45 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault()
       }}
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Категорія CRM"
-        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
+        className="flex h-[min(80vh,560px)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
       >
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <div>
@@ -638,7 +644,7 @@ function CategoryPickerModal({
             placeholder="Пошук категорії…"
           />
         </div>
-        <div className="min-h-0 flex-1 overflow-auto p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" data-modal-scroll>
           {q.trim() ? (
             <ul className="space-y-0.5">
               {filtered.map((c) => (
