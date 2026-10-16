@@ -291,6 +291,53 @@ export const browserApi = {
     return { ...product, marketplacePrices: marketplacePrices(product) }
   },
 
+  async createProduct() {
+    let created: Product | null = null
+    mutate((s) => {
+      const maxNum = s.products.reduce((max, p) => {
+        const m = /^TM-(\d+)/.exec(p.sku)
+        return m ? Math.max(max, Number(m[1])) : max
+      }, 10000)
+      const sku = `TM-${maxNum + 1}`
+      const product: Product = {
+        sku,
+        name: '',
+        brand: '',
+        category: '',
+        status: 'Чернетка',
+        price: 0,
+        oldPrice: null,
+        total: 0,
+        reserve: 0,
+        available: 0,
+        stockLabel: 'Немає в наявності',
+        channels: { rozetka: '—', epicentr: '—', prom: '—' },
+        syncStatus: '—',
+        model: '',
+        barcode: '',
+        weightKg: null,
+        dimensionsCm: '',
+        country: '',
+        description: '',
+        brandMissing: true,
+        duplicateOf: null,
+        updatedAt: nowIso(),
+        updatedBy: 'Олена',
+        condition: 'Новий',
+      }
+      s.products.unshift(product)
+      s.history.unshift({
+        at: nowIso(),
+        sku,
+        text: 'Створено чернетку товару',
+        who: 'Олена',
+        kind: 'Статус',
+      })
+      created = product
+    })
+    return { ...created!, marketplacePrices: marketplacePrices(created!) }
+  },
+
   async patchProduct(sku: string, body: Partial<Product>) {
     let next: Product | null = null
     mutate((s) => {

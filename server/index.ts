@@ -231,6 +231,62 @@ app.get('/api/products', (_req, res) => {
   res.json(readJson<Product[]>('products.json'))
 })
 
+app.post('/api/products', (_req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const maxNum = products.reduce((max, p) => {
+    const m = /^TM-(\d+)/.exec(p.sku)
+    return m ? Math.max(max, Number(m[1])) : max
+  }, 10000)
+  const sku = `TM-${maxNum + 1}`
+  const product: Product = {
+    sku,
+    name: '',
+    brand: '',
+    category: '',
+    status: 'Чернетка',
+    price: 0,
+    oldPrice: null,
+    total: 0,
+    reserve: 0,
+    available: 0,
+    stockLabel: 'Немає в наявності',
+    channels: { rozetka: '—', epicentr: '—', prom: '—' },
+    syncStatus: '—',
+    model: '',
+    barcode: '',
+    weightKg: null,
+    dimensionsCm: '',
+    country: '',
+    description: '',
+    epicentrName: '',
+    color: '',
+    ageGroup: '',
+    material: '',
+    type: '',
+    partsCount: null,
+    series: '',
+    condition: 'Новий',
+    updatedAt: nowIso(),
+    updatedBy: 'Олена',
+    duplicateOf: null,
+    brandMissing: true,
+  }
+  products.unshift(product)
+  writeJson('products.json', products)
+  const history = readJson<{ at: string; sku: string; text: string; who: string; kind: string }[]>(
+    'product-history.json',
+  )
+  history.unshift({
+    at: nowIso(),
+    sku,
+    text: 'Створено чернетку товару',
+    who: 'Олена',
+    kind: 'Статус',
+  })
+  writeJson('product-history.json', history)
+  res.status(201).json({ ...product, marketplacePrices: marketplacePrices(product) })
+})
+
 app.get('/api/products/:sku', (req, res) => {
   const products = readJson<Product[]>('products.json')
   const product = products.find((p) => p.sku === req.params.sku)

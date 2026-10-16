@@ -19,6 +19,8 @@ const httpApi = {
   getOverview: () => request<OverviewPayload>('/overview'),
   getProducts: () => request<Product[]>('/products'),
   getProduct: (sku: string) => request<Product>(`/products/${sku}`),
+  createProduct: () =>
+    request<Product>('/products', { method: 'POST', body: '{}' }),
   patchProduct: (sku: string, body: Partial<Product>) =>
     request<Product>(`/products/${sku}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getProductHistory: (sku: string) =>

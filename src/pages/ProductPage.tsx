@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Product, type ProductHistoryItem } from '@/api/client'
 import {
@@ -12,6 +12,13 @@ import {
   chipTone,
 } from '@/components/ui'
 import { formatDateTime, money } from '@/lib/format'
+import {
+  checkDescriptionForMarketplaces,
+  checkNameForMarketplaces,
+  DESCRIPTION_RULES,
+  NAME_RULES,
+  type FieldCheck,
+} from '@/lib/marketplaceText'
 
 const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Маркетплейси', 'Історія'] as const
 
@@ -36,6 +43,16 @@ export function ProductPage() {
   useEffect(() => {
     void load().catch((e) => setError(e instanceof Error ? e.message : 'Помилка'))
   }, [sku])
+
+  const viewName = draft.name ?? product?.name ?? ''
+  const viewDescription = draft.description ?? product?.description ?? ''
+  const nameChecks = useMemo(() => checkNameForMarketplaces(viewName), [viewName])
+  const descriptionChecks = useMemo(
+    () => checkDescriptionForMarketplaces(viewDescription),
+    [viewDescription],
+  )
+  const nameMax = Math.max(...Object.values(NAME_RULES).map((r) => r.max))
+  const descriptionMax = Math.max(...Object.values(DESCRIPTION_RULES).map((r) => r.max))
 
   if (error) return <p className="text-[var(--error)]">{error}</p>
   if (!product) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
@@ -118,23 +135,33 @@ export function ProductPage() {
               <label className="block text-sm">
                 <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
                   <span>Назва</span>
-                  <span>{(view.name ?? '').length} / 255</span>
+                  <span>
+                    {(view.name ?? '').length} / {nameMax}
+                  </span>
                 </div>
                 <Input
                   value={view.name}
                   onChange={(e) => setField('name', e.target.value)}
-                  maxLength={255}
+                  maxLength={nameMax}
                 />
+                <MarketplaceChecks checks={nameChecks} rules={NAME_RULES} />
               </label>
               <label className="mt-4 block text-sm">
-                <div className="mb-1 text-[var(--text-secondary)]">Опис</div>
+                <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
+                  <span>Опис</span>
+                  <span>
+                    {(view.description ?? '').length} / {descriptionMax}
+                  </span>
+                </div>
                 <Textarea
                   value={view.description}
                   onChange={(e) => setField('description', e.target.value)}
+                  maxLength={descriptionMax}
                 />
                 <div className="mt-1 text-xs text-[var(--text-secondary)]">
-                  Допустимі теги як у Epicentr: абзаци, жирний, списки, таблиці. Інше не передається.
+                  Epicentr: абзаци, жирний, списки, таблиці. Емодзі на маркетплейсах не приймаються.
                 </div>
+                <MarketplaceChecks checks={descriptionChecks} rules={DESCRIPTION_RULES} />
               </label>
               <div className="mt-4">
                 <div className="mb-2 text-sm text-[var(--text-secondary)]">Фото</div>
@@ -482,5 +509,38 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <div className="mb-1 text-[var(--text-secondary)]">{label}</div>
       {children}
     </label>
+  )
+}
+
+function MarketplaceChecks({
+  checks,
+  rules,
+}: {
+  checks: FieldCheck[]
+  rules: typeof NAME_RULES | typeof DESCRIPTION_RULES
+}) {
+  return (
+    <ul className="mt-2 space-y-1 text-xs">
+      {checks.map((c) => {
+        const rule = rules[c.id]
+        return (
+          <li
+            key={c.id}
+            className={c.ok ? 'text-[var(--text-secondary)]' : 'text-[var(--warning)]'}
+          >
+            <span className="font-medium">{c.label}</span>
+            {': '}
+            {c.ok ? (
+              <>OK · до {rule.max} симв.</>
+            ) : (
+              <>
+                {c.issues.join('; ')} · ліміт {rule.max}
+              </>
+            )}
+            <span className="block text-[var(--text-secondary)]">дозволено: {rule.allowedHint}</span>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

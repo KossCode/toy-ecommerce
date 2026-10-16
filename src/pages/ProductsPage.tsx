@@ -9,11 +9,13 @@ import {
   ListFilters,
   PageHeader,
   Select,
+  SortableTh,
   StatusChip,
   StockDot,
   chipTone,
 } from '@/components/ui'
 import { money } from '@/lib/format'
+import { compareValues, useTableSort } from '@/lib/tableSort'
 
 type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos'
 
@@ -45,12 +47,24 @@ export function ProductsPage() {
     useState<(typeof MARKETPLACES)[number]['id']>('rozetka')
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkNotice, setBulkNotice] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
   const categoryFilter = params.get('category') ?? ''
   const brandFilter = params.get('brand')
   const hasBrandFilter = params.has('brand')
+  type ProductSortKey =
+    | 'name'
+    | 'category'
+    | 'status'
+    | 'price'
+    | 'available'
+    | 'stockLabel'
+    | 'rozetka'
+    | 'epicentr'
+    | 'prom'
+  const { sortKey, sortDir, toggle } = useTableSort<ProductSortKey>('name')
 
   async function load() {
     setProducts(await api.getProducts())
@@ -60,8 +74,20 @@ export function ProductsPage() {
     void load()
   }, [])
 
+  async function addProduct() {
+    try {
+      setCreating(true)
+      const created = await api.createProduct()
+      navigate(`/products/${created.sku}`)
+    } catch (e) {
+      setBulkNotice(e instanceof Error ? e.message : 'Не вдалося створити товар')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const filtered = useMemo(() => {
-    return products.filter((p) => {
+    const rows = products.filter((p) => {
       if (tab === 'draft' && p.status !== 'Чернетка') return false
       if (tab === 'off' && !isOffMarketplace(p)) return false
       if (tab === 'notReady' && p.syncStatus !== 'Є питання') return false
@@ -78,7 +104,28 @@ export function ProductsPage() {
       }
       return true
     })
-  }, [products, tab, q, categoryFilter, brandFilter, hasBrandFilter])
+    const valueOf = (p: Product): string | number => {
+      switch (sortKey) {
+        case 'name':
+          return p.name || p.sku
+        case 'category':
+          return p.category
+        case 'status':
+          return p.status
+        case 'price':
+          return p.price
+        case 'available':
+          return p.available
+        case 'stockLabel':
+          return p.stockLabel
+        case 'rozetka':
+        case 'epicentr':
+        case 'prom':
+          return p.channels[sortKey] ?? '—'
+      }
+    }
+    return [...rows].sort((a, b) => compareValues(valueOf(a), valueOf(b), sortDir))
+  }, [products, tab, q, categoryFilter, brandFilter, hasBrandFilter, sortKey, sortDir])
 
   async function setChannelForSelected(enabled: boolean) {
     const label = MARKETPLACES.find((m) => m.id === bulkMarketplace)?.label ?? bulkMarketplace
@@ -137,7 +184,9 @@ export function ProductsPage() {
         meta={`${products.length} товарів`}
         actions={
           <>
-            <Button>Додати товар</Button>
+            <Button disabled={creating} onClick={() => void addProduct()}>
+              {creating ? 'Створення…' : 'Додати товар'}
+            </Button>
             <Button variant="secondary">Імпорт</Button>
             <Button variant="secondary">Експорт</Button>
           </>
@@ -241,16 +290,54 @@ export function ProductsPage() {
             <tr>
               <th className="w-10 px-3 py-2" />
               <th className="px-3 py-2 font-medium">Фото</th>
-              <th className="px-3 py-2 font-medium">Товар</th>
-              <th className="px-3 py-2 font-medium">Категорія</th>
-              <th className="px-3 py-2 font-medium">Статус</th>
-              <th className="px-3 py-2 text-right font-medium">Ціна</th>
-              <th className="px-3 py-2 text-right font-medium">Доступно</th>
-              <th className="px-3 py-2 font-medium">Наявність</th>
+              <SortableTh
+                label="Товар"
+                active={sortKey === 'name'}
+                dir={sortDir}
+                onClick={() => toggle('name')}
+              />
+              <SortableTh
+                label="Категорія"
+                active={sortKey === 'category'}
+                dir={sortDir}
+                onClick={() => toggle('category')}
+              />
+              <SortableTh
+                label="Статус"
+                active={sortKey === 'status'}
+                dir={sortDir}
+                onClick={() => toggle('status')}
+              />
+              <SortableTh
+                label="Ціна"
+                align="right"
+                active={sortKey === 'price'}
+                dir={sortDir}
+                onClick={() => toggle('price')}
+              />
+              <SortableTh
+                label="Доступно"
+                align="right"
+                active={sortKey === 'available'}
+                dir={sortDir}
+                onClick={() => toggle('available')}
+              />
+              <SortableTh
+                label="Наявність"
+                active={sortKey === 'stockLabel'}
+                dir={sortDir}
+                onClick={() => toggle('stockLabel')}
+              />
               {MARKETPLACES.map((m) => (
-                <th key={m.id} className="px-2 py-2 text-center font-medium">
-                  {m.label}
-                </th>
+                <SortableTh
+                  key={m.id}
+                  label={m.label}
+                  align="center"
+                  className="px-2"
+                  active={sortKey === m.id}
+                  dir={sortDir}
+                  onClick={() => toggle(m.id)}
+                />
               ))}
             </tr>
           </thead>

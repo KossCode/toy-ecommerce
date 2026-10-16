@@ -177,6 +177,41 @@ export function FilterTab({
   )
 }
 
+export function SortableTh({
+  label,
+  active,
+  dir,
+  onClick,
+  align = 'left',
+  className = '',
+}: {
+  label: string
+  active: boolean
+  dir: 'asc' | 'desc'
+  onClick: () => void
+  align?: 'left' | 'right' | 'center'
+  className?: string
+}) {
+  const alignClass =
+    align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+  return (
+    <th className={`px-3 py-2 font-medium ${alignClass} ${className}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`inline-flex items-center gap-1 hover:text-[var(--text)] ${
+          active ? 'text-[var(--text)]' : ''
+        }`}
+      >
+        {label}
+        <span className="text-[10px] opacity-70" aria-hidden>
+          {active ? (dir === 'asc' ? '▲' : '▼') : '↕'}
+        </span>
+      </button>
+    </th>
+  )
+}
+
 export function StockDot({ label }: { label: string }) {
   const color =
     label === 'В наявності'

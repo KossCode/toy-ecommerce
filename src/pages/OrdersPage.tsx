@@ -9,12 +9,14 @@ import {
   ListFilters,
   PageHeader,
   Select,
+  SortableTh,
   StatusChip,
   Textarea,
   chipTone,
 } from '@/components/ui'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
+import { compareValues, useTableSort } from '@/lib/tableSort'
 
 const CHANNELS = ['Instagram', 'Telegram', 'Viber', 'Телефон'] as const
 const WAREHOUSES = ['Основний'] as const
@@ -41,6 +43,15 @@ export function OrdersPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const tab = (params.get('tab') as Tab) || 'all'
+  type OrderSortKey =
+    | 'id'
+    | 'createdAt'
+    | 'customer'
+    | 'warehouse'
+    | 'status'
+    | 'delivery'
+    | 'total'
+  const { sortKey, sortDir, toggle } = useTableSort<OrderSortKey>('createdAt', 'desc')
 
   async function load() {
     const [o, p] = await Promise.all([api.getOrders(), api.getProducts()])
@@ -53,7 +64,7 @@ export function OrdersPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    return orders.filter((o) => {
+    const rows = orders.filter((o) => {
       if (tab === 'draft' && o.status !== 'Чернетка') return false
       if (tab === 'new' && o.status !== 'Нове') return false
       if (tab === 'ship' && o.status !== 'Підтверджено') return false
@@ -67,7 +78,26 @@ export function OrdersPage() {
       }
       return true
     })
-  }, [orders, tab, channel, q])
+    const valueOf = (o: OrderListItem): string | number => {
+      switch (sortKey) {
+        case 'id':
+          return o.id
+        case 'createdAt':
+          return o.createdAt
+        case 'customer':
+          return o.customerName ?? ''
+        case 'warehouse':
+          return o.warehouse ?? o.itemsLabel
+        case 'status':
+          return o.status
+        case 'delivery':
+          return o.ttn ?? o.delivery
+        case 'total':
+          return o.total
+      }
+    }
+    return [...rows].sort((a, b) => compareValues(valueOf(a), valueOf(b), sortDir))
+  }, [orders, tab, channel, q, sortKey, sortDir])
 
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'Усі', count: orders.length },
@@ -165,13 +195,49 @@ export function OrdersPage() {
           <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
             <tr>
               <th className="w-10 px-3 py-2" />
-              <th className="px-3 py-2 font-medium">Номер</th>
-              <th className="px-3 py-2 font-medium">Створено</th>
-              <th className="px-3 py-2 font-medium">Клієнт</th>
-              <th className="px-3 py-2 font-medium">Склад</th>
-              <th className="px-3 py-2 font-medium">Статус</th>
-              <th className="px-3 py-2 font-medium">Доставка</th>
-              <th className="px-3 py-2 text-right font-medium">Сума</th>
+              <SortableTh
+                label="Номер"
+                active={sortKey === 'id'}
+                dir={sortDir}
+                onClick={() => toggle('id')}
+              />
+              <SortableTh
+                label="Створено"
+                active={sortKey === 'createdAt'}
+                dir={sortDir}
+                onClick={() => toggle('createdAt')}
+              />
+              <SortableTh
+                label="Клієнт"
+                active={sortKey === 'customer'}
+                dir={sortDir}
+                onClick={() => toggle('customer')}
+              />
+              <SortableTh
+                label="Склад"
+                active={sortKey === 'warehouse'}
+                dir={sortDir}
+                onClick={() => toggle('warehouse')}
+              />
+              <SortableTh
+                label="Статус"
+                active={sortKey === 'status'}
+                dir={sortDir}
+                onClick={() => toggle('status')}
+              />
+              <SortableTh
+                label="Доставка"
+                active={sortKey === 'delivery'}
+                dir={sortDir}
+                onClick={() => toggle('delivery')}
+              />
+              <SortableTh
+                label="Сума"
+                align="right"
+                active={sortKey === 'total'}
+                dir={sortDir}
+                onClick={() => toggle('total')}
+              />
             </tr>
           </thead>
           <tbody>
