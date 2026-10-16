@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, type Category, type Product, type ProductHistoryItem } from '@/api/client'
+import { StockEditDrawer } from '@/components/StockEditDrawer'
 import {
   Button,
   Input,
@@ -36,6 +37,7 @@ export function ProductPage() {
   const [saving, setSaving] = useState(false)
   const [crmCategories, setCrmCategories] = useState<Category[]>([])
   const [pickingCategory, setPickingCategory] = useState(false)
+  const [stockOpen, setStockOpen] = useState(false)
   const dirty = Object.keys(draft).length > 0
 
   async function load() {
@@ -345,9 +347,13 @@ export function ProductPage() {
                 <div className="text-sm">
                   Всього {product.total} · резерв {product.reserve} · доступно {product.available}
                 </div>
-                <Link className="mt-2 inline-block text-sm text-[var(--primary)]" to="/stock">
-                  Змінити у «Наявність»
-                </Link>
+                <Button
+                  variant="quiet"
+                  className="mt-2 h-8 px-2"
+                  onClick={() => setStockOpen(true)}
+                >
+                  Змінити залишок
+                </Button>
                 <div className="mt-3 text-sm text-[var(--text-secondary)]">
                   Поріг «Закінчується»: 5
                 </div>
@@ -489,6 +495,13 @@ export function ProductPage() {
             <div className="mt-1 text-sm text-[var(--text-secondary)]">
               Всього {product.total} · резерв {product.reserve}
             </div>
+            <Button
+              variant="quiet"
+              className="mt-3 h-8 px-2"
+              onClick={() => setStockOpen(true)}
+            >
+              Змінити залишок
+            </Button>
           </Panel>
           <Panel title="Ціна">
             <div className="text-2xl font-semibold">{money(product.price)}</div>
@@ -528,6 +541,15 @@ export function ProductPage() {
             setField('category', name)
             setPickingCategory(false)
           }}
+        />
+      ) : null}
+
+      {stockOpen ? (
+        <StockEditDrawer
+          products={[product]}
+          initialSku={product.sku}
+          onClose={() => setStockOpen(false)}
+          onSaved={() => load()}
         />
       ) : null}
     </div>
