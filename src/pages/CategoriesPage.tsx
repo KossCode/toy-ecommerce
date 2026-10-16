@@ -7,6 +7,8 @@ import {
   type CategoryMapping,
 } from '@/api/client'
 import { Button, Input, PageHeader, Panel, Select, StatusChip } from '@/components/ui'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 const CHANNELS = [
   { key: 'rozetka' as const, label: 'Rozetka' },
@@ -19,7 +21,7 @@ export function CategoriesPage() {
   const [selectedId, setSelectedId] = useState('constructors')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ constructors: true })
   const [adding, setAdding] = useState(false)
-  const [newName, setNewName] = useState('')
+  const [addParentId, setAddParentId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -57,19 +59,18 @@ export function CategoriesPage() {
     ? (data?.categories.find((c) => c.id === selected.parentId)?.name ?? '—')
     : '—'
 
-  async function handleAdd() {
-    const name = newName.trim()
-    if (!name) return
-    setSaving(true)
-    try {
-      const created = await api.createCategory({ name, parentId: null })
-      await load()
-      setSelectedId(created.id)
-      setAdding(false)
-      setNewName('')
-    } finally {
-      setSaving(false)
+  function openAdd(parentId: string | null = null) {
+    setAddParentId(parentId)
+    setAdding(true)
+  }
+
+  async function handleCreated(created: Category) {
+    await load()
+    setSelectedId(created.id)
+    if (created.parentId) {
+      setExpanded((prev) => ({ ...prev, [created.parentId!]: true }))
     }
+    setAdding(false)
   }
 
   async function refreshDictionaries() {
@@ -159,7 +160,7 @@ export function CategoriesPage() {
         meta={`${data.meta.topLevelCount} категорій · ${data.meta.productTotal} товарів`}
         actions={
           <>
-            <Button onClick={() => setAdding(true)}>Додати категорію</Button>
+            <Button onClick={() => openAdd(null)}>Додати категорію</Button>
             <Button variant="secondary" disabled={saving} onClick={() => void refreshDictionaries()}>
               Оновити довідники маркетплейсів
             </Button>
@@ -170,32 +171,6 @@ export function CategoriesPage() {
       {notice ? (
         <div className="mb-3 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text-secondary)]">
           {notice}
-        </div>
-      ) : null}
-
-      {adding ? (
-        <div className="mb-3 flex flex-wrap items-end gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-white p-3">
-          <label className="min-w-[220px] flex-1 text-sm">
-            <span className="mb-1 block text-[var(--text-secondary)]">Назва</span>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Нова категорія"
-              autoFocus
-            />
-          </label>
-          <Button disabled={saving || !newName.trim()} onClick={() => void handleAdd()}>
-            Зберегти
-          </Button>
-          <Button
-            variant="quiet"
-            onClick={() => {
-              setAdding(false)
-              setNewName('')
-            }}
-          >
-            Скасувати
-          </Button>
         </div>
       ) : null}
 
@@ -223,13 +198,20 @@ export function CategoriesPage() {
                   <dt className="text-[var(--text-secondary)]">Товарів</dt>
                   <dd className="mt-0.5 font-medium tabular-nums">{selected.productCount}</dd>
                 </div>
-                <div className="flex items-end">
+                <div className="flex flex-wrap items-end gap-3">
                   <Link
                     to={`/products?category=${encodeURIComponent(selected.name)}`}
                     className="text-[var(--primary)] hover:underline"
                   >
                     Показати товари
                   </Link>
+                  <button
+                    type="button"
+                    className="text-[var(--primary)] hover:underline"
+                    onClick={() => openAdd(selected.id)}
+                  >
+                    + Дочірня категорія
+                  </button>
                 </div>
               </dl>
             </Panel>
@@ -258,6 +240,167 @@ export function CategoriesPage() {
             Оберіть категорію зліва
           </div>
         )}
+      </div>
+
+      {adding ? (
+        <AddCategoryModal
+          categories={data.categories}
+          initialParentId={addParentId}
+          onClose={() => setAdding(false)}
+          onCreated={(c) => void handleCreated(c)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function AddCategoryModal({
+  categories,
+  initialParentId,
+  onClose,
+  onCreated,
+}: {
+  categories: Category[]
+  initialParentId: string | null
+  onClose: () => void
+  onCreated: (created: Category) => void
+}) {
+  const [name, setName] = useState('')
+  const [parentId, setParentId] = useState<string | null>(initialParentId)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
+
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of categories) m.set(c.id, c.name)
+    return m
+  }, [categories])
+
+  const parentOptions = useMemo(() => {
+    return [...categories]
+      .sort((a, b) => a.name.localeCompare(b.name, 'uk'))
+      .map((c) => {
+        const parts: string[] = [c.name]
+        let pid = c.parentId
+        while (pid) {
+          const n = nameById.get(pid)
+          if (!n) break
+          parts.unshift(n)
+          pid = categories.find((x) => x.id === pid)?.parentId ?? null
+        }
+        return { id: c.id, label: parts.join(' › ') }
+      })
+  }, [categories, nameById])
+
+  const parentLabel =
+    parentId == null
+      ? 'Корінь меню (топ-рівень)'
+      : (parentOptions.find((o) => o.id === parentId)?.label ?? '—')
+
+  async function submit() {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Вкажіть назву')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      const created = await api.createCategory({ name: trimmed, parentId })
+      onCreated(created)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/45 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault()
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-category-title"
+        className="w-full max-w-md overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+          <div>
+            <h2 id="add-category-title" className="text-lg font-semibold">
+              Нова категорія
+            </h2>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
+              Спочатку дерево CRM — мапінг на маркетплейси після збереження
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded px-2 text-lg text-[var(--text-secondary)] hover:bg-[var(--bg)]"
+            onClick={onClose}
+            aria-label="Закрити"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          <label className="block text-sm">
+            <span className="mb-1 block text-[var(--text-secondary)]">Назва</span>
+            <Input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Наприклад: LEGO Technic"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void submit()
+                }
+              }}
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="mb-1 block text-[var(--text-secondary)]">Батьківська категорія</span>
+            <Select
+              className="w-full"
+              value={parentId ?? ''}
+              onChange={(e) => setParentId(e.target.value || null)}
+            >
+              <option value="">— Корінь меню (топ-рівень) —</option>
+              {parentOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+            <span className="mt-1 block text-xs text-[var(--text-secondary)]">
+              Зʼявиться в: {parentLabel}
+              {name.trim() ? ` › ${name.trim()}` : ''}
+            </span>
+          </label>
+
+          {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
+          <Button variant="secondary" onClick={onClose}>
+            Скасувати
+          </Button>
+          <Button disabled={saving || !name.trim()} onClick={() => void submit()}>
+            {saving ? 'Збереження…' : 'Створити'}
+          </Button>
+        </div>
       </div>
     </div>
   )
