@@ -405,12 +405,18 @@ export const browserApi = {
       const orderItems = body.items.map((row) => {
         const p = s.products.find((x) => x.sku === row.sku)
         if (!p) throw new Error(`Немає товару ${row.sku}`)
+        const qty = Math.max(1, Number(row.qty) || 1)
+        const override =
+          typeof row.price === 'number' && Number.isFinite(row.price) && row.price >= 0
+            ? row.price
+            : null
+        const price = override ?? p.price
         return {
           sku: p.sku,
           name: p.name,
-          qty: row.qty,
-          price: p.price,
-          oldPrice: p.oldPrice,
+          qty,
+          price,
+          oldPrice: override != null && override !== p.price ? p.price : p.oldPrice,
         }
       })
       const delivery = body.delivery ?? 'Нова Пошта'
