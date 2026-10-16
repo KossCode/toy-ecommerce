@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type Product, type ProductHistoryItem } from '@/api/client'
+import { api, type Category, type Product, type ProductHistoryItem } from '@/api/client'
 import {
   Button,
   Input,
@@ -11,6 +11,7 @@ import {
   Textarea,
   chipTone,
 } from '@/components/ui'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateTime, money } from '@/lib/format'
 import {
   checkDescriptionForMarketplaces,
@@ -31,12 +32,19 @@ export function ProductPage() {
   const [historyFilter, setHistoryFilter] = useState('Усі')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [crmCategories, setCrmCategories] = useState<Category[]>([])
+  const [pickingCategory, setPickingCategory] = useState(false)
   const dirty = Object.keys(draft).length > 0
 
   async function load() {
-    const [p, h] = await Promise.all([api.getProduct(sku), api.getProductHistory(sku)])
+    const [p, h, cats] = await Promise.all([
+      api.getProduct(sku),
+      api.getProductHistory(sku),
+      api.getCategories(),
+    ])
     setProduct(p)
     setHistory(h)
+    setCrmCategories(cats.categories)
     setDraft({})
   }
 
@@ -144,7 +152,7 @@ export function ProductPage() {
                   onChange={(e) => setField('name', e.target.value)}
                   maxLength={nameMax}
                 />
-                <MarketplaceChecks checks={nameChecks} rules={NAME_RULES} />
+                <MarketplaceIssues checks={nameChecks} />
               </label>
               <label className="mt-4 block text-sm">
                 <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
@@ -158,10 +166,7 @@ export function ProductPage() {
                   onChange={(e) => setField('description', e.target.value)}
                   maxLength={descriptionMax}
                 />
-                <div className="mt-1 text-xs text-[var(--text-secondary)]">
-                  Epicentr: абзаци, жирний, списки, таблиці. Емодзі на маркетплейсах не приймаються.
-                </div>
-                <MarketplaceChecks checks={descriptionChecks} rules={DESCRIPTION_RULES} />
+                <MarketplaceIssues checks={descriptionChecks} />
               </label>
               <div className="mt-4">
                 <div className="mb-2 text-sm text-[var(--text-secondary)]">Фото</div>
@@ -194,8 +199,20 @@ export function ProductPage() {
                     На RZ/EC передається без дефіса.
                   </div>
                 </Field>
-                <Field label="Категорія">
-                  <Input value={view.category} onChange={(e) => setField('category', e.target.value)} />
+                <Field label="Категорія CRM">
+                  <button
+                    type="button"
+                    className="flex h-9 w-full items-center justify-between rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 text-left text-sm hover:border-[var(--primary)]"
+                    onClick={() => setPickingCategory(true)}
+                  >
+                    <span className={view.category ? '' : 'text-[var(--text-secondary)]'}>
+                      {view.category || 'Оберіть категорію…'}
+                    </span>
+                    <span className="text-[var(--text-secondary)]">⋯</span>
+                  </button>
+                  <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                    Мапінг на Rozetka / Epicentr / Prom підтягнеться з довідника категорій CRM.
+                  </div>
                 </Field>
                 <Field label="Бренд (необовʼязково)">
                   <Input
@@ -499,48 +516,189 @@ export function ProductPage() {
           </Panel>
         </div>
       </div>
+
+      {pickingCategory ? (
+        <CategoryPickerModal
+          categories={crmCategories}
+          currentName={view.category}
+          onClose={() => setPickingCategory(false)}
+          onPick={(name) => {
+            setField('category', name)
+            setPickingCategory(false)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block text-sm">
+    <div className="block text-sm">
       <div className="mb-1 text-[var(--text-secondary)]">{label}</div>
       {children}
-    </label>
+    </div>
   )
 }
 
-function MarketplaceChecks({
-  checks,
-  rules,
-}: {
-  checks: FieldCheck[]
-  rules: typeof NAME_RULES | typeof DESCRIPTION_RULES
-}) {
+/** Show hints only when there is a real marketplace issue (forbidden chars / over length). */
+function MarketplaceIssues({ checks }: { checks: FieldCheck[] }) {
+  const bad = checks.filter((c) => !c.ok)
+  if (bad.length === 0) return null
   return (
-    <ul className="mt-2 space-y-1 text-xs">
-      {checks.map((c) => {
-        const rule = rules[c.id]
-        return (
-          <li
-            key={c.id}
-            className={c.ok ? 'text-[var(--text-secondary)]' : 'text-[var(--warning)]'}
-          >
-            <span className="font-medium">{c.label}</span>
-            {': '}
-            {c.ok ? (
-              <>OK · до {rule.max} симв.</>
-            ) : (
-              <>
-                {c.issues.join('; ')} · ліміт {rule.max}
-              </>
-            )}
-            <span className="block text-[var(--text-secondary)]">дозволено: {rule.allowedHint}</span>
-          </li>
-        )
-      })}
+    <ul className="mt-2 space-y-1 text-xs text-[var(--warning)]">
+      {bad.map((c) => (
+        <li key={c.id}>
+          Зверніть увагу: для {c.label} — {c.issues.join('; ')}.
+        </li>
+      ))}
     </ul>
+  )
+}
+
+function CategoryPickerModal({
+  categories,
+  currentName,
+  onPick,
+  onClose,
+}: {
+  categories: Category[]
+  currentName: string
+  onPick: (name: string) => void
+  onClose: () => void
+}) {
+  const [q, setQ] = useState('')
+  useEscapeKey(true, onClose)
+
+  const byParent = useMemo(() => {
+    const map = new Map<string | null, Category[]>()
+    for (const c of categories) {
+      const list = map.get(c.parentId) ?? []
+      list.push(c)
+      map.set(c.parentId, list)
+    }
+    for (const [, list] of map) list.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'uk'))
+    return map
+  }, [categories])
+
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of categories) m.set(c.id, c.name)
+    return m
+  }, [categories])
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    if (!s) return categories
+    return categories.filter((c) => c.name.toLowerCase().includes(s))
+  }, [categories, q])
+
+  const roots = byParent.get(null) ?? []
+
+  function pathLabel(c: Category) {
+    const parts: string[] = [c.name]
+    let pid = c.parentId
+    while (pid) {
+      const parentName = nameById.get(pid)
+      if (!parentName) break
+      parts.unshift(parentName)
+      pid = categories.find((x) => x.id === pid)?.parentId ?? null
+    }
+    return parts.join(' › ')
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div
+        role="dialog"
+        aria-label="Категорія CRM"
+        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)] bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <div>
+            <h3 className="font-semibold">Категорія CRM</h3>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Свій довідник сайту — мапінги МП зберігаються в «Категорії»
+            </p>
+          </div>
+          <button type="button" className="px-2 text-lg" onClick={onClose} aria-label="Закрити">
+            ×
+          </button>
+        </div>
+        <div className="border-b border-[var(--border)] px-4 py-2">
+          <Input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Пошук категорії…"
+          />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto p-2">
+          {q.trim() ? (
+            <ul className="space-y-0.5">
+              {filtered.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className={`w-full rounded-[var(--radius)] px-3 py-2 text-left text-sm hover:bg-[var(--bg)] ${
+                      currentName === c.name ? 'bg-[var(--bg)] font-medium' : ''
+                    }`}
+                    onClick={() => onPick(c.name)}
+                  >
+                    {pathLabel(c)}
+                  </button>
+                </li>
+              ))}
+              {filtered.length === 0 ? (
+                <li className="px-3 py-6 text-center text-sm text-[var(--text-secondary)]">
+                  Нічого не знайдено
+                </li>
+              ) : null}
+            </ul>
+          ) : (
+            <ul className="space-y-1">
+              {roots.map((root) => {
+                const children = byParent.get(root.id) ?? []
+                return (
+                  <li key={root.id}>
+                    <button
+                      type="button"
+                      className={`w-full rounded-[var(--radius)] px-3 py-2 text-left text-sm font-medium hover:bg-[var(--bg)] ${
+                        currentName === root.name ? 'bg-[var(--bg)]' : ''
+                      }`}
+                      onClick={() => onPick(root.name)}
+                    >
+                      {root.name}
+                    </button>
+                    {children.length ? (
+                      <ul className="ml-3 border-l border-[var(--border)] pl-2">
+                        {children.map((child) => (
+                          <li key={child.id}>
+                            <button
+                              type="button"
+                              className={`w-full rounded-[var(--radius)] px-3 py-1.5 text-left text-sm hover:bg-[var(--bg)] ${
+                                currentName === child.name ? 'bg-[var(--bg)] font-medium' : ''
+                              }`}
+                              onClick={() => onPick(child.name)}
+                            >
+                              {child.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
