@@ -9,6 +9,8 @@ export function OrderDetailPage() {
   const { id = '' } = useParams()
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [ttnBusy, setTtnBusy] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [reason, setReason] = useState('покупець відмовився')
 
@@ -30,6 +32,19 @@ export function OrderDetailPage() {
   if (error) return <p className="text-[var(--error)]">{error}</p>
   if (!order) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
 
+  async function createTtn() {
+    try {
+      setTtnBusy(true)
+      setActionError(null)
+      await api.createTtn(order!.id)
+      await load()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Помилка створення ТТН')
+    } finally {
+      setTtnBusy(false)
+    }
+  }
+
   return (
     <div>
       <div className="mb-2 text-sm text-[var(--text-secondary)]">
@@ -44,6 +59,7 @@ export function OrderDetailPage() {
           <span className="inline-flex flex-wrap items-center gap-2">
             <StatusChip>{order.channel}</StatusChip>
             <StatusChip tone={chipTone(order.status)}>{order.status}</StatusChip>
+            {order.ttn ? <StatusChip tone="primary">ТТН {order.ttn}</StatusChip> : null}
             {order.confirmLabel ? (
               <span
                 className={
@@ -70,8 +86,10 @@ export function OrderDetailPage() {
                 {order.status === 'Чернетка' ? 'Підтвердити і зарезервувати' : 'Підтвердити'}
               </Button>
             ) : null}
-            {order.status === 'Підтверджено' ? (
-              <Button variant="secondary">Створити накладну</Button>
+            {order.status === 'Підтверджено' && !order.ttn ? (
+              <Button variant="secondary" disabled={ttnBusy} onClick={() => void createTtn()}>
+                {ttnBusy ? 'Створюємо…' : 'Створити накладну'}
+              </Button>
             ) : null}
             {order.status !== 'Скасовано' && order.status !== 'Доставлено' ? (
               <Button variant="quiet" onClick={() => setCancelOpen(true)}>
@@ -81,6 +99,7 @@ export function OrderDetailPage() {
           </>
         }
       />
+      {actionError ? <p className="mb-3 text-sm text-[var(--error)]">{actionError}</p> : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
         <div className="space-y-4">

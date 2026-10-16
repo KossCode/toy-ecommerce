@@ -18,14 +18,32 @@ import { money } from '@/lib/format'
 type Tab = 'all' | 'draft' | 'off' | 'notReady' | 'low' | 'oos'
 
 /** Маркетплейси з інтеграцій (Instagram — лише канал замовлень, не лістинг). */
-const MARKETPLACES = ['Rozetka', 'Epicentr', 'Prom'] as const
+const MARKETPLACES = [
+  { id: 'rozetka' as const, label: 'Rozetka' },
+  { id: 'epicentr' as const, label: 'Epicentr' },
+  { id: 'prom' as const, label: 'Prom' },
+]
+
+function channelTone(label: string) {
+  if (label === 'Активний') return 'success' as const
+  if (label === 'Вимкнено' || label === '—') return 'neutral' as const
+  return 'warning' as const
+}
+
+function isOffMarketplace(p: Product) {
+  return MARKETPLACES.every((m) => {
+    const v = p.channels[m.id] ?? '—'
+    return v === '—' || v === 'Вимкнено'
+  })
+}
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [bulkMarketplace, setBulkMarketplace] =
-    useState<(typeof MARKETPLACES)[number]>('Rozetka')
+    useState<(typeof MARKETPLACES)[number]['id']>('rozetka')
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkNotice, setBulkNotice] = useState<string | null>(null)
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -34,14 +52,18 @@ export function ProductsPage() {
   const brandFilter = params.get('brand')
   const hasBrandFilter = params.has('brand')
 
+  async function load() {
+    setProducts(await api.getProducts())
+  }
+
   useEffect(() => {
-    void api.getProducts().then(setProducts)
+    void load()
   }, [])
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
       if (tab === 'draft' && p.status !== 'Чернетка') return false
-      if (tab === 'off' && p.syncStatus !== '—') return false
+      if (tab === 'off' && !isOffMarketplace(p)) return false
       if (tab === 'notReady' && p.syncStatus !== 'Є питання') return false
       if (tab === 'low' && p.stockLabel !== 'Закінчується') return false
       if (tab === 'oos' && p.stockLabel !== 'Немає в наявності') return false
@@ -58,6 +80,27 @@ export function ProductsPage() {
     })
   }, [products, tab, q, categoryFilter, brandFilter, hasBrandFilter])
 
+  async function setChannelForSelected(enabled: boolean) {
+    const label = MARKETPLACES.find((m) => m.id === bulkMarketplace)?.label ?? bulkMarketplace
+    const value = enabled ? 'Активний' : 'Вимкнено'
+    try {
+      setBulkBusy(true)
+      setBulkNotice(null)
+      await Promise.all(
+        selected.map((sku) => api.patchProduct(sku, { channels: { [bulkMarketplace]: value } })),
+      )
+      await load()
+      setBulkNotice(
+        `${enabled ? 'Увімкнено' : 'Вимкнено'} на ${label}: ${selected.length} товар(ів)`,
+      )
+      setSelected([])
+    } catch (e) {
+      setBulkNotice(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: 'all', label: 'Усі', count: products.length },
     {
@@ -68,7 +111,7 @@ export function ProductsPage() {
     {
       id: 'off',
       label: 'Не на маркетплейсах',
-      count: products.filter((p) => p.syncStatus === '—').length,
+      count: products.filter((p) => isOffMarketplace(p)).length,
     },
     {
       id: 'notReady',
@@ -159,36 +202,31 @@ export function ProductsPage() {
         <Select
           className="h-8 border-white/35 bg-white/10 text-white"
           value={bulkMarketplace}
+          disabled={bulkBusy}
           onChange={(e) =>
-            setBulkMarketplace(e.target.value as (typeof MARKETPLACES)[number])
+            setBulkMarketplace(e.target.value as (typeof MARKETPLACES)[number]['id'])
           }
           aria-label="Маркетплейс для bulk-дії"
         >
           {MARKETPLACES.map((m) => (
-            <option key={m} value={m} className="text-[var(--text)]">
-              {m}
+            <option key={m.id} value={m.id} className="text-[var(--text)]">
+              {m.label}
             </option>
           ))}
         </Select>
         <button
           type="button"
-          className="underline-offset-2 hover:underline"
-          onClick={() =>
-            setBulkNotice(
-              `Увімкнено на ${bulkMarketplace}: ${selected.length} товар(ів) (мок)`,
-            )
-          }
+          disabled={bulkBusy}
+          className="underline-offset-2 hover:underline disabled:opacity-50"
+          onClick={() => void setChannelForSelected(true)}
         >
           Увімкнути
         </button>
         <button
           type="button"
-          className="underline-offset-2 hover:underline"
-          onClick={() =>
-            setBulkNotice(
-              `Вимкнено на ${bulkMarketplace}: ${selected.length} товар(ів) (мок)`,
-            )
-          }
+          disabled={bulkBusy}
+          className="underline-offset-2 hover:underline disabled:opacity-50"
+          onClick={() => void setChannelForSelected(false)}
         >
           Вимкнути
         </button>
@@ -198,7 +236,7 @@ export function ProductsPage() {
       ) : null}
 
       <div className="overflow-auto rounded-[var(--radius)] border border-[var(--border)] bg-white">
-        <table className="w-full min-w-[1000px] text-left text-sm">
+        <table className="w-full min-w-[1100px] text-left text-sm">
           <thead className="bg-[var(--bg)] text-[var(--text-secondary)]">
             <tr>
               <th className="w-10 px-3 py-2" />
@@ -209,7 +247,11 @@ export function ProductsPage() {
               <th className="px-3 py-2 text-right font-medium">Ціна</th>
               <th className="px-3 py-2 text-right font-medium">Доступно</th>
               <th className="px-3 py-2 font-medium">Наявність</th>
-              <th className="px-3 py-2 font-medium">Синхронізація</th>
+              {MARKETPLACES.map((m) => (
+                <th key={m.id} className="px-2 py-2 text-center font-medium">
+                  {m.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -263,11 +305,16 @@ export function ProductsPage() {
                 <td className="px-3 py-2.5">
                   <StockDot label={p.stockLabel} />
                 </td>
-                <td className="px-3 py-2.5" title={p.syncHint}>
-                  <StatusChip tone={chipTone(p.syncStatus)}>
-                    {p.syncStatus === 'Є питання' ? `! ${p.syncStatus}` : p.syncStatus}
-                  </StatusChip>
-                </td>
+                {MARKETPLACES.map((m) => {
+                  const status = p.channels[m.id] ?? '—'
+                  return (
+                    <td key={m.id} className="px-2 py-2.5 text-center" title={`${m.label}: ${status}`}>
+                      <StatusChip tone={channelTone(status)}>
+                        {status === 'Активний' ? '✓' : status === 'Вимкнено' ? 'вимк' : status}
+                      </StatusChip>
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
