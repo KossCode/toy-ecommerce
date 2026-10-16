@@ -361,12 +361,15 @@ export function ProductsPage() {
                   </div>
                 </td>
                 <td className="px-3 py-2.5">
-                  <Link className="font-medium text-[var(--primary)]" to={`/products/${p.sku}`}>
-                    {p.name}
+                  <Link
+                    className="block font-medium text-[var(--primary)] hover:underline"
+                    to={`/products/${encodeURIComponent(p.sku)}`}
+                  >
+                    {(p.name ?? '').trim() ? p.name : 'Без назви'}
+                    <span className="mt-0.5 block text-xs font-normal text-[var(--text-secondary)] no-underline">
+                      {p.brand ? `${p.sku} · ${p.brand}` : p.sku}
+                    </span>
                   </Link>
-                  <div className="text-xs text-[var(--text-secondary)]">
-                    {p.brand ? `${p.sku} · ${p.brand}` : p.sku}
-                  </div>
                   {p.duplicateOf ? (
                     <div className="text-xs text-[var(--text-secondary)]">
                       дубль кольору {p.duplicateOf}
