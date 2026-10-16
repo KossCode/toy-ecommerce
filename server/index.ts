@@ -43,6 +43,20 @@ function recalcStock(product: Product) {
   }
 }
 
+function deriveSyncStatus(product: Product) {
+  if (product.status === 'Чернетка') {
+    product.syncStatus = '—'
+    return
+  }
+  const vals = ['rozetka', 'epicentr', 'prom'].map((k) => product.channels[k] ?? '—')
+  const active = vals.filter((v) => v === 'Активний').length
+  const bad = vals.filter((v) => !['Активний', '—', 'Вимкнено'].includes(v))
+  if (bad.length) product.syncStatus = 'Є питання'
+  else if (active === 3) product.syncStatus = 'Активна'
+  else if (active === 0) product.syncStatus = '—'
+  else product.syncStatus = 'Часткова'
+}
+
 function applyRounding(n: number, rounding: PriceRule['rounding']) {
   switch (rounding) {
     case 'up_10':
@@ -217,6 +231,62 @@ app.get('/api/products', (_req, res) => {
   res.json(readJson<Product[]>('products.json'))
 })
 
+app.post('/api/products', (_req, res) => {
+  const products = readJson<Product[]>('products.json')
+  const maxNum = products.reduce((max, p) => {
+    const m = /^TM-(\d+)/.exec(p.sku)
+    return m ? Math.max(max, Number(m[1])) : max
+  }, 10000)
+  const sku = `TM-${maxNum + 1}`
+  const product: Product = {
+    sku,
+    name: '',
+    brand: '',
+    category: '',
+    status: 'Чернетка',
+    price: 0,
+    oldPrice: null,
+    total: 0,
+    reserve: 0,
+    available: 0,
+    stockLabel: 'Немає в наявності',
+    channels: { rozetka: '—', epicentr: '—', prom: '—' },
+    syncStatus: '—',
+    model: '',
+    barcode: '',
+    weightKg: null,
+    dimensionsCm: '',
+    country: '',
+    description: '',
+    epicentrName: '',
+    color: '',
+    ageGroup: '',
+    material: '',
+    type: '',
+    partsCount: null,
+    series: '',
+    condition: 'Новий',
+    updatedAt: nowIso(),
+    updatedBy: 'Олена',
+    duplicateOf: null,
+    brandMissing: true,
+  }
+  products.unshift(product)
+  writeJson('products.json', products)
+  const history = readJson<{ at: string; sku: string; text: string; who: string; kind: string }[]>(
+    'product-history.json',
+  )
+  history.unshift({
+    at: nowIso(),
+    sku,
+    text: 'Створено чернетку товару',
+    who: 'Олена',
+    kind: 'Статус',
+  })
+  writeJson('product-history.json', history)
+  res.status(201).json({ ...product, marketplacePrices: marketplacePrices(product) })
+})
+
 app.get('/api/products/:sku', (req, res) => {
   const products = readJson<Product[]>('products.json')
   const product = products.find((p) => p.sku === req.params.sku)
@@ -257,6 +327,7 @@ app.patch('/api/products/:sku', (req, res) => {
     'partsCount',
     'series',
     'channels',
+    'syncStatus',
   ] as const
   const next = { ...products[idx] }
   for (const key of allowed) {
@@ -268,6 +339,10 @@ app.patch('/api/products/:sku', (req, res) => {
   if (typeof next.total === 'number' && next.total < next.reserve) {
     res.status(400).json({ error: 'Всього не може бути менше резерву' })
     return
+  }
+  if (req.body.channels && typeof req.body.channels === 'object') {
+    next.channels = { ...products[idx].channels, ...req.body.channels }
+    deriveSyncStatus(next)
   }
   next.brandMissing = !next.brand
   recalcStock(next)
@@ -488,6 +563,38 @@ app.post('/api/orders/:id/confirm', (req, res) => {
     order.city = order.city ?? '—'
   }
   order.history.push({ at: nowIso(), text: 'Підтверджено', who: 'Олена' })
+  orders[idx] = order
+  writeJson('orders.json', orders)
+  res.json(order)
+})
+
+app.post('/api/orders/:id/ttn', (req, res) => {
+  const orders = readJson<Order[]>('orders.json')
+  const idx = orders.findIndex((o) => o.id === req.params.id)
+  if (idx < 0) {
+    res.status(404).json({ error: 'Замовлення не знайдено' })
+    return
+  }
+  const order = orders[idx]
+  if (order.status !== 'Підтверджено') {
+    res.status(400).json({ error: 'Накладну можна створити лише для підтвердженого замовлення' })
+    return
+  }
+  if (order.ttn) {
+    res.status(400).json({ error: 'ТТН вже створено' })
+    return
+  }
+  const carrier = order.delivery.includes('Міст') ? 'ME' : 'NP'
+  const serial = String(2040000000 + Number(order.id.replace(/\D/g, '') || Date.now() % 1e7))
+  order.ttn = `${carrier}${serial}`
+  order.ttnStatus = 'Створено (мок)'
+  const cod =
+    order.payment === 'Накладений платіж' ? ` · COD ${order.total} грн` : ''
+  order.history.push({
+    at: nowIso(),
+    text: `Створено ТТН ${order.ttn} · ${order.delivery}${cod}`,
+    who: 'Олена',
+  })
   orders[idx] = order
   writeJson('orders.json', orders)
   res.json(order)

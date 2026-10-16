@@ -56,6 +56,20 @@ function recalcStock(product: Product) {
   else product.stockLabel = 'В наявності'
 }
 
+function deriveSyncStatus(product: Product) {
+  if (product.status === 'Чернетка') {
+    product.syncStatus = '—'
+    return
+  }
+  const vals = ['rozetka', 'epicentr', 'prom'].map((k) => product.channels[k] ?? '—')
+  const active = vals.filter((v) => v === 'Активний').length
+  const bad = vals.filter((v) => !['Активний', '—', 'Вимкнено'].includes(v))
+  if (bad.length) product.syncStatus = 'Є питання'
+  else if (active === 3) product.syncStatus = 'Активна'
+  else if (active === 0) product.syncStatus = '—'
+  else product.syncStatus = 'Часткова'
+}
+
 function applyRounding(n: number, rounding: PriceRule['rounding']) {
   switch (rounding) {
     case 'up_10':
@@ -277,16 +291,69 @@ export const browserApi = {
     return { ...product, marketplacePrices: marketplacePrices(product) }
   },
 
+  async createProduct() {
+    let created: Product | null = null
+    mutate((s) => {
+      const maxNum = s.products.reduce((max, p) => {
+        const m = /^TM-(\d+)/.exec(p.sku)
+        return m ? Math.max(max, Number(m[1])) : max
+      }, 10000)
+      const sku = `TM-${maxNum + 1}`
+      const product: Product = {
+        sku,
+        name: '',
+        brand: '',
+        category: '',
+        status: 'Чернетка',
+        price: 0,
+        oldPrice: null,
+        total: 0,
+        reserve: 0,
+        available: 0,
+        stockLabel: 'Немає в наявності',
+        channels: { rozetka: '—', epicentr: '—', prom: '—' },
+        syncStatus: '—',
+        model: '',
+        barcode: '',
+        weightKg: null,
+        dimensionsCm: '',
+        country: '',
+        description: '',
+        brandMissing: true,
+        duplicateOf: null,
+        updatedAt: nowIso(),
+        updatedBy: 'Олена',
+        condition: 'Новий',
+      }
+      s.products.unshift(product)
+      s.history.unshift({
+        at: nowIso(),
+        sku,
+        text: 'Створено чернетку товару',
+        who: 'Олена',
+        kind: 'Статус',
+      })
+      created = product
+    })
+    return { ...created!, marketplacePrices: marketplacePrices(created!) }
+  },
+
   async patchProduct(sku: string, body: Partial<Product>) {
     let next: Product | null = null
     mutate((s) => {
       const idx = s.products.findIndex((p) => p.sku === sku)
       if (idx < 0) throw new Error('Товар не знайдено')
-      const merged = { ...s.products[idx], ...body }
+      const prev = s.products[idx]
+      const merged = {
+        ...prev,
+        ...body,
+        channels: body.channels ? { ...prev.channels, ...body.channels } : prev.channels,
+      }
       if (typeof merged.total === 'number' && merged.total < merged.reserve) {
         throw new Error('Всього не може бути менше резерву')
       }
       merged.brandMissing = !merged.brand
+      if (body.channels) deriveSyncStatus(merged)
       recalcStock(merged)
       merged.updatedAt = nowIso()
       merged.updatedBy = 'Олена'
@@ -453,6 +520,31 @@ export const browserApi = {
         o.city = o.city ?? '—'
       }
       o.history.push({ at: nowIso(), text: 'Підтверджено', who: 'Олена' })
+      order = o
+    })
+    return order!
+  },
+
+  async createTtn(id: string) {
+    let order: Order | null = null
+    mutate((s) => {
+      const idx = s.orders.findIndex((o) => o.id === id)
+      if (idx < 0) throw new Error('Замовлення не знайдено')
+      const o = s.orders[idx]
+      if (o.status !== 'Підтверджено') {
+        throw new Error('Накладну можна створити лише для підтвердженого замовлення')
+      }
+      if (o.ttn) throw new Error('ТТН вже створено')
+      const carrier = o.delivery.includes('Міст') ? 'ME' : 'NP'
+      const serial = String(2040000000 + Number(o.id.replace(/\D/g, '') || Date.now() % 1e7))
+      o.ttn = `${carrier}${serial}`
+      o.ttnStatus = 'Створено (мок)'
+      const cod = o.payment === 'Накладений платіж' ? ` · COD ${o.total} грн` : ''
+      o.history.push({
+        at: nowIso(),
+        text: `Створено ТТН ${o.ttn} · ${o.delivery}${cod}`,
+        who: 'Олена',
+      })
       order = o
     })
     return order!

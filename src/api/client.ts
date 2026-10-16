@@ -19,6 +19,8 @@ const httpApi = {
   getOverview: () => request<OverviewPayload>('/overview'),
   getProducts: () => request<Product[]>('/products'),
   getProduct: (sku: string) => request<Product>(`/products/${sku}`),
+  createProduct: () =>
+    request<Product>('/products', { method: 'POST', body: '{}' }),
   patchProduct: (sku: string, body: Partial<Product>) =>
     request<Product>(`/products/${sku}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getProductHistory: (sku: string) =>
@@ -29,6 +31,8 @@ const httpApi = {
     request<Order>(`/orders`, { method: 'POST', body: JSON.stringify(body) }),
   confirmOrder: (id: string) =>
     request<Order>(`/orders/${id}/confirm`, { method: 'POST', body: '{}' }),
+  createTtn: (id: string) =>
+    request<Order>(`/orders/${id}/ttn`, { method: 'POST', body: '{}' }),
   cancelOrder: (id: string, reason: string) =>
     request<Order>(`/orders/${id}/cancel`, {
       method: 'POST',
