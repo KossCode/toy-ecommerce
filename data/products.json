@@ -34,12 +34,21 @@
     "updatedAt": "2026-10-15T06:47:14",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "Конструктор LEGO City «Пожарная часть»",
+    "descriptionRu": "Пожарная часть с машиной, вертолётом и минифигурками. Подойдёт детям 6–12 лет.",
+    "countryRu": "Дания",
+    "conditionRu": "Новый",
+    "colorRu": "Базовый",
+    "ageGroupRu": "6–12 лет",
+    "materialRu": "Пластик",
+    "typeRu": "Конструктор",
+    "seriesRu": "City"
   },
   {
     "sku": "TM-10018-R",
     "name": "Конструктор LEGO City «Пожежна частина» (червоний)",
-    "brand": "",
+    "brand": "Lego",
     "category": "Конструктори",
     "status": "Активний",
     "price": 1890,
@@ -68,10 +77,19 @@
     "partsCount": 540,
     "series": "City",
     "condition": "Новий",
-    "updatedAt": "2026-10-06T12:00:00",
+    "updatedAt": "2026-10-17T23:26:15",
     "updatedBy": "Олена",
     "duplicateOf": "TM-10018",
-    "brandMissing": true
+    "brandMissing": false,
+    "nameRu": "Конструктор пожарной части LEGO City (красный)",
+    "descriptionRu": "Красный вариант набора. Отдельная статья.",
+    "countryRu": "Дания",
+    "conditionRu": "Новый",
+    "colorRu": "Красный",
+    "ageGroupRu": "6–12 лет",
+    "materialRu": "Пластик",
+    "typeRu": "Конструктор",
+    "seriesRu": "City"
   },
   {
     "sku": "TM-10042",
@@ -109,7 +127,16 @@
     "updatedAt": "2026-10-05T11:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "Мягкая игрушка «Мишка Тео», 31 см",
+    "descriptionRu": "Мягкий мишка Тео высотой 31 см.",
+    "countryRu": "Украина",
+    "conditionRu": "Новый",
+    "colorRu": "Бежевий",
+    "ageGroupRu": "0+",
+    "materialRu": "Текстиль",
+    "typeRu": "М’яка іграшка",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10077",
@@ -147,7 +174,16 @@
     "updatedAt": "2026-10-04T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Украина",
+    "conditionRu": "Новый",
+    "colorRu": "",
+    "ageGroupRu": "8+",
+    "materialRu": "Картон",
+    "typeRu": "Настільна гра",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10103",
@@ -184,7 +220,16 @@
     "updatedAt": "2026-10-01T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Китай",
+    "conditionRu": "Новый",
+    "colorRu": "",
+    "ageGroupRu": "3+",
+    "materialRu": "Пластик",
+    "typeRu": "Лялька",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10120",
@@ -222,7 +267,16 @@
     "updatedBy": "Олена",
     "duplicateOf": null,
     "brandMissing": true,
-    "awaiting": true
+    "awaiting": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Украина",
+    "conditionRu": "Новый",
+    "colorRu": "",
+    "ageGroupRu": "3+",
+    "materialRu": "Дерево",
+    "typeRu": "Пазл",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10155",
@@ -259,7 +313,16 @@
     "updatedAt": "2026-10-02T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Украина",
+    "conditionRu": "Новый",
+    "colorRu": "",
+    "ageGroupRu": "5+",
+    "materialRu": "Папір",
+    "typeRu": "Набір",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10188",
@@ -296,7 +359,16 @@
     "updatedAt": "2026-10-03T10:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Малайзія",
+    "conditionRu": "Новый",
+    "colorRu": "Жовтий",
+    "ageGroupRu": "3+",
+    "materialRu": "Метал",
+    "typeRu": "Машинка",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10204",
@@ -333,7 +405,16 @@
     "updatedAt": "2026-10-06T11:05:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "Польша",
+    "conditionRu": "Новый",
+    "colorRu": "Зелений",
+    "ageGroupRu": "0+",
+    "materialRu": "Текстиль",
+    "typeRu": "Килимок",
+    "seriesRu": ""
   },
   {
     "sku": "TM-10250",
@@ -370,6 +451,15 @@
     "updatedAt": "2026-10-07T08:00:00",
     "updatedBy": "Олена",
     "duplicateOf": null,
-    "brandMissing": true
+    "brandMissing": true,
+    "nameRu": "",
+    "descriptionRu": "",
+    "countryRu": "",
+    "conditionRu": "Новый",
+    "colorRu": "",
+    "ageGroupRu": "",
+    "materialRu": "",
+    "typeRu": "",
+    "seriesRu": ""
   }
 ]

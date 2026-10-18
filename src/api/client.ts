@@ -102,17 +102,29 @@ export type Product = {
   dimensionsCm: string
   country: string
   description: string
+  /** Russian name for Rozetka/Prom RU feeds (required there). */
+  nameRu: string
+  /** Russian description; HTML subset same as `description`. */
+  descriptionRu: string
+  /** Russian country label (e.g. Україна → Украина). */
+  countryRu: string
   brandMissing: boolean
   duplicateOf: string | null
   updatedAt: string
   updatedBy: string
   condition?: string
+  conditionRu?: string
   color?: string
+  colorRu?: string
   ageGroup?: string
+  ageGroupRu?: string
   material?: string
+  materialRu?: string
   type?: string
+  typeRu?: string
   partsCount?: number | null
   series?: string
+  seriesRu?: string
   awaiting?: boolean
   marketplacePrices?: {
     rozetka: MarketplacePrice

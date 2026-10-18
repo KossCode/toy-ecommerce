@@ -40,7 +40,7 @@ export const DESCRIPTION_RULES: Record<MarketplaceId, FieldRule> = {
     forbiddenHint: 'емодзі',
   },
   epicentr: {
-    max: 4000,
+    max: 12160,
     allowedHint: 'абзаци, жирний, списки, таблиці (решта HTML відсікається)',
     forbidden: /<(?!\/?(p|br|b|strong|ul|ol|li|table|tr|td|th|thead|tbody)\b)[^>]+>/gi,
     forbiddenHint: 'теги поза списком Epicentr (script, iframe, style…)',

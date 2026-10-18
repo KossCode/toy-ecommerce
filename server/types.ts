@@ -21,14 +21,23 @@ export type Product = {
   dimensionsCm: string
   country: string
   description: string
+  nameRu: string
+  descriptionRu: string
+  countryRu: string
   epicentrName: string
   color: string
+  colorRu: string
   ageGroup: string
+  ageGroupRu: string
   material: string
+  materialRu: string
   type: string
+  typeRu: string
   partsCount: number | null
   series: string
+  seriesRu: string
   condition: string
+  conditionRu: string
   updatedAt: string
   updatedBy: string
   duplicateOf: string | null
