@@ -11,7 +11,10 @@ CRM — единственный источник правды о товарах
 - [rozetka.md](rozetka.md)
 - [epicentr.md](epicentr.md)
 - [prom.md](prom.md)
-- Конспекты API (контракты, заголовки, sandbox) — `*-api.md` (по мере готовности)
+- Конспекты API (контракты, заголовки, sandbox):
+  - [`prom-api.md`](prom-api.md) — Public API; **есть тестовая компания** (тот же host, другой token)
+  - [`rozetka-api.md`](rozetka-api.md) — Seller API; **отдельной sandbox нет** (~356 method+path)
+  - [`epicentr-api.md`](epicentr-api.md) — Merchant API; **песочницы нет** (только прод)
 
 ## Сравнение площадок
 
