@@ -23,8 +23,9 @@ import type {
   Product,
   ProductHistoryItem,
 } from './client'
+import { guessRuFromUa } from '@/lib/translate'
 
-const STORAGE_KEY = 'triomio-crm-browser-v4'
+const STORAGE_KEY = 'triomio-crm-browser-v6'
 
 type Store = {
   products: Product[]
@@ -159,9 +160,26 @@ function recountRuleProducts(data: PricesFile, products: Product[]) {
   data.meta.ruleCount = data.rules.length
 }
 
+function normalizeProduct(p: Product): Product {
+  const fill = (ru: string | undefined, ua: string | undefined) =>
+    ru?.trim() ? ru : ua?.trim() ? guessRuFromUa(ua) : ''
+  return {
+    ...p,
+    nameRu: p.nameRu ?? '',
+    descriptionRu: p.descriptionRu ?? '',
+    countryRu: fill(p.countryRu, p.country),
+    conditionRu: fill(p.conditionRu, p.condition),
+    colorRu: fill(p.colorRu, p.color),
+    ageGroupRu: fill(p.ageGroupRu, p.ageGroup),
+    materialRu: fill(p.materialRu, p.material),
+    typeRu: fill(p.typeRu, p.type),
+    seriesRu: fill(p.seriesRu, p.series),
+  }
+}
+
 function seed(): Store {
   return {
-    products: structuredClone(seedProducts) as Product[],
+    products: (structuredClone(seedProducts) as Product[]).map(normalizeProduct),
     orders: structuredClone(seedOrders) as Order[],
     integrations: structuredClone(seedIntegrations) as IntegrationsFile,
     meta: structuredClone(seedMeta),
@@ -324,11 +342,20 @@ export const browserApi = {
         dimensionsCm: '',
         country: '',
         description: '',
+        nameRu: '',
+        descriptionRu: '',
+        countryRu: '',
         brandMissing: true,
         duplicateOf: null,
         updatedAt: nowIso(),
         updatedBy: 'Олена',
         condition: 'Новий',
+        conditionRu: 'Новый',
+        colorRu: '',
+        ageGroupRu: '',
+        materialRu: '',
+        typeRu: '',
+        seriesRu: '',
       }
       s.products.unshift(product)
       s.history.unshift({

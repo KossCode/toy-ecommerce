@@ -22,8 +22,15 @@ import {
   NAME_RULES,
   type FieldCheck,
 } from '@/lib/marketplaceText'
+import {
+  REQUIRED_FIELDS,
+  checkRequiredFields,
+  missingRequiredLabels,
+} from '@/lib/productRequired'
+import { translateUkToRu } from '@/lib/translate'
 
 const tabs = ['Основне', 'Атрибути', 'Ціни і наявність', 'Маркетплейси', 'Історія'] as const
+type LangTab = 'ua' | 'ru'
 
 export function ProductPage() {
   const { sku: skuParam = '' } = useParams()
@@ -31,10 +38,13 @@ export function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [draft, setDraft] = useState<Partial<Product>>({})
   const [tab, setTab] = useState<(typeof tabs)[number]>('Основне')
+  const [langTab, setLangTab] = useState<LangTab>('ua')
   const [history, setHistory] = useState<ProductHistoryItem[]>([])
   const [historyFilter, setHistoryFilter] = useState('Усі')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState<string | null>(null)
   const [crmCategories, setCrmCategories] = useState<Category[]>([])
   const [pickingCategory, setPickingCategory] = useState(false)
   const [stockOpen, setStockOpen] = useState(false)
@@ -56,8 +66,12 @@ export function ProductPage() {
     void load().catch((e) => setError(e instanceof Error ? e.message : 'Помилка'))
   }, [sku])
 
-  const viewName = draft.name ?? product?.name ?? ''
-  const viewDescription = draft.description ?? product?.description ?? ''
+  const viewNameUa = draft.name ?? product?.name ?? ''
+  const viewNameRu = draft.nameRu ?? product?.nameRu ?? ''
+  const viewDescriptionUa = draft.description ?? product?.description ?? ''
+  const viewDescriptionRu = draft.descriptionRu ?? product?.descriptionRu ?? ''
+  const viewName = langTab === 'ua' ? viewNameUa : viewNameRu
+  const viewDescription = langTab === 'ua' ? viewDescriptionUa : viewDescriptionRu
   const nameChecks = useMemo(() => checkNameForMarketplaces(viewName), [viewName])
   const descriptionChecks = useMemo(
     () => checkDescriptionForMarketplaces(viewDescription),
@@ -69,7 +83,22 @@ export function ProductPage() {
   if (error) return <p className="text-[var(--error)]">{error}</p>
   if (!product) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
 
-  const view = { ...product, ...draft }
+  const view: Product = {
+    ...product,
+    nameRu: product.nameRu ?? '',
+    descriptionRu: product.descriptionRu ?? '',
+    countryRu: product.countryRu ?? '',
+    conditionRu: product.conditionRu ?? '',
+    colorRu: product.colorRu ?? '',
+    ageGroupRu: product.ageGroupRu ?? '',
+    materialRu: product.materialRu ?? '',
+    typeRu: product.typeRu ?? '',
+    seriesRu: product.seriesRu ?? '',
+    ...draft,
+  }
+
+  const requiredFills = checkRequiredFields(view)
+  const missingRequired = missingRequiredLabels(requiredFills)
 
   function setField<K extends keyof Product>(key: K, value: Product[K]) {
     setDraft((d) => ({ ...d, [key]: value }))
@@ -84,6 +113,48 @@ export function ProductPage() {
       setDraft({})
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function autoTranslateUaToRu() {
+    setTranslateError(null)
+    const v = { ...product!, ...draft }
+    const pairs: { ua: string; key: keyof Product }[] = [
+      { ua: v.name ?? '', key: 'nameRu' },
+      { ua: v.description ?? '', key: 'descriptionRu' },
+      { ua: v.country ?? '', key: 'countryRu' },
+      { ua: v.condition ?? '', key: 'conditionRu' },
+      { ua: v.color ?? '', key: 'colorRu' },
+      { ua: v.ageGroup ?? '', key: 'ageGroupRu' },
+      { ua: v.material ?? '', key: 'materialRu' },
+      { ua: v.type ?? '', key: 'typeRu' },
+      { ua: v.series ?? '', key: 'seriesRu' },
+    ]
+    const toDo = pairs.filter((p) => p.ua.trim())
+    if (toDo.length === 0) {
+      setTranslateError('Немає українських полів для перекладу. Заповніть UA спочатку.')
+      return
+    }
+    setTranslating(true)
+    try {
+      const results = await Promise.all(
+        toDo.map(async ({ ua, key }) => {
+          const ru = await translateUkToRu(ua)
+          return [key, ru] as const
+        }),
+      )
+      setDraft((d) => {
+        const next = { ...d }
+        for (const [key, ru] of results) {
+          ;(next as Record<string, string>)[key] = ru
+        }
+        return next
+      })
+      setLangTab('ru')
+    } catch (e) {
+      setTranslateError(e instanceof Error ? e.message : 'Помилка перекладу')
+    } finally {
+      setTranslating(false)
     }
   }
 
@@ -144,36 +215,80 @@ export function ProductPage() {
         <div className="space-y-4">
           {tab === 'Основне' ? (
             <Panel>
+              <LangBar
+                langTab={langTab}
+                translating={translating}
+                translateError={translateError}
+                hintUa="Заповніть українською; країна і тексти теж підуть у автопереклад на RU."
+                hintRu="Перекладає назву, опис, країну та текстові атрибути. «Україна» → «Украина» з глосарія."
+                onLang={(id) => {
+                  setLangTab(id)
+                  setTranslateError(null)
+                }}
+                onTranslate={() => void autoTranslateUaToRu()}
+              />
+
               <label className="block text-sm">
                 <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
-                  <span>Назва</span>
                   <span>
-                    {(view.name ?? '').length} / {nameMax}
+                    Назва ({langTab === 'ua' ? 'UA' : 'RU'}){' '}
+                    <span className="text-[var(--error)]" title="Обовʼязково для майданчиків">
+                      *
+                    </span>
+                  </span>
+                  <span>
+                    {viewName.length} / {nameMax}
                   </span>
                 </div>
                 <Input
-                  value={view.name}
-                  onChange={(e) => setField('name', e.target.value)}
+                  value={viewName}
+                  onChange={(e) =>
+                    setField(langTab === 'ua' ? 'name' : 'nameRu', e.target.value)
+                  }
                   maxLength={nameMax}
+                  placeholder={
+                    langTab === 'ua'
+                      ? 'Українська назва для вітрини та фідів'
+                      : 'Російська назва (Rozetka / Prom)'
+                  }
                 />
                 <MarketplaceIssues checks={nameChecks} />
               </label>
               <label className="mt-4 block text-sm">
                 <div className="mb-1 flex justify-between text-[var(--text-secondary)]">
-                  <span>Опис</span>
                   <span>
-                    {(view.description ?? '').length} / {descriptionMax}
+                    Опис ({langTab === 'ua' ? 'UA' : 'RU'}){' '}
+                    <span className="text-[var(--error)]">*</span>
+                  </span>
+                  <span>
+                    {viewDescription.length} / {descriptionMax}
                   </span>
                 </div>
                 <Textarea
-                  value={view.description}
-                  onChange={(e) => setField('description', e.target.value)}
+                  value={viewDescription}
+                  onChange={(e) =>
+                    setField(
+                      langTab === 'ua' ? 'description' : 'descriptionRu',
+                      e.target.value,
+                    )
+                  }
                   maxLength={descriptionMax}
+                  placeholder={
+                    langTab === 'ua'
+                      ? 'HTML: <p>, <b>, <ul><li>, таблиці…'
+                      : 'Той самий формат, російською'
+                  }
                 />
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                  Допустимі теги як у Epicentr: абзаци, жирний, списки, таблиці. Інше не
+                  передається.
+                </p>
                 <MarketplaceIssues checks={descriptionChecks} />
               </label>
               <div className="mt-4">
-                <div className="mb-2 text-sm text-[var(--text-secondary)]">Фото</div>
+                <div className="mb-2 text-sm text-[var(--text-secondary)]">
+                  Фото <span className="text-[var(--error)]">*</span>
+                </div>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4].map((n) => (
                     <div
@@ -195,15 +310,19 @@ export function ProductPage() {
                     Додати фото
                   </button>
                 </div>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                  Мін. 1 фото (білий фон). Rozetka до 15, Prom до 10, Epicentr — без фото товар не
+                  створиться.
+                </p>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Field label="Артикул">
+                <Field label="Артикул" required>
                   <Input value={product.sku} disabled />
                   <div className="mt-1 text-xs text-[var(--text-secondary)]">
-                    На RZ/EC передається без дефіса.
+                    На RZ/EC передається без дефіса (`TM10018`).
                   </div>
                 </Field>
-                <Field label="Категорія CRM">
+                <Field label="Категорія CRM" required>
                   <button
                     type="button"
                     className="flex h-9 w-full items-center justify-between rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 text-left text-sm hover:border-[var(--primary)]"
@@ -218,12 +337,15 @@ export function ProductPage() {
                     Мапінг на Rozetka / Epicentr / Prom підтягнеться з довідника категорій CRM.
                   </div>
                 </Field>
-                <Field label="Бренд (необовʼязково)">
+                <Field label="Бренд" required>
                   <Input
                     value={view.brand}
                     onChange={(e) => setField('brand', e.target.value)}
-                    placeholder="Зазвичай порожньо"
+                    placeholder="LEGO або «Без бренду»"
                   />
+                  <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                    Обовʼязково для Rozetka та Epicentr.
+                  </div>
                 </Field>
                 <Field label="Модель">
                   <Input value={view.model} onChange={(e) => setField('model', e.target.value)} />
@@ -231,8 +353,23 @@ export function ProductPage() {
                 <Field label="Штрихкод">
                   <Input value={view.barcode} onChange={(e) => setField('barcode', e.target.value)} />
                 </Field>
-                <Field label="Країна-виробник">
-                  <Input value={view.country} onChange={(e) => setField('country', e.target.value)} />
+                <Field
+                  label={
+                    langTab === 'ua' ? 'Країна-виробник (UA)' : 'Країна-виробник (RU)'
+                  }
+                >
+                  <Input
+                    value={langTab === 'ua' ? view.country : (view.countryRu ?? '')}
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'country' : 'countryRu', e.target.value)
+                    }
+                    placeholder={langTab === 'ua' ? 'Україна' : 'Украина'}
+                  />
+                  <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                    {langTab === 'ua'
+                      ? 'На RU буде «Украина» після автоперекладу / глосарія.'
+                      : 'Обовʼязково російською для RU-вітрини (не плутати з UA «Україна»).'}
+                  </div>
                 </Field>
                 <Field label="Вага, кг">
                   <Input
@@ -258,32 +395,71 @@ export function ProductPage() {
             <Panel>
               <h2 className="text-base font-semibold">Фіксовані поля товару (не варіанти)</h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Різний колір — окремий артикул через Дублювати.
+                Різний колір — окремий артикул через Дублювати. Текстові значення — UA/RU (як
+                назва/опис); числа спільні.
               </p>
+              <div className="mt-3">
+                <LangBar
+                  langTab={langTab}
+                  translating={translating}
+                  translateError={translateError}
+                  hintUa="Заповніть атрибути українською."
+                  hintRu="Ті самі атрибути російською. Кнопка перекладає з UA (і країну/назву/опис теж)."
+                  onLang={(id) => {
+                    setLangTab(id)
+                    setTranslateError(null)
+                  }}
+                  onTranslate={() => void autoTranslateUaToRu()}
+                />
+              </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Field label="Стан">
+                <Field label={langTab === 'ua' ? 'Стан (UA)' : 'Стан (RU)'}>
                   <Input
-                    value={view.condition ?? ''}
-                    onChange={(e) => setField('condition', e.target.value)}
+                    value={
+                      langTab === 'ua' ? (view.condition ?? '') : (view.conditionRu ?? '')
+                    }
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'condition' : 'conditionRu', e.target.value)
+                    }
+                    placeholder={langTab === 'ua' ? 'Новий' : 'Новый'}
                   />
                 </Field>
-                <Field label="Колір">
-                  <Input value={view.color ?? ''} onChange={(e) => setField('color', e.target.value)} />
-                </Field>
-                <Field label="Вікова група">
+                <Field label={langTab === 'ua' ? 'Колір (UA)' : 'Колір (RU)'}>
                   <Input
-                    value={view.ageGroup ?? ''}
-                    onChange={(e) => setField('ageGroup', e.target.value)}
+                    value={langTab === 'ua' ? (view.color ?? '') : (view.colorRu ?? '')}
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'color' : 'colorRu', e.target.value)
+                    }
                   />
                 </Field>
-                <Field label="Матеріал">
+                <Field label={langTab === 'ua' ? 'Вікова група (UA)' : 'Вікова група (RU)'}>
                   <Input
-                    value={view.material ?? ''}
-                    onChange={(e) => setField('material', e.target.value)}
+                    value={
+                      langTab === 'ua' ? (view.ageGroup ?? '') : (view.ageGroupRu ?? '')
+                    }
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'ageGroup' : 'ageGroupRu', e.target.value)
+                    }
+                    placeholder={langTab === 'ua' ? '6–12 років' : '6–12 лет'}
                   />
                 </Field>
-                <Field label="Тип">
-                  <Input value={view.type ?? ''} onChange={(e) => setField('type', e.target.value)} />
+                <Field label={langTab === 'ua' ? 'Матеріал (UA)' : 'Матеріал (RU)'}>
+                  <Input
+                    value={
+                      langTab === 'ua' ? (view.material ?? '') : (view.materialRu ?? '')
+                    }
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'material' : 'materialRu', e.target.value)
+                    }
+                  />
+                </Field>
+                <Field label={langTab === 'ua' ? 'Тип (UA)' : 'Тип (RU)'}>
+                  <Input
+                    value={langTab === 'ua' ? (view.type ?? '') : (view.typeRu ?? '')}
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'type' : 'typeRu', e.target.value)
+                    }
+                  />
                 </Field>
                 <Field label="Кількість деталей">
                   <Input
@@ -296,11 +472,16 @@ export function ProductPage() {
                       )
                     }
                   />
+                  <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                    Число — спільне для UA і RU (не перекладається).
+                  </div>
                 </Field>
-                <Field label="Серія">
+                <Field label={langTab === 'ua' ? 'Серія (UA)' : 'Серія (RU)'}>
                   <Input
-                    value={view.series ?? ''}
-                    onChange={(e) => setField('series', e.target.value)}
+                    value={langTab === 'ua' ? (view.series ?? '') : (view.seriesRu ?? '')}
+                    onChange={(e) =>
+                      setField(langTab === 'ua' ? 'series' : 'seriesRu', e.target.value)
+                    }
                   />
                 </Field>
               </div>
@@ -312,6 +493,11 @@ export function ProductPage() {
                   <StatusChip tone="success">Epicentr: обов’язкові заповнені</StatusChip>
                 )}
               </div>
+              <p className="mt-3 text-xs text-[var(--text-secondary)]">
+                RU для атрибутів не блокує синк сам по собі (обовʼязкові на RU лише назва й
+                опис на Rozetka/Prom). Але для Epicentr text-param і RU-вітрини краще
+                заповнити.
+              </p>
             </Panel>
           ) : null}
 
@@ -319,7 +505,7 @@ export function ProductPage() {
             <>
               <Panel title="Базова ціна">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Ціна, грн">
+                  <Field label="Ціна, грн" required>
                     <Input
                       type="number"
                       value={view.price}
@@ -447,6 +633,11 @@ export function ProductPage() {
                         Epicentr не приймає кількість, лише статус.
                       </p>
                     ) : null}
+                    {enabled && missingRequired.length > 0 ? (
+                      <p className="mt-2 text-sm text-[var(--warning)]">
+                        Не заповнено для синхронізації: {missingRequired.join(', ')}.
+                      </p>
+                    ) : null}
                   </Panel>
                 )
               })}
@@ -529,6 +720,40 @@ export function ProductPage() {
               У списку товарів — колонка «Синхронізація»: {product.syncStatus}.
             </p>
           </Panel>
+          <Panel title="Готовність до вивантаження">
+            <p className="mb-2 text-xs text-[var(--text-secondary)]">
+              Обовʼязкові поля = ті, що required хоча б на одному з Rozetka / Prom / Epicentr.
+              Чернетку можна зберегти порожньою.
+            </p>
+            <ul className="space-y-1.5 text-sm">
+              {REQUIRED_FIELDS.map((def) => {
+                const fill = requiredFills.find((f) => f.id === def.id)
+                const ok = fill?.ok ?? false
+                return (
+                  <li key={def.id} className="flex items-start gap-2">
+                    <span
+                      className={ok ? 'text-[var(--success)]' : 'text-[var(--warning)]'}
+                      aria-hidden
+                    >
+                      {ok ? '✓' : '!'}
+                    </span>
+                    <span>
+                      <span className={ok ? '' : 'text-[var(--warning)]'}>{def.label}</span>
+                      <span className="mt-0.5 block text-[10px] text-[var(--text-secondary)]">
+                        {def.marketplaces.join(', ')}
+                      </span>
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+            {missingRequired.length > 0 && product.status !== 'Чернетка' ? (
+              <p className="mt-3 text-xs text-[var(--warning)]">
+                Не заповнено: {missingRequired.join(', ')}. Синк на майданчики буде
+                заблоковано, доки поля порожні.
+              </p>
+            ) : null}
+          </Panel>
         </div>
       </div>
 
@@ -556,10 +781,94 @@ export function ProductPage() {
   )
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function LangBar({
+  langTab,
+  translating,
+  translateError,
+  hintUa,
+  hintRu,
+  onLang,
+  onTranslate,
+}: {
+  langTab: LangTab
+  translating: boolean
+  translateError: string | null
+  hintUa: string
+  hintRu: string
+  onLang: (id: LangTab) => void
+  onTranslate: () => void
+}) {
+  return (
+    <div className="mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="inline-flex rounded-[var(--radius)] border border-[var(--border)] p-0.5"
+          role="tablist"
+          aria-label="Мова контенту"
+        >
+          {(
+            [
+              { id: 'ua' as const, label: 'UA' },
+              { id: 'ru' as const, label: 'RU' },
+            ] as const
+          ).map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              role="tab"
+              aria-selected={langTab === l.id}
+              onClick={() => onLang(l.id)}
+              className={`rounded-[calc(var(--radius)-2px)] px-3 py-1.5 text-sm font-medium ${
+                langTab === l.id
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg)]'
+              }`}
+            >
+              {l.label}
+              {l.id === 'ua' ? (
+                <span className="ml-1 text-[10px] opacity-80">основна</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+        {langTab === 'ru' ? (
+          <Button
+            variant="secondary"
+            className="h-8"
+            disabled={translating}
+            onClick={onTranslate}
+          >
+            {translating ? 'Перекладаємо…' : 'Автоматично перекласти з UA'}
+          </Button>
+        ) : (
+          <p className="text-xs text-[var(--text-secondary)]">{hintUa}</p>
+        )}
+      </div>
+      {langTab === 'ru' ? (
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">{hintRu}</p>
+      ) : null}
+      {translateError ? (
+        <p className="mt-2 text-sm text-[var(--error)]">{translateError}</p>
+      ) : null}
+    </div>
+  )
+}
+
+function Field({
+  label,
+  children,
+  required,
+}: {
+  label: ReactNode
+  children: ReactNode
+  required?: boolean
+}) {
   return (
     <div className="block text-sm">
-      <div className="mb-1 text-[var(--text-secondary)]">{label}</div>
+      <div className="mb-1 text-[var(--text-secondary)]">
+        {label}
+        {required ? <span className="text-[var(--error)]"> *</span> : null}
+      </div>
       {children}
     </div>
   )
