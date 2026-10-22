@@ -5,3 +5,14 @@ dist
 *.local
 .vscode
 .idea
+
+# Secrets and local infra config — never commit (public repo)
+.env
+.env.*
+!.env.example
+.local-config/
+*.pem
+*.dump
+
+# Local photo storage (profile local)
+.local-media/

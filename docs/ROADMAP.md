@@ -120,6 +120,7 @@
 | [integrations/README.md](integrations/README.md) | Синхронизация, остатки, категории |
 | [integrations/rozetka.md](integrations/rozetka.md), [epicentr.md](integrations/epicentr.md), [prom.md](integrations/prom.md) | Исследования площадок |
 | [design/README.md](design/README.md) | Витрина (на паузе после главной) |
+| [backend/README.md](backend/README.md) | Бэкенд MVP, AWS, план имплементации с критериями приёмки |
 
 ## Открытые вопросы
 
