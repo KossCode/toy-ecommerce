@@ -19,21 +19,26 @@ Maven ставить не нужно — в репозитории `backend/mvnw
 # 1. База
 docker compose -f deploy/docker-compose.dev.yml up -d postgres
 
-# 2. Бэкенд (миграции применятся при старте, демо-данные загрузятся)
+# 2. Бэкенд (миграции применятся при старте)
 cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
 # 3. Админка (в другом терминале, из корня репозитория)
 npm install
-npm run dev:web
+VITE_API_PROXY=http://localhost:8080 npm run dev:web
 ```
 
 - Админка: http://localhost:5173
 - API: http://localhost:8080/api
-- OpenAPI UI: http://localhost:8080/api/docs
-- Health: http://localhost:8080/actuator/health
+- OpenAPI UI: http://localhost:8080/api/docs (спецификация — `/api/docs/openapi.json`)
+- Health: http://localhost:8080/actuator/health, http://localhost:8080/healthz
+- База: `localhost:15432`, база/пользователь/пароль `triomio` — только для локального контейнера. Порт не `5432`, чтобы не конфликтовать с Postgres из Homebrew или установщика EDB на той же машине.
 
-Vite проксирует `/api` на `http://localhost:8080`. Сейчас прокси смотрит на Express-мок (`3001`); на этапе 7 порт меняется в `vite.config.ts`, а `npm run dev` перестаёт запускать `server/`.
+Если `java -version` показывает не 25, укажите JDK явно: `export JAVA_HOME=$(/usr/libexec/java_home -v 25)` (или путь Homebrew `/opt/homebrew/opt/openjdk@25`).
+
+Прокси Vite для `/api` задаётся переменной `VITE_API_PROXY`. Без неё он смотрит на Express-мок (`3001`), и `npm run dev` работает как раньше. Пока эндпоинты не перенесены (этап 7), данные админки отдаёт Express-мок; на этапе 7 Java API становится значением по умолчанию, а `npm run dev` перестаёт запускать `server/`.
+
+Без локальной базы приложение можно поднять на временном Postgres из Testcontainers: `./mvnw spring-boot:test-run`. Нужен запущенный Docker.
 
 ## 3. Профили Spring
 
@@ -58,7 +63,7 @@ docker compose -f deploy/docker-compose.dev.yml up -d postgres
 
 ## 5. Переменные окружения
 
-Локально все значения по умолчанию лежат в `application-local.yml`; секретов там нет. Если нужно что-то переопределить — файл `backend/.env.local` (маска `*.local` уже в `.gitignore`).
+Локально все значения по умолчанию лежат в `application-local.yml`; секретов там нет. Если нужно что-то переопределить — файл `backend/.env.local` (маски `*.local` и `.env.*` уже в `.gitignore`). Формат — Java properties (`spring.datasource.password=...`); профиль `local` подключает его через `spring.config.import`, если файл есть. Путь относительный, поэтому запускайте приложение из `backend/`.
 
 Живые ключи площадок локально **не используются**. Для отладки интеграции допустим только токен тестовой компании Prom, и только в `.env.local`. Режим площадки локально по умолчанию `OFF`; поднять его можно максимум до `READ_ONLY` без отдельного согласования.
 
@@ -71,13 +76,17 @@ docker build -f deploy/Dockerfile -t triomio-crm:local .
 docker compose -f deploy/docker-compose.dev.yml --profile app up
 ```
 
-Образ собирается под архитектуру машины. На Apple Silicon это arm64, как на EC2.
+Образ собирается под архитектуру машины. На Apple Silicon это arm64, как на EC2. В контекст сборки попадают только файлы из allowlist в `.dockerignore`; `.env*`, `.local-config/` и `.git` туда не попадают.
+
+Пока клиент API не переключён (этап 7.2), прод-сборка админки внутри образа работает на браузерном моке — так задумано, чтобы образ уже сейчас показывал данные.
 
 ## 7. Частые проблемы
 
 | Симптом | Причина | Что сделать |
 | --- | --- | --- |
-| `Connection refused` к 5432 | контейнер базы не поднят | `docker compose -f deploy/docker-compose.dev.yml ps` |
+| `Connection refused` к 15432 | контейнер базы не поднят | `docker compose -f deploy/docker-compose.dev.yml ps` |
+| `ports are not available ... address already in use` | порт `15432` или `8080` занят другим процессом | `nc -z 127.0.0.1 15432`; остановить чужой процесс или поменять порт в `docker-compose.dev.yml` и `application-local.yml` |
+| Тесты: `Could not find a valid Docker environment` | Docker не запущен | запустить Docker Desktop / OrbStack |
 | Flyway: `checksum mismatch` | изменили уже применённую миграцию | вернуть файл; изменения — новой миграцией. Локально можно сбросить базу (§4) |
 | 401 на всё в админке | нет сессии | войти под демо-пользователем из `application-local.yml` |
 | 403 на POST | нет CSRF-заголовка | клиент должен слать `X-XSRF-TOKEN` ([`05-api.md`](05-api.md) §4) |
