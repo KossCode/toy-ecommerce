@@ -6,7 +6,7 @@
 
 | Компонент | Где живёт | Что делает |
 | --- | --- | --- |
-| Caddy | контейнер на EC2 | Принимает HTTPS на 443, получает и продлевает сертификаты Let's Encrypt, редиректит HTTP → HTTPS, проксирует в приложение |
+| nginx + certbot | на хосте EC2 (не в Docker) | Принимает HTTPS на 443, редиректит HTTP → HTTPS, проксирует в приложение на `127.0.0.1:8080`, отдаёт страницу 503, пока приложение перезапускается. certbot выпускает и продлевает сертификаты Let's Encrypt |
 | Приложение (Spring Boot) | контейнер на EC2 | REST API `/api/**`, собранная админка (статикой), фиды `/feeds/**`, планировщик Quartz, outbox-диспетчер, клиенты API площадок |
 | PostgreSQL 17 | контейнер на EC2, том на EBS | Все данные CRM, сессии пользователей, таблицы Quartz, outbox, журналы |
 | S3 `media` | AWS | Фото товаров; префикс `products/` читается публично (площадки скачивают фото по URL из фида) |
@@ -25,7 +25,7 @@
 | `https://admin.<domain>/api/**` | REST API | сессия; кроме `/api/auth/login` |
 | `https://admin.<domain>/feeds/{token}/{marketplace}.xml` | фиды для площадок | по секретному токену в пути |
 | `https://admin.<domain>/healthz` | короткая проверка живости для внешнего мониторинга | открыт, без подробностей |
-| `/actuator/**` | метрики и детальный health | закрыт на уровне Caddy, доступен только изнутри сервера |
+| `/actuator/**` | метрики и детальный health | закрыт в nginx, доступен только изнутри сервера |
 | `https://<domain>/` | будущий сайт-витрина | отдельный контейнер позже |
 
 Админка и API на одном origin, поэтому CORS не нужен, а cookie сессии работает без ухищрений.
@@ -93,9 +93,11 @@ deploy/
   Dockerfile           multi-stage: фронт + бэкенд → один образ
   docker-compose.dev.yml
   docker-compose.prod.yml
-  Caddyfile
+  nginx/               admin.conf (сайт для nginx на хосте), 50x.html
   .env.example         имена переменных без значений
-  scripts/             deploy.sh, backup-db.sh, render-env.sh, restore-db.sh
+  scripts/             deploy.sh, validate-env.sh, smoke.sh, rollback.sh, backup-db.sh, render-env.sh, restore-db.sh
+docs/releases/         заметки о релизах vX.Y.Z и индекс
+.local-config/         локально, в .gitignore: ID ресурсов AWS для скриптов и команд из runbook
 server/                Express-мок; удаляется после паритета API (этап 7.4)
 data/                  демо-данные; грузятся только в профиле local
 docs/backend/          эти документы

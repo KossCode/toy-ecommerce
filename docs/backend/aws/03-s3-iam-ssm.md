@@ -112,7 +112,7 @@ IAM → Roles → Create role → Trusted entity: AWS service → EC2.
 ## 4. ECR
 
 - Repository: `triomio/crm`, private.
-- Tag immutability: Immutable — тег `sha` нельзя перезаписать, откат всегда на тот же образ.
+- Tag immutability: Immutable — тег версии `vX.Y.Z` нельзя перезаписать, откат всегда на тот же образ.
 - Scan on push: Basic.
 - Lifecycle policy: хранить последние 20 образов.
 

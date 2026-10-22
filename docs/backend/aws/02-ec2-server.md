@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | Регион | `eu-central-1` | |
 | AMI | Ubuntu Server 24.04 LTS, arm64 (официальный образ Canonical) | SSM Agent предустановлен; официальный apt-репозиторий Docker |
-| Тип | `t4g.medium` (2 vCPU, 4 GiB) | Java + PostgreSQL + Caddy с запасом. `t4g.small` (2 GiB) — только если бюджет критичен |
+| Тип | `t4g.medium` (2 vCPU, 4 GiB) | Java + PostgreSQL + nginx с запасом. `t4g.small` (2 GiB) — только если бюджет критичен |
 | Диск | gp3, 30 GiB, encrypted | База и логи маленькие; расширяется без остановки |
 | Сеть | default VPC, публичная подсеть, auto-assign public IP — да | Без своих VPC и NAT: экономия и простота |
 | Key pair | **без ключа** (Proceed without a key pair) | Вход только через Session Manager |
@@ -101,11 +101,21 @@ dpkg -i /tmp/cwagent.deb
 # конфигурация — ops/04-monitoring.md §2
 ```
 
+### nginx и certbot
+
+```bash
+apt-get install -y nginx certbot python3-certbot-nginx
+systemctl enable nginx
+rm -f /etc/nginx/sites-enabled/default
+```
+
+Конфиг сайта и выпуск сертификата — после покупки домена ([`04-domain-tls.md`](04-domain-tls.md) §4). До этого nginx стоит, но наружу ничего не открыто: в security group нет inbound-правил.
+
 ### Каталог приложения
 
 ```bash
-mkdir -p /opt/triomio/scripts && chmod 700 /opt/triomio
-# сюда кладутся: docker-compose.prod.yml, Caddyfile, scripts/* из deploy/ репозитория
+mkdir -p /opt/triomio/scripts /opt/triomio/nginx && chmod 700 /opt/triomio
+# сюда кладутся: docker-compose.prod.yml, nginx/*, scripts/* из deploy/ репозитория
 # .env создаётся скриптом render-env.sh из Parameter Store (ops/01-docker-compose.md §4)
 ```
 

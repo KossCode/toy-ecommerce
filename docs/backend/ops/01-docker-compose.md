@@ -2,15 +2,17 @@
 
 Назад к плану: [`../README.md`](../README.md), шаг 3.4. Файлы живут в `deploy/` репозитория и копируются в `/opt/triomio` на сервере при деплое.
 
-## 1. Сервисы
+## 1. Что где работает
 
-| Сервис | Образ | Порты на хосте | Память (лимит) |
+| Что | Где | Порты | Память |
 | --- | --- | --- | --- |
-| `caddy` | `caddy:2-alpine` (конкретная версия фиксируется при настройке) | `80`, `443/tcp`, `443/udp` | 128 MiB |
-| `app` | `<registry>/triomio/crm:<sha>` | `127.0.0.1:8080` | 1.5 GiB |
-| `postgres` | `postgres:17` | нет | 768 MiB |
+| nginx + certbot | на хосте, systemd | `80`, `443` наружу | ≈ 30 MiB |
+| `app` | контейнер `<registry>/triomio/crm:<версия>` | `127.0.0.1:8080` | лимит 1.5 GiB |
+| `postgres` | контейнер `postgres:17` | нет | лимит 768 MiB |
 
-Итого ≈ 2.4 GiB из 4 GiB на `t4g.medium`; остальное — ОС, Docker, page cache. Swap 2 GiB — страховка ([`../aws/02-ec2-server.md`](../aws/02-ec2-server.md) §5).
+Итого ≈ 2.3 GiB из 4 GiB на `t4g.medium`; остальное — ОС, Docker, page cache. Swap 2 GiB — страховка ([`../aws/02-ec2-server.md`](../aws/02-ec2-server.md) §5).
+
+nginx стоит на хосте, а не в контейнере, как в Lexio: он продолжает отвечать, пока контейнер приложения перезапускается, и отдаёт страницу 503 вместо обрыва соединения.
 
 ## 2. `deploy/docker-compose.prod.yml`
 
@@ -29,23 +31,6 @@ x-awslogs: &awslogs
     max-buffer-size: 4m
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports: ["80:80", "443:443", "443:443/udp"]
-    environment:
-      ADMIN_HOST: ${ADMIN_HOST}
-      ACME_EMAIL: ${ACME_EMAIL}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      app: { condition: service_healthy }
-    mem_limit: 128m
-    logging: *awslogs
-    profiles: ["public"]          # не стартует, пока нет домена
-
   app:
     image: ${ECR_REGISTRY}/triomio/crm:${APP_TAG}
     restart: unless-stopped
@@ -97,8 +82,6 @@ services:
     logging: *awslogs
 
 volumes:
-  caddy_data:
-  caddy_config:
   feeds:
   pgdata:
 ```
@@ -106,41 +89,78 @@ volumes:
 Пояснения:
 
 - Порт PostgreSQL на хост не пробрасывается — база доступна только из Docker-сети.
-- Приложение слушает только `127.0.0.1`: снаружи к нему не попасть, но работает проброс порта SSM до покупки домена.
+- Приложение слушает только `127.0.0.1`: снаружи к нему не попасть; nginx на хосте и проброс порта SSM (до покупки домена) ходят именно сюда.
 - `-XX:+ExitOnOutOfMemoryError`: при нехватке памяти JVM завершается, и Docker её перезапускает, вместо того чтобы зависнуть.
 - Лог-группу `/triomio/prod` создаём заранее в CloudWatch с хранением 30 дней ([`04-monitoring.md`](04-monitoring.md) §1).
-- После появления домена Caddy запускается так: `docker compose --profile public up -d`.
 
-## 3. `deploy/Caddyfile`
+## 3. nginx на хосте
 
-```caddyfile
-{
-	email {$ACME_EMAIL}
-}
+### `deploy/nginx/admin.conf`
 
-{$ADMIN_HOST} {
-	encode zstd gzip
+Шаблон сайта до выпуска сертификата. `__ADMIN_HOST__` подставляется при установке ([`../aws/04-domain-tls.md`](../aws/04-domain-tls.md) §4); затем `certbot --nginx` сам добавляет `listen 443 ssl`, пути к сертификату и редирект с HTTP.
 
-	@internal path /actuator/*
-	respond @internal 404
+```nginx
+server {
+    listen 80;
+    server_name __ADMIN_HOST__;
+    server_tokens off;
 
-	request_body {
-		max_size 25MB
-	}
+    client_max_body_size 25m;
 
-	header {
-		Strict-Transport-Security "max-age=300"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		-Server
-	}
+    # Пока приложение перезапускается — страница «Оновлюємо систему» с кодом 503
+    error_page 502 503 504 =503 /50x.html;
+    location = /50x.html {
+        internal;
+        root /var/www/triomio;
+        add_header Cache-Control "no-store" always;
+    }
 
-	reverse_proxy app:8080
+    location /actuator/ {
+        return 404;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_intercept_errors on;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 120s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript application/xml image/svg+xml;
+    gzip_min_length 1000;
+
+    add_header Strict-Transport-Security "max-age=300" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 }
 ```
 
-`max-age` у HSTS повышается по [`../aws/04-domain-tls.md`](../aws/04-domain-tls.md) §5. Content-Security-Policy задаёт приложение, потому что ему известны собственные ассеты.
+- `proxy_intercept_errors on` подменяет на страницу 503 и ошибки `5xx` самого приложения. Для JSON API это значит, что админка получит HTML вместо `problem+json`, поэтому клиент обрабатывает `503` отдельно: «Система оновлюється, спробуйте за хвилину». Если это начнёт мешать — включать перехват только для `location /` без `/api/`.
+- Кешированием ассетов управляет приложение ([`02-deploy.md`](02-deploy.md) §1); nginx заголовки кеша не трогает.
+- `max-age` у HSTS повышается по [`../aws/04-domain-tls.md`](../aws/04-domain-tls.md) §5. Content-Security-Policy задаёт приложение: ему известны собственные ассеты.
+
+### `deploy/nginx/50x.html`
+
+Статическая страница на украинском без внешних ресурсов: логотип inline-SVG, текст «Оновлюємо систему. Спробуйте через хвилину», автообновление через 30 секунд (`<meta http-equiv="refresh" content="30">`).
+
+### Изменение конфига после certbot
+
+После `certbot --nginx` живой файл `/etc/nginx/sites-available/triomio-admin` содержит строки certbot. Поэтому изменение `admin.conf` в репозитории применяется так:
+
+```bash
+sed "s/__ADMIN_HOST__/admin.<domain>/g" /opt/triomio/nginx/admin.conf > /etc/nginx/sites-available/triomio-admin
+certbot --nginx -d admin.<domain> --reinstall --redirect --non-interactive
+nginx -t && systemctl reload nginx
+```
+
+certbot заново вставит сертификат (без перевыпуска) и редирект. `deploy.sh` конфиг nginx не трогает; при деплое обновляется только `50x.html`.
 
 ## 4. `.env`
 
@@ -158,10 +178,15 @@ volumes:
 | `APP_FEEDS_TOKEN` | `/triomio/prod/feeds/token` |
 | `APP_S3_MEDIA_BUCKET` | `/triomio/prod/s3/media-bucket` |
 | `INTEGRATIONS_MAX_MODE` | `/triomio/prod/app/integrations-max-mode` |
-| `ADMIN_HOST`, `ACME_EMAIL` | `/triomio/prod/app/*` |
+| `APP_VERSION` | пишет `deploy.sh` (= `APP_TAG`) |
+| `ADMIN_HOST` | `/triomio/prod/app/admin-host`; нужен `smoke.sh` |
 | `BACKUP_BUCKET`, `HEARTBEAT_URL` | для скриптов бэкапа |
 
 `deploy/scripts/render-env.sh` читает `aws ssm get-parameters-by-path --path /triomio/prod --recursive --with-decryption`, собирает `.env` и выставляет права. Править `.env` руками нельзя: следующий рендер перезапишет изменения. Меняем параметр в Parameter Store → `render-env.sh` → `docker compose up -d`.
+
+### `validate-env.sh`
+
+Как в Lexio: запускается перед каждым `docker compose up` из `deploy.sh` и останавливает деплой, если в `.env` нет обязательной переменной или она пустая. Список обязательных — массив в начале скрипта; он же сверяется с `deploy/.env.example` в CI, чтобы новая переменная не забылась ни в одном из мест. Значения скрипт не печатает — только имена отсутствующих.
 
 ## 5. Частые команды
 

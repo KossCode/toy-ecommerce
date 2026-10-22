@@ -5,6 +5,7 @@
 ## 1. Логи
 
 - Контейнеры пишут в CloudWatch Logs через драйвер `awslogs`, группа `/triomio/prod`, поток = имя контейнера ([`01-docker-compose.md`](01-docker-compose.md) §2).
+- nginx на хосте пишет в `/var/log/nginx/`; эти файлы отправляет в ту же группу CloudWatch Agent (§2), потоки `nginx-access` и `nginx-error`. Локальная ротация — штатный `logrotate` Ubuntu.
 - Группу создаём вручную до первого запуска: CloudWatch → Log groups → Create → `/triomio/prod`, retention 30 days.
 - Приложение в профиле `prod` пишет JSON (structured logging Spring Boot): уровень, логгер, сообщение, `traceId`, `userId`, `marketplace`, `job`.
 - Поиск: CloudWatch Logs Insights, например:
@@ -17,12 +18,22 @@
 
 Что нельзя писать в логи — [`05-security.md`](05-security.md) §5.
 
-## 2. Метрики хоста
+## 2. Метрики хоста и логи nginx
 
-CloudWatch Agent на EC2 ([`../aws/02-ec2-server.md`](../aws/02-ec2-server.md) §5) собирает только то, чего нет в стандартных метриках EC2:
+CloudWatch Agent на EC2 ([`../aws/02-ec2-server.md`](../aws/02-ec2-server.md) §5) собирает только то, чего нет в стандартных метриках EC2, и логи nginx:
 
 ```json
 {
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          { "file_path": "/var/log/nginx/access.log", "log_group_name": "/triomio/prod", "log_stream_name": "nginx-access" },
+          { "file_path": "/var/log/nginx/error.log", "log_group_name": "/triomio/prod", "log_stream_name": "nginx-error" }
+        ]
+      }
+    }
+  },
   "metrics": {
     "namespace": "Triomio",
     "append_dimensions": { "InstanceId": "${aws:InstanceId}" },

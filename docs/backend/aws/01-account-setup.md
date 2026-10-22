@@ -6,6 +6,7 @@
 
 ## 1. Перед регистрацией
 
+- [ ] Аккаунт отдельный, только под CRM. Аккаунт Lexio и другие проекты не используем: разные владельцы, разные счета, и ошибка в одном проекте не задевает другой.
 - [ ] Решено, чей аккаунт и чья карта ([`../README.md`](../README.md) §6, вопрос 2). Правильнее всего — аккаунт клиента: юридически данные и счета его, разработчик получает доступ через Identity Center.
 - [ ] Заведён общий почтовый ящик для root (например, `aws@<domain>` или отдельный ящик владельца). Не личная почта разработчика: при смене подрядчика доступ к root не должен уйти вместе с ним.
 - [ ] Есть менеджер паролей с общим хранилищем, где будут root-пароль, MFA-резерв и коды восстановления.
@@ -72,6 +73,22 @@ aws sts get-caller-identity --profile triomio
 | Регион | `eu-central-1` для всего, кроме глобальных сервисов (IAM, Billing) |
 | Теги | `project=triomio`, `env=prod` на каждом ресурсе |
 | Имена | префикс `triomio-` (`triomio-web-sg`, `triomio-ec2-role`) |
+
+ID созданных ресурсов записываем локально в `.local-config/aws-resources.env` (папка в `.gitignore`), как в Lexio. Из этого файла их берут команды runbook и локальные скрипты, а в публичный репозиторий они не попадают:
+
+```bash
+AWS_PROFILE=triomio
+AWS_REGION=eu-central-1
+INSTANCE_ID=
+ELASTIC_IP=
+SECURITY_GROUP_ID=
+MEDIA_BUCKET=
+BACKUPS_BUCKET=
+ECR_REGISTRY=
+ADMIN_HOST=admin.<domain>
+```
+
+Использование: `source .local-config/aws-resources.env && aws ssm start-session --target "$INSTANCE_ID"`.
 
 ## 8. Критерии приёмки этапа
 
