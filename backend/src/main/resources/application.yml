@@ -22,10 +22,21 @@ spring:
       org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
       org.quartz.jobStore.isClustered: false
       org.quartz.jobStore.misfireThreshold: 60000
+  session:
+    jdbc:
+      initialize-schema: never
+      cleanup-cron: "0 */15 * * * *"
 
 server:
   port: 8080
   shutdown: graceful
+  servlet:
+    session:
+      # Inactivity limit; the 7-day absolute limit is enforced by SessionPolicyFilter.
+      timeout: 12h
+      # Name, HttpOnly and SameSite=Lax are fixed in SecurityConfig; only Secure differs (off for http://localhost).
+      cookie:
+        secure: true
   error:
     include-stacktrace: never
     include-message: never

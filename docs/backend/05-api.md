@@ -52,7 +52,8 @@
 ## 4. Аутентификация в запросах
 
 - Cookie `SESSION` (HttpOnly, Secure, SameSite=Lax) ставится после `POST /api/auth/login`.
-- CSRF: Spring Security кладёт токен в cookie `XSRF-TOKEN`; клиент читает её и отправляет в заголовке `X-XSRF-TOKEN` на каждом `POST`/`PATCH`/`PUT`/`DELETE`.
+- CSRF: Spring Security кладёт токен в cookie `XSRF-TOKEN`; клиент читает её и отправляет в заголовке `X-XSRF-TOKEN` на каждом `POST`/`PATCH`/`PUT`/`DELETE`. Сам вход — тоже `POST`, поэтому перед ним клиент вызывает `GET /api/auth/csrf`. После входа токен меняется: новый приходит в ответе на вход, в той же cookie.
+- Ошибки безопасности приходят как problem+json с полем `code`: `UNAUTHORIZED`, `SESSION_EXPIRED` (401); `FORBIDDEN`, `CSRF_INVALID`, `PASSWORD_CHANGE_REQUIRED` (403); `BAD_CREDENTIALS` (401 на входе); `TOO_MANY_ATTEMPTS` (429).
 - CORS выключен: админка и API на одном origin.
 
 Подробно — [`06-auth-and-roles.md`](06-auth-and-roles.md).
@@ -101,11 +102,13 @@
 
 | Метод и путь | Роль | Назначение |
 | --- | --- | --- |
-| `POST /api/auth/login` | все | вход |
-| `POST /api/auth/logout` | все | выход |
+| `GET /api/auth/csrf` | открыт | выдать cookie `XSRF-TOKEN` перед входом |
+| `POST /api/auth/login` | открыт | вход |
+| `POST /api/auth/logout` | все | выход, `204` |
 | `GET /api/auth/me` | все | текущий пользователь и роль |
-| `POST /api/auth/password` | все | смена своего пароля |
-| `GET/POST/PATCH /api/users` | OWNER | управление пользователями, сброс пароля |
+| `POST /api/auth/password` | все | смена своего пароля; остальные сессии пользователя завершаются |
+| `GET/POST /api/users`, `PATCH /api/users/{id}` | OWNER | список, создание (временный пароль в ответе один раз), имя/роль/активность |
+| `POST /api/users/{id}/reset-password` | OWNER | новый временный пароль, сессии пользователя завершаются |
 | `POST /api/products/{sku}/images` | OWNER, MANAGER | загрузка фото (`multipart/form-data`) |
 | `PATCH /api/products/{sku}/images/order` | OWNER, MANAGER | порядок фото |
 | `DELETE /api/products/{sku}/images/{id}` | OWNER, MANAGER | удаление фото |
