@@ -3,6 +3,8 @@ package com.triomio.crm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -86,8 +88,22 @@ class PlatformTests {
     }
 
     @Test
-    void unknownApiPathIsProblemJson() throws Exception {
+    void apiRequiresSession() throws Exception {
         mvc.perform(get("/api/does-not-exist"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Потрібен вхід"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void actuatorBeyondHealthAndInfoIsClosed() throws Exception {
+        mvc.perform(get("/actuator/env").with(user("owner").roles("OWNER"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unknownApiPathIsProblemJson() throws Exception {
+        mvc.perform(get("/api/does-not-exist").with(user("manager").roles("MANAGER")))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))
@@ -98,6 +114,8 @@ class PlatformTests {
     @Test
     void validationErrorListsFields() throws Exception {
         mvc.perform(post("/api/_test/echo")
+                        .with(user("manager").roles("MANAGER"))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"\",\"basePrice\":-1}"))
                 .andExpect(status().isBadRequest())
@@ -109,7 +127,7 @@ class PlatformTests {
 
     @Test
     void unexpectedErrorHidesInternals() throws Exception {
-        mvc.perform(get("/api/_test/boom"))
+        mvc.perform(get("/api/_test/boom").with(user("manager").roles("MANAGER")))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))

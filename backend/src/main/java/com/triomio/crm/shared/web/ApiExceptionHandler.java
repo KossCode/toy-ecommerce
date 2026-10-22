@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +54,21 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         problem.setProperty("errors", errors);
         return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Ця дія доступна лише власнику.");
+        problem.setProperty("code", "FORBIDDEN");
+        return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.FORBIDDEN, request);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<Object> handleAuthentication(AuthenticationException ex, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Увійдіть, щоб продовжити.");
+        problem.setProperty("code", "UNAUTHORIZED");
+        return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.UNAUTHORIZED, request);
     }
 
     @ExceptionHandler(Exception.class)

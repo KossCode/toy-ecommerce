@@ -9,6 +9,13 @@ spring:
     username: triomio
     password: triomio
 
+# http://localhost has no TLS, so a Secure cookie would never come back.
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
 logging:
   level:
     com.triomio.crm: DEBUG

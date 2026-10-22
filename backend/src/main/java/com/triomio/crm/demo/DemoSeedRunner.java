@@ -17,6 +17,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.type.TypeReference;
@@ -48,21 +49,28 @@ class DemoSeedRunner implements ApplicationRunner {
     private final JdbcClient jdbc;
     private final JsonMapper json;
     private final TransactionTemplate tx;
+    private final PasswordEncoder encoder;
     private final Path dataDir;
+    private final String userPassword;
 
     DemoSeedRunner(
             JdbcClient jdbc,
             JsonMapper json,
             TransactionTemplate tx,
-            @Value("${app.demo.data-dir:../data}") String dataDir) {
+            PasswordEncoder encoder,
+            @Value("${app.demo.data-dir:../data}") String dataDir,
+            @Value("${app.demo.user-password:}") String userPassword) {
         this.jdbc = jdbc;
         this.json = json;
         this.tx = tx;
+        this.encoder = encoder;
         this.dataDir = Path.of(dataDir);
+        this.userPassword = userPassword;
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        seedUsers();
         if (!Files.isRegularFile(dataDir.resolve("products.json"))) {
             log.warn("Demo seed skipped: {} has no products.json", dataDir.toAbsolutePath());
             return;
@@ -74,6 +82,36 @@ class DemoSeedRunner implements ApplicationRunner {
             return;
         }
         tx.executeWithoutResult(status -> seed());
+    }
+
+    /**
+     * owner@demo.local and manager@demo.local, both with app.demo.user-password from backend/.env.local. The password is
+     * never committed, so without it there are no demo users.
+     */
+    void seedUsers() {
+        if (userPassword.length() < 12) {
+            log.warn("Demo users skipped: set app.demo.user-password (12+ characters) in backend/.env.local");
+            return;
+        }
+        String hash = encoder.encode(userPassword);
+        int created = 0;
+        for (String[] user : new String[][] {
+            {"owner@demo.local", "Демо Власник", "OWNER"}, {"manager@demo.local", "Демо Менеджер", "MANAGER"}
+        }) {
+            created += jdbc.sql("""
+                            INSERT INTO users (email, password_hash, full_name, role, must_change_password, password_changed_at)
+                            VALUES (:email, :hash, :name, :role, false, now())
+                            ON CONFLICT (email) DO NOTHING
+                            """)
+                    .param("email", user[0])
+                    .param("hash", hash)
+                    .param("name", user[1])
+                    .param("role", user[2])
+                    .update();
+        }
+        if (created > 0) {
+            log.info("Demo users created: owner@demo.local, manager@demo.local");
+        }
     }
 
     void seed() {
