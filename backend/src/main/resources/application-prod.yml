@@ -1,0 +1,18 @@
+# Datasource and other secrets come from the environment (SPRING_DATASOURCE_*), rendered
+# from SSM Parameter Store into /opt/triomio/.env on the server. Never put values here.
+server:
+  forward-headers-strategy: native
+
+logging:
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        version: ${APP_VERSION:dev}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

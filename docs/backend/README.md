@@ -171,27 +171,27 @@ flowchart LR
 
 Документы: [`02-tech-stack.md`](02-tech-stack.md), [`03-local-development.md`](03-local-development.md), [`10-testing.md`](10-testing.md).
 
-- [ ] **2.1 Проект Spring Boot в `backend/`.**
+- [x] **2.1 Проект Spring Boot в `backend/`.**
   - Java 25, Spring Boot 4.x, Maven Wrapper; версии зафиксированы в `pom.xml`.
   - Пакеты по модулям из [`01-architecture.md`](01-architecture.md) §3.
   - `./mvnw verify` проходит.
-- [ ] **2.2 Локальное окружение одной командой.**
+- [x] **2.2 Локальное окружение одной командой.**
   - `docker compose -f deploy/docker-compose.dev.yml up -d` поднимает PostgreSQL.
   - Приложение с профилем `local` стартует, `GET /actuator/health` → `UP`.
-  - Vite проксирует `/api` на Java API; админка открывается и показывает данные.
-- [ ] **2.3 Миграции.**
+  - Vite проксирует `/api` на Java API при `VITE_API_PROXY=http://localhost:8080`; данные из Java API админка показывает после переноса эндпоинтов (этап 7).
+- [x] **2.3 Миграции.**
   - Flyway применяет миграции на пустую базу без ошибок.
   - Схема Quartz создаётся миграцией, а не самим Quartz.
   - Тест на Testcontainers прогоняет все миграции.
   - Миграции соответствуют правилу [`../../.cursor/rules/safe-db-migrations.mdc`](../../.cursor/rules/safe-db-migrations.mdc).
-- [ ] **2.4 Базовая обвязка.**
+- [x] **2.4 Базовая обвязка.**
   - Ошибки API отдаются в формате `application/problem+json`.
   - В профиле `prod` логи пишутся одной строкой JSON на событие.
   - OpenAPI доступен локально по `/api/docs`.
 - [ ] **2.5 CI на каждый PR.**
-  - GitHub Actions: `./mvnw verify`, `npm run build`, поиск секретов (gitleaks).
-  - Красный CI блокирует мёрж (branch protection на `master`).
-- [ ] **2.6 Docker-образ.**
+  - GitHub Actions: `./mvnw verify`, `npm run build`, поиск секретов (gitleaks), сборка образа `linux/arm64` — [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+  - Красный CI блокирует мёрж (branch protection на `master`) — включает владелец репозитория после первого зелёного прогона.
+- [x] **2.6 Docker-образ.**
   - Multi-stage Dockerfile собирает фронт и бэкенд в один образ `linux/arm64`.
   - Процесс в контейнере работает не от root.
   - Образ стартует с `deploy/docker-compose.dev.yml` и отдаёт админку.

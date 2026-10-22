@@ -1,0 +1,42 @@
+# Local development only. The credentials are for a throwaway container bound to 127.0.0.1
+# and match backend/src/main/resources/application-local.yml; they are not secrets.
+# Host port 15432 avoids clashing with Homebrew/EDB Postgres installs on 5432/5433.
+#   docker compose -f deploy/docker-compose.dev.yml up -d postgres
+#   docker build -f deploy/Dockerfile -t triomio-crm:local . && docker compose -f deploy/docker-compose.dev.yml --profile app up
+name: triomio-dev
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: triomio
+      POSTGRES_USER: triomio
+      POSTGRES_PASSWORD: triomio
+    ports: ["127.0.0.1:15432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U triomio -d triomio"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: [app]
+    image: triomio-crm:local
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/triomio
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  pgdata:

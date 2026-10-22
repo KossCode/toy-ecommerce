@@ -1,0 +1,14 @@
+# Local development only. The database credentials below belong to the throwaway
+# container from deploy/docker-compose.dev.yml (bound to 127.0.0.1) and are not secrets.
+# Real or personal overrides go to backend/.env.local (gitignored), never to this file.
+spring:
+  config:
+    import: optional:file:./.env.local[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:15432/triomio
+    username: triomio
+    password: triomio
+
+logging:
+  level:
+    com.triomio.crm: DEBUG
