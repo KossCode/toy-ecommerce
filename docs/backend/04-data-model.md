@@ -25,6 +25,8 @@
 | `login_attempts` | `email`, `ip`, `at`, `success` — для ограничения перебора |
 | `spring_session`, `spring_session_attributes` | схема Spring Session JDBC, создаётся миграцией |
 
+Таблицы этого раздела создаются на этапе 6 вместе со Spring Security; остальные — миграциями `V2`–`V6` (этап 5).
+
 ### 2.2 Каталог
 
 | Таблица | Ключевые колонки |
@@ -33,7 +35,7 @@
 | `brand_mappings` | `brand_id`, `marketplace`, `external_id`, `external_name`; PK `(brand_id, marketplace)` |
 | `categories` | `id`, `parent_id`, `name`, `sort_order` — наше дерево, оно же меню будущего сайта |
 | `marketplace_categories` | `marketplace`, `external_id`, `parent_external_id`, `name`, `is_leaf`, `attribute_set_code`, `synced_at`; PK `(marketplace, external_id)` |
-| `marketplace_category_attributes` | `marketplace`, `category_external_id`, `code`, `name`, `is_required`, `value_type`, `values jsonb`, `synced_at` |
+| `marketplace_category_attributes` | `marketplace`, `category_external_id`, `code`, `name`, `is_required`, `value_type`, `allowed_values jsonb`, `synced_at` |
 | `category_mappings` | `category_id`, `marketplace`, `external_category_id`, `attribute_set_code`; PK `(category_id, marketplace)` |
 | `products` | `id`, `sku` (unique, вид `TM-10018`), `status` (`DRAFT` / `ACTIVE` / `ARCHIVE`), `is_demo`, `brand_id`, `category_id`, `name_uk`, `name_ru`, `description_uk`, `description_ru`, `model`, `barcode`, `country_uk`, `country_ru`, `weight_kg`, `length_cm`, `width_cm`, `height_cm`, фиксированные атрибуты (`color_*`, `age_group_*`, `material_*`, `type_*`, `parts_count`, `series_*`, `condition_*`), `base_price`, `old_price`, `duplicate_of`, `version` |
 | `product_channels` | `product_id`, `marketplace`, `enabled`, `external_id` (`TM10018`), `name_override`, `moderation_status`, `last_error`, `last_synced_at`; PK `(product_id, marketplace)` |
@@ -47,8 +49,8 @@
 
 | Таблица | Ключевые колонки |
 | --- | --- |
-| `stock` | `product_id` (PK), `total`, `reserve`, `available` (`generated always as (greatest(total - reserve, 0)) stored`), `awaiting`, `updated_at`; `CHECK (total >= 0 AND reserve >= 0)` |
-| `price_rules` | `id`, `marketplace`, `scope` (`DEFAULT` / `CATEGORY` / `BRAND` / `PRODUCT`), `scope_ref_id`, `kind` (`BASE` / `PERCENT` / `AMOUNT` / `EXACT`), `value`, `rounding`, `updated_at` |
+| `stock` | `product_id` (PK), `total`, `reserve`, `available` (`generated always as (greatest(total - reserve, 0)) stored`), `awaiting` (boolean, флажок «Очікується»: ждём поставку), `updated_at`; `CHECK (total >= 0 AND reserve >= 0)` |
+| `price_rules` | `id`, `marketplace`, `scope` (`DEFAULT` / `CATEGORY` / `BRAND` / `PRODUCT`), `scope_ref_id`, `kind` (`BASE` / `PERCENT` / `AMOUNT` / `EXACT`), `value`, `rounding` (`NONE` / `UP_10` / `DOWN_10` / `UP_100` / `DOWN_100` / `TO_99`), `updated_at`; одно правило на `(marketplace, scope, scope_ref_id)` |
 
 `available` — то самое «доступно», которое уходит на площадки. Порог «Закінчується» — в `settings`.
 
@@ -56,9 +58,9 @@
 
 | Таблица | Ключевые колонки |
 | --- | --- |
-| `orders` | `id`, `number` (наш, вид `TM-10482`), `channel` (`PROM` / `ROZETKA` / `EPICENTR` / `INSTAGRAM` / `MANUAL` / `SITE`), `external_id`, `status`, `external_status`, `placed_at`, `confirm_deadline_at`, `customer_name`, `customer_phone`, `city`, `delivery_method`, `delivery_address`, `warehouse`, `payment_method`, `ttn`, `ttn_status`, `comment`, `cancel_reason`, `total`, `external_updated_at`, `raw_payload jsonb`, `version`; `UNIQUE (channel, external_id)` |
+| `orders` | `id`, `number` (наш, вид `TM-10482`), `channel` (`PROM` / `ROZETKA` / `EPICENTR` / `INSTAGRAM` / `MANUAL` / `SITE`), `external_id` (обязателен для площадок), `status` (`DRAFT` / `NEW` / `CONFIRMED` / `SHIPPED` / `DELIVERED` / `CANCELLED`; украинские подписи — в админке), `external_status`, `placed_at`, `confirm_deadline_at`, `customer_name`, `customer_phone`, `city`, `delivery_method`, `delivery_address`, `warehouse`, `payment_method`, `ttn`, `ttn_status`, `comment`, `cancel_reason`, `total`, `external_updated_at`, `raw_payload jsonb`, `version`; `UNIQUE (channel, external_id)` |
 | `order_items` | `id`, `order_id`, `product_id` (nullable — SKU с площадки может не найтись), `sku`, `name`, `qty`, `price`, `old_price` |
-| `order_status_history` | `id`, `order_id`, `from_status`, `to_status`, `at`, `actor`, `source` (`USER` / `POLL` / `SYSTEM`) |
+| `order_status_history` | `id`, `order_id`, `from_status`, `to_status`, `at`, `actor_user_id`, `source` (`USER` / `POLL` / `SYSTEM`), `note` |
 
 `raw_payload` — последний ответ площадки по заказу. Он нужен для разбора спорных случаев и для маппинга статусов, которые мы ещё не видели. Персональные данные в нём хранятся по той же политике, что и в колонках ([`ops/05-security.md`](ops/05-security.md) §5).
 
@@ -66,7 +68,7 @@
 
 | Таблица | Ключевые колонки |
 | --- | --- |
-| `integration_settings` | `marketplace` (PK), `mode` (`OFF` / `READ_ONLY` / `DRY_RUN` / `LIVE`), `credentials_ciphertext bytea`, `credentials_hint` (последние 4 символа), `credentials_updated_at`, `orders_cursor`, `paused_reason`, `updated_by` |
+| `integration_settings` | `marketplace` (PK), `mode` (`OFF` / `READ_ONLY` / `DRY_RUN` / `LIVE`), `credentials_ciphertext bytea`, `credentials_hint` (последние 4 символа), `credentials_updated_at`, `orders_cursor`, `paused_reason`, `updated_by`; строки трёх площадок создаёт миграция с режимом `READ_ONLY` |
 | `sync_outbox` | `id`, `marketplace`, `kind` (`STOCK` / `PRICE` / `ORDER_STATUS`), `product_id` / `order_id`, `payload jsonb`, `dedupe_key`, `status` (`PENDING` / `IN_PROGRESS` / `DONE` / `DRY_RUN` / `BLOCKED` / `FAILED`), `attempts`, `next_attempt_at`, `last_error`, `created_at`, `processed_at` |
 | `sync_log` | `id`, `marketplace`, `operation`, `http_method`, `path`, `http_status`, `duration_ms`, `request_excerpt`, `response_excerpt`, `at` — без токенов и заголовков авторизации; хранится 30 дней |
 | `feed_builds` | `id`, `marketplace`, `started_at`, `finished_at`, `items_count`, `status`, `errors jsonb` |
@@ -79,15 +81,15 @@
 
 | Таблица | Ключевые колонки |
 | --- | --- |
-| `audit_log` | `id`, `at`, `actor_user_id` (null = «Система»), `entity_type`, `entity_id`, `sku`, `kind` (`Поля` / `Ціна` / `Наявність` / `Статус` / `Інтеграція` / `Користувачі`), `text`, `diff jsonb` |
-| `settings` | `key` (PK), `value jsonb` — порог «Закінчується», параметры оповещений |
+| `audit_log` | `id`, `at`, `actor_user_id` (null = «Система»), `entity_type` (`PRODUCT` / `ORDER` / `CATEGORY` / `PRICE_RULE` / `INTEGRATION` / `USER`), `entity_id`, `sku`, `kind` (`FIELDS` / `PRICE` / `STOCK` / `STATUS` / `INTEGRATION` / `USERS` — в админке «Поля» / «Ціна» / «Наявність» / «Статус» / «Інтеграція» / «Користувачі»), `message`, `diff jsonb` |
+| `settings` | `key` (PK), `value jsonb` — порог «Закінчується» (`stock.low_threshold` = 5), предохранители (`guard.mass_zero`, `guard.price_jump`), параметры оповещений; значения по умолчанию кладёт миграция |
 
 ## 3. Остатки и конкурентность
 
 Остаток меняют одновременно менеджер в админке, опрос заказов и (позже) сайт. Правила:
 
 1. Любое изменение — одним атомарным `UPDATE stock SET reserve = reserve + :qty WHERE product_id = :id RETURNING available`, без чтения-изменения-записи в Java.
-2. В той же транзакции пишутся `audit_log` и строки `sync_outbox` с абсолютным значением `available`.
+2. В той же транзакции пишутся `audit_log` и строки `sync_outbox` с абсолютным значением `available`. Реализация: `InventoryService` публикует `StockChanged`, слушатели модулей `audit` и `integrations` работают синхронно и требуют уже открытую транзакцию (`Propagation.MANDATORY`). Если `available` не изменился (отгрузка), строка outbox не создаётся.
 3. Резерв меняется по переходу статуса заказа (новый → резерв; отмена → снять; отправка → `total` и `reserve` вниз одинаково), а не по факту получения заказа. Повторный опрос того же заказа резерв не задваивает.
 4. `CHECK` в БД — последняя линия защиты: отрицательный остаток вызовет ошибку транзакции, а не тихую порчу данных.
 
