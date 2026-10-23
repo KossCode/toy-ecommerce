@@ -1,5 +1,7 @@
 package com.triomio.crm.shared.web;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -9,9 +11,6 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Serves the Vite build from classpath:/static and falls back to index.html for unknown paths so a refresh
@@ -30,7 +29,8 @@ class SpaWebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/assets/**")
                 .addResourceLocations("classpath:/static/assets/")
-                .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable());
+                .setCacheControl(
+                        CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable());
 
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
