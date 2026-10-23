@@ -19,8 +19,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        // Express mock by default; VITE_API_PROXY=http://localhost:8080 targets the Java API.
-        target: process.env.VITE_API_PROXY ?? 'http://localhost:3001',
+        // Proxies /api to the Java backend (override with VITE_API_PROXY).
+        target: process.env.VITE_API_PROXY ?? 'http://localhost:8080',
         changeOrigin: true,
       },
     },

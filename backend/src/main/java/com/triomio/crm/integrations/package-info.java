@@ -1,2 +1,2 @@
-/** Marketplace write modes, credentials, sync outbox, call log and reconciliation. */
+/** Marketplace connection status, outbox retry and sync readiness. */
 package com.triomio.crm.integrations;

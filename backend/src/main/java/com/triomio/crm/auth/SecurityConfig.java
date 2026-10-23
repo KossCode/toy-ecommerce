@@ -58,11 +58,6 @@ class SecurityConfig {
     }
 
     @Bean
-    Clock clock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             SecurityContextRepository contextRepository,

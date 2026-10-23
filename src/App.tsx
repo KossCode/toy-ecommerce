@@ -9,6 +9,8 @@ import { IntegrationsPage } from '@/pages/IntegrationsPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { PricesPage } from '@/pages/PricesPage'
 import { StubPage } from '@/pages/StubPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { ChangePasswordPage } from '@/pages/ChangePasswordPage'
 
 /** Old «Наявність» URLs → products (tabs low/oos/reserved preserved). */
 function StockRedirect() {
@@ -22,6 +24,8 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="login" element={<LoginPage />} />
+        <Route path="change-password" element={<ChangePasswordPage />} />
         <Route element={<CrmLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="orders" element={<OrdersPage />} />

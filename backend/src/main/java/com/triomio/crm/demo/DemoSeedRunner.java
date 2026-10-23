@@ -71,6 +71,7 @@ class DemoSeedRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         seedUsers();
+        seedIntegrationDemo();
         if (!Files.isRegularFile(dataDir.resolve("products.json"))) {
             log.warn("Demo seed skipped: {} has no products.json", dataDir.toAbsolutePath());
             return;
@@ -82,6 +83,24 @@ class DemoSeedRunner implements ApplicationRunner {
             return;
         }
         tx.executeWithoutResult(status -> seed());
+    }
+
+    /** Sample job runs and an Epicentr pause so overview/integrations screens are not empty locally. */
+    void seedIntegrationDemo() {
+        int jobs =
+                jdbc.sql("SELECT count(*) FROM job_runs").query(Integer.class).single();
+        if (jobs == 0) {
+            for (String job : List.of("PROM_ORDERS", "ROZETKA_ORDERS", "EPICENTR_ORDERS", "PROM_STOCK")) {
+                jdbc.sql("""
+                                INSERT INTO job_runs (job_name, started_at, finished_at, status)
+                                VALUES (:name, now() - interval '30 minutes', now() - interval '29 minutes', 'SUCCESS')
+                                """).param("name", job).update();
+            }
+        }
+        jdbc.sql("""
+                        UPDATE integration_settings SET paused_reason = 'Помилка API о 09:12'
+                        WHERE marketplace = 'EPICENTR' AND paused_reason IS NULL
+                        """).update();
     }
 
     /**

@@ -1,2 +1,2 @@
-/** Orders from all channels, manual orders and status transitions. */
+/** Orders from all channels: create, confirm, TTN stub, cancel with stock reserve. */
 package com.triomio.crm.orders;

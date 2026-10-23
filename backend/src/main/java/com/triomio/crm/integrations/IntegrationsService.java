@@ -1,0 +1,184 @@
+package com.triomio.crm.integrations;
+
+import com.triomio.crm.shared.ApiProblemException;
+import com.triomio.crm.shared.WireLabels;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+class IntegrationsService {
+
+    record Flow(
+            String name,
+            String status,
+            String when,
+            @Nullable String link) {}
+
+    record Ready(int ready, int total, int notReady, List<Map<String, Object>> reasons) {}
+
+    record ErrorBanner(String title, String nextTry) {}
+
+    record ModerationError(String sku, String name, String error, String when) {}
+
+    record Marketplace(
+            String id,
+            String name,
+            String tabLabel,
+            String tabTone,
+            List<Flow> flows,
+            Ready ready,
+            Map<String, Object> connection,
+            @Nullable ErrorBanner errorBanner,
+            List<ModerationError> moderationErrors) {}
+
+    record IntegrationsFile(List<Marketplace> marketplaces) {}
+
+    private final JdbcClient jdbc;
+
+    IntegrationsService(JdbcClient jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Transactional(readOnly = true)
+    IntegrationsFile list() {
+        return new IntegrationsFile(List.of(build("PROM"), build("ROZETKA"), build("EPICENTR")));
+    }
+
+    @Transactional
+    Marketplace retry(String id) {
+        String mp = WireLabels.marketplaceCode(id);
+        if (!List.of("PROM", "ROZETKA", "EPICENTR").contains(mp)) {
+            throw new ApiProblemException(HttpStatus.NOT_FOUND, "INTEGRATION_NOT_FOUND", "Площадку не знайдено");
+        }
+        jdbc.sql("""
+                        UPDATE sync_outbox SET status = 'PENDING', next_attempt_at = now(), updated_at = now(),
+                          attempts = 0, last_error = null
+                        WHERE marketplace = :mp AND status = 'FAILED'
+                        """).param("mp", mp).update();
+        jdbc.sql("""
+                        UPDATE integration_settings SET paused_reason = null, updated_at = now()
+                        WHERE marketplace = :mp
+                        """).param("mp", mp).update();
+        return build(mp);
+    }
+
+    private Marketplace build(String marketplace) {
+        String id = WireLabels.marketplaceWire(marketplace);
+        String name = switch (marketplace) {
+            case "PROM" -> "Prom";
+            case "ROZETKA" -> "Rozetka";
+            default -> "Epicentr";
+        };
+        record Setting(
+                String mode,
+                @Nullable String pausedReason,
+                @Nullable String credentialsHint) {}
+        Setting setting = jdbc.sql(
+                        "SELECT mode, paused_reason, credentials_hint FROM integration_settings WHERE marketplace = :mp")
+                .param("mp", marketplace)
+                .query(Setting.class)
+                .optional()
+                .orElse(new Setting("READ_ONLY", null, null));
+
+        int failed = jdbc.sql("SELECT count(*) FROM sync_outbox WHERE marketplace = :mp AND status = 'FAILED'")
+                .param("mp", marketplace)
+                .query(Integer.class)
+                .single();
+        String lastSuccess = jdbc.sql("""
+                        SELECT to_char(finished_at AT TIME ZONE 'Europe/Kyiv', 'HH24:MI')
+                        FROM job_runs WHERE job_name LIKE :prefix AND status = 'SUCCESS' AND finished_at IS NOT NULL
+                        ORDER BY finished_at DESC LIMIT 1
+                        """)
+                .param("prefix", marketplace + "%")
+                .query(String.class)
+                .optional()
+                .orElse(null);
+
+        int total = jdbc.sql("SELECT count(*) FROM products WHERE status = 'ACTIVE'")
+                .query(Integer.class)
+                .single();
+        int ready = jdbc.sql("""
+                        SELECT count(DISTINCT p.id) FROM products p
+                        JOIN product_channels c ON c.product_id = p.id AND c.marketplace = :mp AND c.enabled
+                        WHERE p.status = 'ACTIVE'
+                        """).param("mp", marketplace).query(Integer.class).single();
+        int notReady = Math.max(0, total - ready);
+        List<Map<String, Object>> reasons = new ArrayList<>();
+        if (notReady > 0) {
+            reasons.add(Map.of("text", "Не увімкнено на площадці", "count", notReady));
+        }
+
+        List<ModerationError> moderation = jdbc.sql("""
+                        SELECT p.sku, coalesce(p.name_uk, p.sku) AS name, c.last_error AS error,
+                               to_char(coalesce(c.last_synced_at, now()) AT TIME ZONE 'Europe/Kyiv', 'HH24:MI') AS at_label
+                        FROM product_channels c JOIN products p ON p.id = c.product_id
+                        WHERE c.marketplace = :mp AND c.last_error IS NOT NULL
+                        LIMIT 20
+                        """)
+                .param("mp", marketplace)
+                .query((rs, i) -> new ModerationError(
+                        rs.getString("sku"), rs.getString("name"), rs.getString("error"), rs.getString("at_label")))
+                .list();
+
+        boolean hasError = failed > 0 || setting.pausedReason() != null;
+        String tabTone = hasError ? (moderation.isEmpty() && failed == 0 ? "error" : "warn") : "ok";
+        if (hasError && "EPICENTR".equals(marketplace)) {
+            tabTone = "error";
+        }
+        String tabLabel = hasError
+                ? (failed > 0 ? failed + " помилка" : "пауза")
+                : (moderation.isEmpty() ? "працює" : moderation.size() + " помилка");
+
+        String when = lastSuccess == null ? "ще не запускалось" : "о " + lastSuccess;
+        List<Flow> flows = List.of(
+                new Flow(
+                        "Замовлення",
+                        hasError && setting.pausedReason() != null ? "Пауза" : "Працює",
+                        "опитано " + when,
+                        null),
+                new Flow(
+                        "Ціни і наявність",
+                        failed > 0 ? "Помилка" : "Працює",
+                        failed > 0 ? "помилка outbox" : "надіслано " + when,
+                        null),
+                new Flow("Фід товарів", "Працює", "імпорт " + when, null),
+                new Flow(
+                        "Модерація",
+                        moderation.isEmpty() ? "Працює" : moderation.size() + " помилка",
+                        "оновлено " + when,
+                        null));
+
+        ErrorBanner banner = null;
+        if (setting.pausedReason() != null) {
+            banner = new ErrorBanner(setting.pausedReason(), "автоповтор незабаром");
+        } else if (failed > 0) {
+            banner = new ErrorBanner("Є " + failed + " помилок відправки", "натисніть «Повторити»");
+        }
+
+        Map<String, Object> connection = new LinkedHashMap<>();
+        connection.put("mode", setting.mode());
+        if (setting.credentialsHint() != null) {
+            connection.put("tokenMasked", setting.credentialsHint());
+        }
+        connection.put(
+                "notes", List.of(lastSuccess == null ? "Немає успішних запусків" : "Останній успіх о " + lastSuccess));
+
+        return new Marketplace(
+                id,
+                name,
+                tabLabel,
+                tabTone,
+                flows,
+                new Ready(ready, total, notReady, reasons),
+                connection,
+                banner,
+                moderation);
+    }
+}

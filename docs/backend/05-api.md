@@ -62,10 +62,10 @@
 
 Сейчас в [`../../src/api/client.ts`](../../src/api/client.ts):
 
-1. Браузерный мок включается при `VITE_USE_BROWSER_API === 'true'` **или** `import.meta.env.PROD`. Второе условие убрать: прод-сборка для AWS должна ходить в API, а демо для Pages и так собирается с `VITE_USE_BROWSER_API=true`.
-2. Текст ошибки читается из `body.error`; нужно читать `detail`, затем `title`.
-3. Добавить `credentials: 'same-origin'` и заголовок `X-XSRF-TOKEN`.
-4. На `401` — переход на экран входа.
+1. Браузерный мок только при `VITE_USE_BROWSER_API === 'true'` (Pages). Сборка для AWS ходит в реальный API.
+2. Текст ошибки — `detail`, затем `title`.
+3. `credentials: 'same-origin'` и заголовок `X-XSRF-TOKEN` (перед входом — `GET /api/auth/csrf`).
+4. На `401` — переход на `#/login`.
 
 ## 6. Паритет с Express-моком
 
@@ -73,30 +73,30 @@
 
 | Готово | Метод и путь (мок) | Модуль | Заметки |
 | --- | --- | --- | --- |
-| [ ] | `GET /api/meta` | `dashboard` | пользователь берётся из сессии, а не из файла |
-| [ ] | `GET /api/overview` | `dashboard` | |
-| [ ] | `GET /api/products` | `catalog` | |
-| [ ] | `POST /api/products` | `catalog` | создаёт черновик |
-| [ ] | `GET /api/products/{sku}` | `catalog` | |
-| [ ] | `PATCH /api/products/{sku}` | `catalog` | + `version`; изменения цены и остатка → outbox |
-| [ ] | `GET /api/products/{sku}/history` | `audit` | |
-| [ ] | `GET /api/orders` | `orders` | |
-| [ ] | `GET /api/orders/{id}` | `orders` | в Java — по `number` |
-| [ ] | `POST /api/orders` | `orders` | ручной заказ; резерв |
-| [ ] | `POST /api/orders/{id}/confirm` | `orders` | для заказа с площадки → outbox `ORDER_STATUS` |
-| [ ] | `POST /api/orders/{id}/ttn` | `orders` | пока только сохранение номера; API Новой Почты — позже |
-| [ ] | `POST /api/orders/{id}/cancel` | `orders` | снятие резерва; причина обязательна |
-| [ ] | `GET /api/categories` | `catalog` | |
-| [ ] | `POST /api/categories` | `catalog` | |
-| [ ] | `PATCH /api/categories/{id}` | `catalog` | маппинги на категории площадок |
-| [ ] | `POST /api/categories/refresh-dictionaries` | `catalog` | ставит джобу `DictionariesRefreshJob`, ответ `202` |
-| [ ] | `GET /api/prices` | `pricing` | |
-| [ ] | `POST /api/prices/preview` | `pricing` | |
-| [ ] | `POST /api/prices` | `pricing` | |
-| [ ] | `PATCH /api/prices/{id}` | `pricing` | |
-| [ ] | `DELETE /api/prices/{id}` | `pricing` | |
-| [ ] | `GET /api/integrations` | `integrations` | данные из `integration_settings`, `job_runs`, `sync_outbox` |
-| [ ] | `POST /api/integrations/{id}/retry` | `integrations` | повтор `FAILED` строк outbox |
+| [x] | `GET /api/meta` | `dashboard` | пользователь берётся из сессии, а не из файла |
+| [x] | `GET /api/overview` | `dashboard` | |
+| [x] | `GET /api/products` | `catalog` | |
+| [x] | `POST /api/products` | `catalog` | создаёт черновик |
+| [x] | `GET /api/products/{sku}` | `catalog` | |
+| [x] | `PATCH /api/products/{sku}` | `catalog` | остаток через InventoryService → outbox; `version`/409 — позже |
+| [x] | `GET /api/products/{sku}/history` | `catalog` | из `audit_log` |
+| [x] | `GET /api/orders` | `orders` | |
+| [x] | `GET /api/orders/{id}` | `orders` | path = `orders.number` |
+| [x] | `POST /api/orders` | `orders` | ручной заказ; резерв |
+| [x] | `POST /api/orders/{id}/confirm` | `orders` | outbox ORDER_STATUS — на этапе 9 |
+| [x] | `POST /api/orders/{id}/ttn` | `orders` | пока только сохранение номера; API Новой Почты — позже |
+| [x] | `POST /api/orders/{id}/cancel` | `orders` | снятие резерва; причина обязательна |
+| [x] | `GET /api/categories` | `catalog` | |
+| [x] | `POST /api/categories` | `catalog` | |
+| [x] | `PATCH /api/categories/{id}` | `catalog` | маппинги на категории площадок |
+| [x] | `POST /api/categories/refresh-dictionaries` | `catalog` | пишет timestamp в settings, ответ `202` |
+| [x] | `GET /api/prices` | `pricing` | |
+| [x] | `POST /api/prices/preview` | `pricing` | |
+| [x] | `POST /api/prices` | `pricing` | |
+| [x] | `PATCH /api/prices/{id}` | `pricing` | |
+| [x] | `DELETE /api/prices/{id}` | `pricing` | |
+| [x] | `GET /api/integrations` | `integrations` | данные из `integration_settings`, `job_runs`, `sync_outbox` |
+| [x] | `POST /api/integrations/{id}/retry` | `integrations` | повтор `FAILED` строк outbox |
 
 ## 7. Новые эндпоинты (нет в моке)
 
