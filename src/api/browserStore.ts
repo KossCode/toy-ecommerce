@@ -13,6 +13,7 @@ import type {
   Category,
   CreateOrderBody,
   IntegrationsFile,
+  Me,
   Order,
   OrderDetail,
   OrderListItem,
@@ -228,7 +229,25 @@ function mutate(fn: (s: Store) => void) {
   saveStore(store)
 }
 
+const demoMe: Me = {
+  id: 1,
+  email: 'demo@triomio.local',
+  fullName: 'Олена',
+  role: 'OWNER',
+  mustChangePassword: false,
+}
+
 export const browserApi = {
+  async login(_email: string, _password: string) {
+    return demoMe
+  },
+  async logout() {},
+  async me() {
+    return demoMe
+  },
+  async changePassword(_current: string, _next: string) {
+    return demoMe
+  },
   async getOverview(): Promise<OverviewPayload> {
     const { meta, orders, products, integrations } = store
     const todo = orders

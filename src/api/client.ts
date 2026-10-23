@@ -1,38 +1,121 @@
 import { browserApi } from './browserStore'
 
-const useBrowserApi =
-  import.meta.env.VITE_USE_BROWSER_API === 'true' || import.meta.env.PROD
+const useBrowserApi = import.meta.env.VITE_USE_BROWSER_API === 'true'
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+
+  constructor(status: number, message: string, code?: string) {
+    super(message)
+    this.status = status
+    this.code = code
+  }
+}
+
+function readCookie(name: string): string | null {
+  const escaped = name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1')
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+let csrfReady: Promise<void> | null = null
+
+async function ensureCsrf(): Promise<void> {
+  if (readCookie('XSRF-TOKEN')) return
+  if (!csrfReady) {
+    csrfReady = fetch('/api/auth/csrf', { credentials: 'same-origin' }).then(() => undefined)
+  }
+  await csrfReady
+  csrfReady = null
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    ...init,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error((body as { error?: string }).error ?? res.statusText)
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string> | undefined),
   }
-  return res.json() as Promise<T>
+  if (init?.body != null && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json'
+  }
+  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+    await ensureCsrf()
+    const token = readCookie('XSRF-TOKEN')
+    if (token) headers['X-XSRF-TOKEN'] = token
+  }
+
+  const res = await fetch(`/api${path}`, {
+    ...init,
+    method,
+    headers,
+    credentials: 'same-origin',
+  })
+
+  if (res.status === 401 && !path.startsWith('/auth/')) {
+    const next = encodeURIComponent(location.hash || '#/')
+    location.hash = `#/login?next=${next}`
+    throw new ApiError(401, 'Увійдіть, щоб продовжити.', 'UNAUTHORIZED')
+  }
+
+  if (res.status === 204) {
+    return undefined as T
+  }
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as {
+      detail?: string
+      title?: string
+      error?: string
+      code?: string
+    }
+    if (body.code === 'PASSWORD_CHANGE_REQUIRED') {
+      location.hash = '#/change-password'
+    }
+    throw new ApiError(
+      res.status,
+      body.detail ?? body.title ?? body.error ?? res.statusText,
+      body.code,
+    )
+  }
+
+  if (res.headers.get('content-type')?.includes('json')) {
+    return res.json() as Promise<T>
+  }
+  return undefined as T
+}
+
+export type Me = {
+  id: number
+  email: string
+  fullName: string
+  role: 'OWNER' | 'MANAGER'
+  mustChangePassword: boolean
 }
 
 const httpApi = {
+  login: (email: string, password: string) =>
+    request<Me>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  me: () => request<Me>('/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<Me>('/auth/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
   getOverview: () => request<OverviewPayload>('/overview'),
   getProducts: () => request<Product[]>('/products'),
   getProduct: (sku: string) => request<Product>(`/products/${sku}`),
-  createProduct: () =>
-    request<Product>('/products', { method: 'POST', body: '{}' }),
+  createProduct: () => request<Product>('/products', { method: 'POST', body: '{}' }),
   patchProduct: (sku: string, body: Partial<Product>) =>
     request<Product>(`/products/${sku}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  getProductHistory: (sku: string) =>
-    request<ProductHistoryItem[]>(`/products/${sku}/history`),
+  getProductHistory: (sku: string) => request<ProductHistoryItem[]>(`/products/${sku}/history`),
   getOrders: () => request<OrderListItem[]>('/orders'),
   getOrder: (id: string) => request<OrderDetail>(`/orders/${id}`),
   createOrder: (body: CreateOrderBody) =>
-    request<Order>(`/orders`, { method: 'POST', body: JSON.stringify(body) }),
+    request<Order>('/orders', { method: 'POST', body: JSON.stringify(body) }),
   confirmOrder: (id: string) =>
     request<Order>(`/orders/${id}/confirm`, { method: 'POST', body: '{}' }),
-  createTtn: (id: string) =>
-    request<Order>(`/orders/${id}/ttn`, { method: 'POST', body: '{}' }),
+  createTtn: (id: string) => request<Order>(`/orders/${id}/ttn`, { method: 'POST', body: '{}' }),
   cancelOrder: (id: string, reason: string) =>
     request<Order>(`/orders/${id}/cancel`, {
       method: 'POST',
@@ -102,11 +185,8 @@ export type Product = {
   dimensionsCm: string
   country: string
   description: string
-  /** Russian name for Rozetka/Prom RU feeds (required there). */
   nameRu: string
-  /** Russian description; HTML subset same as `description`. */
   descriptionRu: string
-  /** Russian country label (e.g. Україна → Украина). */
   countryRu: string
   brandMissing: boolean
   duplicateOf: string | null
@@ -151,7 +231,6 @@ export type Order = {
   city: string | null
   status: string
   confirmDeadlineMinutes: number | null
-  /** Склад відвантаження (поки один — «Основний») */
   warehouse?: string | null
   delivery: string
   deliveryAddress: string | null
@@ -180,25 +259,14 @@ export type CreateOrderBody = {
   customerName: string
   customerPhone?: string
   city?: string
-  /** Склад відвантаження — зараз лише «Основний» (квартира) */
   warehouse?: string
-  /** Carrier shown in the orders table: Нова Пошта | Міст Експрес */
   delivery?: string
-  /** Branch / address / locker details */
   deliveryAddress?: string
-  /** Відділення | Адреса — CRM label; maps to NP Warehouse* / Doors* later */
   deliveryType?: string
-  /** Отримувач | Відправник — NP/Meest payerType */
   deliveryPayer?: string
-  /**
-   * Оплачено | Накладений платіж | Під час отримання | Карткою при отриманні
-   * COD → післяплата on waybill when TTN is created (stage 5).
-   */
   payment?: string
-  /** Чернетка — без резерву; Нове / Підтверджено — резервує залишок */
   status?: 'Чернетка' | 'Нове' | 'Підтверджено'
   comment?: string
-  /** Optional unit price override (грн). If omitted, catalog price is used. */
   items: { sku: string; qty: number; price?: number }[]
 }
 
