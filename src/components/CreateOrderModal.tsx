@@ -5,7 +5,8 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { money } from '@/lib/format'
 
-const CHANNELS = ['Instagram', 'Telegram', 'Viber', 'Телефон'] as const
+/** Must match WireLabels / orders.channel CHECK (manual channels only). */
+const CHANNELS = ['Instagram', 'Вручну', 'Сайт'] as const
 const WAREHOUSES = ['Основний'] as const
 const CARRIERS = ['Нова Пошта', 'Міст Експрес'] as const
 const DELIVERY_TYPES = ['Відділення', 'Адреса', 'Поштомат'] as const

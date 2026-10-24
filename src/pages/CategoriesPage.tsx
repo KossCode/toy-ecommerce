@@ -28,6 +28,20 @@ export function CategoriesPage() {
   async function load() {
     const next = await api.getCategories()
     setData(next)
+    setSelectedId((prev) => {
+      if (next.categories.some((c) => c.id === prev)) return prev
+      const firstRoot = next.categories
+        .filter((c) => c.parentId == null)
+        .sort((a, b) => a.sortOrder - b.sortOrder)[0]
+      return firstRoot?.id ?? prev
+    })
+    setExpanded((prev) => {
+      const nextExpanded = { ...prev }
+      for (const c of next.categories.filter((x) => x.parentId == null)) {
+        if (nextExpanded[c.id] === undefined) nextExpanded[c.id] = true
+      }
+      return nextExpanded
+    })
   }
 
   useEffect(() => {

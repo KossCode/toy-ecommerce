@@ -56,6 +56,7 @@ class DashboardTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.todo", hasSize(org.hamcrest.Matchers.greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$.todo[0].status").value("Нове"))
+                .andExpect(jsonPath("$.todo[0].channel").value("Instagram"))
                 .andExpect(jsonPath("$.todo[0].actionKind").value("confirm"))
                 .andExpect(jsonPath("$.todo[0].urgent").value(true))
                 .andExpect(jsonPath("$.integrations", hasSize(3)))

@@ -10,6 +10,8 @@ dist
 .env
 .env.*
 !.env.example
+!.env.local.example
+!**/.env.local.example
 .local-config/
 *.pem
 *.dump

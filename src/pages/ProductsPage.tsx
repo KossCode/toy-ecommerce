@@ -98,7 +98,12 @@ export function ProductsPage() {
     const rows = products.filter((p) => {
       if (tab === 'draft' && p.status !== 'Чернетка') return false
       if (tab === 'off' && !isOffMarketplace(p)) return false
-      if (tab === 'notReady' && p.syncStatus !== 'Є питання') return false
+      if (
+        tab === 'notReady' &&
+        p.syncStatus !== 'Є питання' &&
+        p.syncStatus !== 'Помилка'
+      )
+        return false
       if (tab === 'low' && p.stockLabel !== 'Закінчується') return false
       if (
         tab === 'oos' &&
@@ -178,7 +183,9 @@ export function ProductsPage() {
     {
       id: 'notReady',
       label: 'Не готові',
-      count: products.filter((p) => p.syncStatus === 'Є питання').length,
+      count: products.filter(
+        (p) => p.syncStatus === 'Є питання' || p.syncStatus === 'Помилка',
+      ).length,
     },
     {
       id: 'low',
