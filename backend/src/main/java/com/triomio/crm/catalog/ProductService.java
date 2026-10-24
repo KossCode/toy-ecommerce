@@ -186,7 +186,7 @@ class ProductService {
                 .param("matRu", optString(body, "materialRu"))
                 .param("typeUk", optString(body, "type"))
                 .param("typeRu", optString(body, "typeRu"))
-                .param("parts", body.containsKey("partsCount") ? (Integer) body.get("partsCount") : null)
+                .param("parts", body.containsKey("partsCount") ? optInteger(body.get("partsCount")) : null)
                 .param("seriesUk", optString(body, "series"))
                 .param("seriesRu", optString(body, "seriesRu"))
                 .update();
@@ -433,6 +433,20 @@ class ProductService {
 
     private static @Nullable BigDecimal optNumber(Map<String, Object> body, String key) {
         return body.containsKey(key) ? number(body.get(key)) : null;
+    }
+
+    private static @Nullable Integer optInteger(@Nullable Object v) {
+        if (v == null) {
+            return null;
+        }
+        if (v instanceof Number n) {
+            return n.intValue();
+        }
+        String s = String.valueOf(v).trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        return Integer.valueOf(s);
     }
 
     private static @Nullable BigDecimal number(@Nullable Object v) {

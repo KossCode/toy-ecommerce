@@ -70,7 +70,7 @@ class DashboardService {
             String syncStatus = WireLabels.syncStatus(status, sync.channels());
             if ("—".equals(syncStatus)) {
                 notOnMarketplaces++;
-            } else if ("Є питання".equals(syncStatus)) {
+            } else if ("Є питання".equals(syncStatus) || "Помилка".equals(syncStatus)) {
                 notReady++;
             }
         }
@@ -153,7 +153,7 @@ class DashboardService {
             boolean isNew = "NEW".equals(row.status());
             items.add(new TodoItem(
                     row.number(),
-                    row.channel(),
+                    WireLabels.channel(row.channel()),
                     row.customerName(),
                     row.total(),
                     statusUa,

@@ -16,6 +16,13 @@ server:
       cookie:
         secure: false
 
+# Local: jobs run against MockMarketplaceClient; DB modes forced OFF when no credentials.
+# Ceiling stays DRY_RUN so an accidental LIVE in DB still cannot HTTP-write.
+app:
+  integrations:
+    max-mode: ${INTEGRATIONS_MAX_MODE:DRY_RUN}
+
 logging:
   level:
     com.triomio.crm: DEBUG
+    org.quartz: INFO

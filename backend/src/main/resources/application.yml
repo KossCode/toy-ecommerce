@@ -63,6 +63,11 @@ info:
     name: triomio-crm
     version: ${APP_VERSION:dev}
 
+# Ceiling for marketplace write mode (docs/backend/08-marketplace-sync.md §2). Override via INTEGRATIONS_MAX_MODE.
+app:
+  integrations:
+    max-mode: ${INTEGRATIONS_MAX_MODE:DRY_RUN}
+
 springdoc:
   api-docs:
     path: /api/docs/openapi.json

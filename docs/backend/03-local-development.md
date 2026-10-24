@@ -19,40 +19,46 @@ Maven ставить не нужно — в репозитории `backend/mvnw
 # 1. База
 docker compose -f deploy/docker-compose.dev.yml up -d postgres
 
-# 2. Бэкенд (миграции применятся при старте)
+# 2. Демо-пароль для owner@demo.local / manager@demo.local
+cp backend/.env.local.example backend/.env.local
+# отредактируйте app.demo.user-password (минимум 12 символов)
+
+# 3. Бэкенд (миграции и Quartz при старте; профиль local)
 cd backend
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
-# 3. Админка (в другом терминале, из корня репозитория)
+# 4. Админка (из корня репозитория) — прокси на Java :8080
 npm install
-VITE_API_PROXY=http://localhost:8080 npm run dev:web
+npm run dev:java
 ```
 
 - Админка: http://localhost:5173
 - API: http://localhost:8080/api
-- OpenAPI UI: http://localhost:8080/api/docs (спецификация — `/api/docs/openapi.json`)
+- OpenAPI UI: http://localhost:8080/api/docs
 - Health: http://localhost:8080/actuator/health, http://localhost:8080/healthz
-- База: `localhost:15432`, база/пользователь/пароль `triomio` — только для локального контейнера. Порт не `5432`, чтобы не конфликтовать с Postgres из Homebrew или установщика EDB на той же машине.
+- База: `localhost:15432`, база/пользователь/пароль `triomio` (только локальный контейнер)
 
-Если `java -version` показывает не 25, укажите JDK явно: `export JAVA_HOME=$(/usr/libexec/java_home -v 25)` (или путь Homebrew `/opt/homebrew/opt/openjdk@25`).
+Если `java -version` не 25: `export JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
 
-Прокси Vite для `/api` задаётся переменной `VITE_API_PROXY`. Без неё он смотрит на Express-мок (`3001`), и `npm run dev` работает как раньше. Пока эндпоинты не перенесены (этап 7), данные админки отдаёт Express-мок; на этапе 7 Java API становится значением по умолчанию, а `npm run dev` перестаёт запускать `server/`.
+`npm run dev:java` задаёт `VITE_API_PROXY=http://localhost:8080`. Сборка Pages (`npm run build:pages`) по-прежнему использует браузерный мок (`VITE_USE_BROWSER_API=true`), без Java.
 
-Без локальной базы приложение можно поднять на временном Postgres из Testcontainers: `./mvnw spring-boot:test-run`. Нужен запущенный Docker.
+Без локальной базы: `./mvnw spring-boot:test-run` (Testcontainers, нужен Docker).
 
 ## 3. Профили Spring
 
 | Профиль | Где | Что включено |
 | --- | --- | --- |
-| `local` | ноутбук разработчика | демо-данные из `data/*.json`, фото на диск (`./.local-media`), OpenAPI UI, читаемые логи, все площадки в `OFF` |
-| `test` | тесты | Testcontainers, WireMock вместо площадок |
-| `prod` | EC2 | JSON-логи, S3, OpenAPI UI выключен, демо-загрузчик не создаётся |
+| `local` | ноутбук | демо-данные из `data/*.json`, OpenAPI UI, DEBUG-логи, площадки → `OFF` (без ключей), Quartz + `MockMarketplaceClient` |
+| `test` | тесты | Testcontainers, тот же mock-клиент |
+| `prod` | EC2 | JSON-логи, S3, OpenAPI выключен, демо-сидер не создаётся |
 
-Профиля `staging` нет: окружение одно.
+## 4. Демо-данные и Quartz
 
-## 4. Демо-данные
+В профиле `local` при пустой базе `DemoSeedRunner` загружает `data/*.json`. Все товары — `is_demo = true` (не попадают в outbox и фиды).
 
-В профиле `local` при пустой базе `DemoSeedRunner` загружает `data/products.json`, `orders.json`, `categories.json`, `prices.json`. Все товары получают `is_demo = true`. Такие товары никогда не попадают в фиды и outbox — это вторая линия защиты после правила «не мешать мок-SKU с живым каталогом» ([`../integrations/LIVE-ACCOUNTS-SAFETY.md`](../integrations/LIVE-ACCOUNTS-SAFETY.md) п. 3).
+Площадки без credentials при старте local принудительно в режиме `OFF`. Потолок `app.integrations.max-mode` / `INTEGRATIONS_MAX_MODE` по умолчанию `DRY_RUN`. Джобы Quartz крутятся по расписанию и пишут `job_runs`; HTTP к реальным API нет — только `MockMarketplaceClient` и строки в `sync_log`.
+
+Ручной запуск джобы (владелец): `POST /api/jobs/{name}/trigger` (например `OutboxDispatch`, `OrdersPoll.PROM`). Список: `GET /api/jobs`.
 
 Сбросить базу:
 
@@ -63,30 +69,13 @@ docker compose -f deploy/docker-compose.dev.yml up -d postgres
 
 ## 5. Переменные окружения
 
-Локально все значения по умолчанию лежат в `application-local.yml`; секретов там нет. Если нужно что-то переопределить — файл `backend/.env.local` (маски `*.local` и `.env.*` уже в `.gitignore`). Формат — Java properties (`spring.datasource.password=...`); профиль `local` подключает его через `spring.config.import`, если файл есть. Путь относительный, поэтому запускайте приложение из `backend/`.
+Секреты и пароль демо — только в `backend/.env.local` (см. `.env.local.example`). Формат — Java properties. Профиль `local` подключает файл через `spring.config.import`; запускайте приложение из `backend/`.
 
-Живые ключи площадок локально **не используются**. Для отладки интеграции допустим только токен тестовой компании Prom, и только в `.env.local`. Режим площадки локально по умолчанию `OFF`; поднять его можно максимум до `READ_ONLY` без отдельного согласования.
+Живые ключи площадок локально **не используются**.
 
 ## 6. Полный образ локально
-
-Проверить то, что поедет на сервер:
 
 ```bash
 docker build -f deploy/Dockerfile -t triomio-crm:local .
 docker compose -f deploy/docker-compose.dev.yml --profile app up
 ```
-
-Образ собирается под архитектуру машины. На Apple Silicon это arm64, как на EC2. В контекст сборки попадают только файлы из allowlist в `.dockerignore`; `.env*`, `.local-config/` и `.git` туда не попадают.
-
-Пока клиент API не переключён (этап 7.2), прод-сборка админки внутри образа работает на браузерном моке — так задумано, чтобы образ уже сейчас показывал данные.
-
-## 7. Частые проблемы
-
-| Симптом | Причина | Что сделать |
-| --- | --- | --- |
-| `Connection refused` к 15432 | контейнер базы не поднят | `docker compose -f deploy/docker-compose.dev.yml ps` |
-| `ports are not available ... address already in use` | порт `15432` или `8080` занят другим процессом | `nc -z 127.0.0.1 15432`; остановить чужой процесс или поменять порт в `docker-compose.dev.yml` и `application-local.yml` |
-| Тесты: `Could not find a valid Docker environment` | Docker не запущен | запустить Docker Desktop / OrbStack |
-| Flyway: `checksum mismatch` | изменили уже применённую миграцию | вернуть файл; изменения — новой миграцией. Локально можно сбросить базу (§4) |
-| 401 на всё в админке | нет сессии | войти под демо-пользователем из `application-local.yml` |
-| 403 на POST | нет CSRF-заголовка | клиент должен слать `X-XSRF-TOKEN` ([`05-api.md`](05-api.md) §4) |
