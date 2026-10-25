@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, type Product } from '@/api/client'
 import { Button, Input, Select, Textarea } from '@/components/ui'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
@@ -192,14 +192,14 @@ function ProductPickerModal({
 }
 
 export function CreateOrderModal({
-  products,
   onClose,
   onCreated,
 }: {
-  products: Product[]
   onClose: () => void
   onCreated: (id: string) => void
 }) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [productsLoading, setProductsLoading] = useState(true)
   const [section, setSection] = useState<'items' | 'delivery'>('items')
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>('Instagram')
   const [warehouse, setWarehouse] = useState<(typeof WAREHOUSES)[number]>('Основний')
@@ -222,6 +222,26 @@ export function CreateOrderModal({
   const [pickingFor, setPickingFor] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void api
+      .getProducts()
+      .then((list) => {
+        if (!cancelled) {
+          setProducts(list.filter((p) => p.status === 'Активний' && p.available > 0))
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Не вдалося завантажити товари')
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEscapeKey(true, pickingFor ? () => setPickingFor(null) : onClose)
   useBodyScrollLock(true)
@@ -483,7 +503,9 @@ export function CreateOrderModal({
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4" data-modal-scroll>
               {section === 'items' ? (
-                products.length === 0 ? (
+                productsLoading ? (
+                  <p className="text-sm text-[var(--text-secondary)]">Завантаження товарів…</p>
+                ) : products.length === 0 ? (
                   <p className="text-sm text-[var(--error)]">Немає товарів у наявності</p>
                 ) : (
                   <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)]">

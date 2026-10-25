@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { api, type OrderListItem, type Product } from '@/api/client'
+import { api, type OrderListItem } from '@/api/client'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { CreateOrderModal } from '@/components/CreateOrderModal'
 import {
@@ -21,7 +21,6 @@ type Tab = 'all' | 'draft' | 'new' | 'ship' | 'sent' | 'cancelled'
 
 export function OrdersPage() {
   const [orders, setOrders] = useState<OrderListItem[]>([])
-  const [products, setProducts] = useState<Product[]>([])
   const [q, setQ] = useState('')
   const [channel, setChannel] = useState('all')
   const [selected, setSelected] = useState<string[]>([])
@@ -40,9 +39,7 @@ export function OrdersPage() {
   const { sortKey, sortDir, toggle: toggleSort } = useTableSort<OrderSortKey>('createdAt', 'desc')
 
   async function load() {
-    const [o, p] = await Promise.all([api.getOrders(), api.getProducts()])
-    setOrders(o)
-    setProducts(p)
+    setOrders(await api.getOrders())
   }
 
   useEffect(() => {
@@ -291,7 +288,6 @@ export function OrdersPage() {
 
       {creating ? (
         <CreateOrderModal
-          products={products.filter((p) => p.status === 'Активний' && p.available > 0)}
           onClose={() => setCreating(false)}
           onCreated={async (id) => {
             setCreating(false)
