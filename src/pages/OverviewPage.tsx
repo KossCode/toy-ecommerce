@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, type OverviewPayload } from '@/api/client'
 import { Button, PageHeader, Panel, StatusChip } from '@/components/ui'
 import { money } from '@/lib/format'
 
 export function OverviewPage() {
+  const navigate = useNavigate()
   const [data, setData] = useState<OverviewPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -115,7 +116,7 @@ export function OverviewPage() {
                           await api.confirmOrder(row.id)
                           await load()
                         } else {
-                          window.location.href = `/orders/${row.id}`
+                          navigate(`/orders/${row.id}`)
                         }
                       }}
                     >

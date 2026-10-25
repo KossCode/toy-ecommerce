@@ -7,7 +7,7 @@
 - Логин по email и паролю, Spring Security, форма входа своя (SPA), API — `POST /api/auth/login`.
 - Сессия на сервере, хранится в PostgreSQL через Spring Session JDBC. Поэтому деплой и перезапуск не разлогинивают пользователей.
 - Cookie `SESSION`: `HttpOnly`, `Secure`, `SameSite=Lax`, путь `/`. Флаги заданы в `SecurityConfig`; `Secure` выключается только в профиле `local` (там `http://localhost`).
-- Таймаут неактивности — 12 часов (`server.servlet.session.timeout`). Срок жизни сессии ограничен 7 днями от создания (`SessionPolicyFilter`): дальше `401 SESSION_EXPIRED` и вход заново.
+- Таймаут неактивности — 14 дней (`server.servlet.session.timeout`), чтобы выходные и праздники не выкидывали из админки. Срок жизни сессии ограничен 30 днями от создания (`SessionPolicyFilter`): дальше `401 SESSION_EXPIRED` и вход заново.
 - После входа ID сессии меняется (защита от session fixation), CSRF-токен тоже выдаётся новый.
 - CSRF-защита включена: `csrf().spa()` с `CookieCsrfTokenRepository` + заголовок `X-XSRF-TOKEN` ([`05-api.md`](05-api.md) §4).
 - Отключение пользователя, смена его роли и сброс пароля удаляют все его сессии (строки `spring_session` по `principal_name`). Смена своего пароля завершает остальные сессии, текущая остаётся.

@@ -14,12 +14,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Two rules the servlet container cannot express: a session lives at most 7 days regardless of activity, and a user
+ * Two rules the servlet container cannot express: a session lives at most 30 days regardless of activity, and a user
  * with a temporary password can only reach /api/auth/** until they change it.
  */
 class SessionPolicyFilter extends OncePerRequestFilter {
 
-    static final Duration MAX_SESSION_AGE = Duration.ofDays(7);
+    static final Duration MAX_SESSION_AGE = Duration.ofDays(30);
 
     private final SecurityProblems problems;
     private final Clock clock;

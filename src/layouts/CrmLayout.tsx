@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { api, type Me } from '@/api/client'
 
 const primaryNav = [
   { to: '/', label: 'Огляд', end: true },
@@ -50,6 +52,31 @@ function NavItem({
 }
 
 export function CrmLayout() {
+  const navigate = useNavigate()
+  const [me, setMe] = useState<Me | null>(null)
+
+  useEffect(() => {
+    void api
+      .me()
+      .then((user) => {
+        setMe(user)
+        if (user.mustChangePassword) {
+          navigate('/change-password', { replace: true })
+        }
+      })
+      .catch(() => {
+        /* 401 handler in client redirects to login */
+      })
+  }, [navigate])
+
+  async function logout() {
+    try {
+      await api.logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
+  }
+
   return (
     <div className="flex min-h-full">
       <aside className="sticky top-0 flex h-screen w-[var(--sidebar)] shrink-0 flex-col border-r border-[var(--border)] bg-white">
@@ -82,8 +109,12 @@ export function CrmLayout() {
             placeholder="Пошук замовлення або артикула"
           />
           <div className="ml-auto flex items-center gap-3 text-sm">
-            <span className="font-medium">Олена</span>
-            <button type="button" className="text-[var(--text-secondary)] hover:text-[var(--text)]">
+            <span className="font-medium">{me?.fullName ?? '…'}</span>
+            <button
+              type="button"
+              className="text-[var(--text-secondary)] hover:text-[var(--text)]"
+              onClick={() => void logout()}
+            >
               Вийти
             </button>
           </div>

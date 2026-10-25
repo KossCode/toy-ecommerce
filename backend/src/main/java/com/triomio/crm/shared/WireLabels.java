@@ -141,31 +141,36 @@ public final class WireLabels {
         return moderationStatus;
     }
 
+    /**
+     * Same vocabulary as the browser mock: Активна / Є питання / Помилка / —. Partial channel coverage is «Є
+     * питання» so the products tab «Не готові» and overview notReady counts stay aligned.
+     */
     public static String syncStatus(String productStatusUa, Map<String, String> channels) {
         if ("Чернетка".equals(productStatusUa)) {
             return "—";
         }
-        String[] keys = {"rozetka", "epicentr", "prom"};
+        int enabled = 0;
         int active = 0;
-        int bad = 0;
-        for (String key : keys) {
-            String v = channels.getOrDefault(key, "—");
+        for (String v : channels.values()) {
+            if (v == null || "—".equals(v) || "Вимкнено".equals(v)) {
+                continue;
+            }
+            enabled++;
             if ("Активний".equals(v)) {
                 active++;
-            } else if (!"Активний".equals(v) && !"—".equals(v) && !"Вимкнено".equals(v)) {
-                bad++;
             }
         }
-        if (bad > 0) {
-            return "Є питання";
+        if (enabled == 0) {
+            return "—";
         }
-        if (active == 3) {
+        int problem = enabled - active;
+        if (problem == 0) {
             return "Активна";
         }
         if (active == 0) {
-            return "—";
+            return "Помилка";
         }
-        return "Часткова";
+        return "Є питання";
     }
 
     public static String formatDeadline(Integer minutes) {
