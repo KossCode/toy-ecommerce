@@ -67,6 +67,7 @@ function draftPayload(draft: Draft, excludeId?: string) {
 export function PricesPage() {
   const [data, setData] = useState<PricesFile | null>(null)
   const [products, setProducts] = useState<Product[]>([])
+  const [productsLoaded, setProductsLoaded] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
@@ -76,18 +77,23 @@ export function PricesPage() {
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'all'
 
-  async function load() {
-    const [prices, list] = await Promise.all([api.getPrices(), api.getProducts()])
-    setData(prices)
-    setProducts(list)
+  async function loadRules() {
+    setData(await api.getPrices())
+  }
+
+  async function ensureProducts() {
+    if (productsLoaded) return
+    setProducts(await api.getProducts())
+    setProductsLoaded(true)
   }
 
   useEffect(() => {
-    void load()
+    void loadRules()
   }, [])
 
   useEffect(() => {
     if (!panelOpen) return
+    void ensureProducts()
     const t = window.setTimeout(() => {
       void api
         .previewPriceRule(draftPayload(draft, editingId ?? undefined))
@@ -138,7 +144,7 @@ export function PricesPage() {
       const body = draftPayload(draft)
       if (editingId) await api.updatePriceRule(editingId, body)
       else await api.createPriceRule(body)
-      await load()
+      await loadRules()
       closePanel()
       setDraft(emptyDraft)
     } finally {
@@ -152,7 +158,7 @@ export function PricesPage() {
     try {
       await api.deletePriceRule(id)
       if (editingId === id) closePanel()
-      await load()
+      await loadRules()
     } finally {
       setSaving(false)
     }
