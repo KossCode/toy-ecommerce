@@ -9,7 +9,7 @@
         {
           "name": "Замовлення",
           "status": "Працює",
-          "when": "опитано о 10:05"
+          "when": "опитано о 10:05 · CRM: кожні 90 с"
         },
         {
           "name": "Ціни і наявність",
@@ -19,7 +19,7 @@
         {
           "name": "Фід товарів",
           "status": "Працює",
-          "when": "імпорт о 09:40"
+          "when": "пересобрано о 00:05 · CRM: щодня о 00:05"
         },
         {
           "name": "Модерація",
@@ -39,9 +39,37 @@
         ]
       },
       "connection": {
-        "feedUrl": "https://triomio.ua/feeds/prom.xml",
-        "notes": [
-          "Імпорт о 09:40: оновлено 9, помилок 0"
+        "mode": "DRY_RUN",
+        "maxMode": "DRY_RUN",
+        "effectiveMode": "DRY_RUN",
+        "feedUrl": "https://example.pages.dev/feeds/demo-token/prom.xml",
+        "capabilities": [
+          "Замовлення — опитування CRM",
+          "Ціни і наявність через API / outbox",
+          "Автооновлення фіду CRM: щодня о 00:05"
+        ],
+        "caption": "Prom імпортує YML за розкладом у кабінеті. Тут — пересбор CRM і опитування замовлень.",
+        "schedules": [
+          {
+            "jobKey": "PROM.OrdersPoll",
+            "flow": "orders",
+            "kind": "INTERVAL",
+            "enabled": true,
+            "label": "кожні 90 с",
+            "triggerName": "OrdersPoll.PROM",
+            "everySeconds": 90
+          },
+          {
+            "jobKey": "PROM.FeedBuild",
+            "flow": "feed",
+            "kind": "CALENDAR",
+            "enabled": true,
+            "label": "щодня о 00:05",
+            "triggerName": "FeedBuild.PROM",
+            "daysOfWeek": [1, 2, 3, 4, 5, 6, 7],
+            "hour": 0,
+            "minute": 5
+          }
         ]
       },
       "errorBanner": null,
@@ -56,7 +84,7 @@
         {
           "name": "Замовлення",
           "status": "Працює",
-          "when": "опитано о 10:05"
+          "when": "опитано о 10:05 · CRM: кожні 90 с"
         },
         {
           "name": "Ціни і наявність",
@@ -66,7 +94,7 @@
         {
           "name": "Фід товарів",
           "status": "Працює",
-          "when": "прочитано о 09:40"
+          "when": "пересобрано о 00:05 · CRM: щодня о 00:05"
         },
         {
           "name": "Модерація",
@@ -90,11 +118,41 @@
         ]
       },
       "connection": {
+        "mode": "READ_ONLY",
+        "maxMode": "DRY_RUN",
+        "effectiveMode": "READ_ONLY",
         "login": "triomio.shop@…",
         "passwordMasked": "••••••••",
-        "feedUrl": "https://triomio.ua/feeds/rozetka.xml",
+        "feedUrl": "https://example.pages.dev/feeds/demo-token/rozetka.xml",
         "priceSync": "Через API",
-        "caption": "Фід у режимі «Український» — підтверджено підтримкою Rozetka."
+        "capabilities": [
+          "Замовлення — опитування CRM",
+          "Ціни і наявність через API / outbox",
+          "Автооновлення фіду CRM: щодня о 00:05"
+        ],
+        "caption": "Rozetka забирає фід за своїм розкладом (~раз на годину). Тут — пересбор CRM і опитування замовлень.",
+        "schedules": [
+          {
+            "jobKey": "ROZETKA.OrdersPoll",
+            "flow": "orders",
+            "kind": "INTERVAL",
+            "enabled": true,
+            "label": "кожні 90 с",
+            "triggerName": "OrdersPoll.ROZETKA",
+            "everySeconds": 90
+          },
+          {
+            "jobKey": "ROZETKA.FeedBuild",
+            "flow": "feed",
+            "kind": "CALENDAR",
+            "enabled": true,
+            "label": "щодня о 00:05",
+            "triggerName": "FeedBuild.ROZETKA",
+            "daysOfWeek": [1, 2, 3, 4, 5, 6, 7],
+            "hour": 0,
+            "minute": 5
+          }
+        ]
       },
       "errorBanner": null,
       "moderationErrors": [
@@ -115,7 +173,7 @@
         {
           "name": "Замовлення",
           "status": "Працює",
-          "when": "опитано о 10:05"
+          "when": "опитано о 10:05 · CRM: кожні 90 с"
         },
         {
           "name": "Ціни і наявність",
@@ -125,7 +183,7 @@
         {
           "name": "Фід товарів",
           "status": "Працює",
-          "when": "автооновлення о 00:00"
+          "when": "пересобрано о 00:05 · CRM: щодня о 00:05"
         },
         {
           "name": "Модерація",
@@ -146,14 +204,39 @@
         ]
       },
       "connection": {
+        "mode": "DRY_RUN",
+        "maxMode": "DRY_RUN",
+        "effectiveMode": "DRY_RUN",
         "tokenMasked": "••••••••3f9a",
-        "feedUrl": "https://triomio.ua/feeds/epicentr.xml",
+        "feedUrl": "https://example.pages.dev/feeds/demo-token/epicentr.xml",
         "capabilities": [
-          "Замовлення ✓",
-          "Ціни і наявність через API ✓",
-          "Автооновлення фіду раз на добу, 00:00"
+          "Замовлення — опитування CRM",
+          "Ціни і наявність через API / outbox",
+          "Автооновлення фіду CRM: щодня о 00:05"
         ],
-        "caption": "Частоту автооновлення змінює менеджер Epicentr."
+        "caption": "Частоту скачування фіду змінює менеджер Epicentr у кабінеті. Тут — коли CRM пересобирає файл.",
+        "schedules": [
+          {
+            "jobKey": "EPICENTR.OrdersPoll",
+            "flow": "orders",
+            "kind": "INTERVAL",
+            "enabled": true,
+            "label": "кожні 90 с",
+            "triggerName": "OrdersPoll.EPICENTR",
+            "everySeconds": 90
+          },
+          {
+            "jobKey": "EPICENTR.FeedBuild",
+            "flow": "feed",
+            "kind": "CALENDAR",
+            "enabled": true,
+            "label": "щодня о 00:05",
+            "triggerName": "FeedBuild.EPICENTR",
+            "daysOfWeek": [1, 2, 3, 4, 5, 6, 7],
+            "hour": 0,
+            "minute": 5
+          }
+        ]
       },
       "errorBanner": {
         "title": "Не вдалося надіслати ціни і наявність для 3 товарів. Маркетплейс не відповідає.",

@@ -21,6 +21,10 @@ server:
 app:
   integrations:
     max-mode: ${INTEGRATIONS_MAX_MODE:DRY_RUN}
+  feeds:
+    dir: ${APP_FEEDS_DIR:./.local-feeds}
+    token: ${APP_FEEDS_TOKEN:local-dev-feeds-token}
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
 
 logging:
   level:

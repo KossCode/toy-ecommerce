@@ -18,6 +18,11 @@ public class FeedBuildJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext context) {
-        sync.buildFeeds();
+        String marketplace = context.getMergedJobDataMap().getString("marketplace");
+        if (marketplace == null || marketplace.isBlank()) {
+            sync.buildFeeds();
+        } else {
+            sync.buildFeed(marketplace);
+        }
     }
 }

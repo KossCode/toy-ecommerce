@@ -46,6 +46,10 @@ public class SyncJobsFacade {
         feeds.buildAll();
     }
 
+    public void buildFeed(String marketplace) {
+        feeds.build(marketplace);
+    }
+
     public int scanConfirmDeadlines() {
         return deadlines.scan();
     }

@@ -15,6 +15,7 @@ spring:
     jdbc:
       initialize-schema: never
     wait-for-jobs-to-complete-on-shutdown: true
+    # System Trigger beans overwrite themselves; user-managed triggers are scheduled only from job_schedules.
     overwrite-existing-jobs: true
     properties:
       org.quartz.scheduler.instanceName: triomio-crm
@@ -67,6 +68,10 @@ info:
 app:
   integrations:
     max-mode: ${INTEGRATIONS_MAX_MODE:DRY_RUN}
+  feeds:
+    dir: ${APP_FEEDS_DIR:./.local-feeds}
+    token: ${APP_FEEDS_TOKEN:local-dev-feeds-token}
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
 
 springdoc:
   api-docs:

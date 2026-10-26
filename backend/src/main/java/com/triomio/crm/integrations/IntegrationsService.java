@@ -1,5 +1,8 @@
 package com.triomio.crm.integrations;
 
+import com.triomio.crm.feeds.FeedsProperties;
+import com.triomio.crm.integrations.mode.IntegrationModeService;
+import com.triomio.crm.integrations.schedule.JobScheduleService;
 import com.triomio.crm.shared.ApiProblemException;
 import com.triomio.crm.shared.WireLabels;
 import java.util.ArrayList;
@@ -41,9 +44,16 @@ class IntegrationsService {
     record IntegrationsFile(List<Marketplace> marketplaces) {}
 
     private final JdbcClient jdbc;
+    private final FeedsProperties feeds;
+    private final JobScheduleService schedules;
+    private final IntegrationModeService modes;
 
-    IntegrationsService(JdbcClient jdbc) {
+    IntegrationsService(
+            JdbcClient jdbc, FeedsProperties feeds, JobScheduleService schedules, IntegrationModeService modes) {
         this.jdbc = jdbc;
+        this.feeds = feeds;
+        this.schedules = schedules;
+        this.modes = modes;
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +79,14 @@ class IntegrationsService {
         return build(mp);
     }
 
+    Marketplace getOne(String id) {
+        String mp = WireLabels.marketplaceCode(id);
+        if (!List.of("PROM", "ROZETKA", "EPICENTR").contains(mp)) {
+            throw new ApiProblemException(HttpStatus.NOT_FOUND, "INTEGRATION_NOT_FOUND", "Площадку не знайдено");
+        }
+        return build(mp);
+    }
+
     private Marketplace build(String marketplace) {
         String id = WireLabels.marketplaceWire(marketplace);
         String name = switch (marketplace) {
@@ -91,15 +109,10 @@ class IntegrationsService {
                 .param("mp", marketplace)
                 .query(Integer.class)
                 .single();
-        String lastSuccess = jdbc.sql("""
-                        SELECT to_char(finished_at AT TIME ZONE 'Europe/Kyiv', 'HH24:MI')
-                        FROM job_runs WHERE job_name LIKE :prefix AND status = 'SUCCESS' AND finished_at IS NOT NULL
-                        ORDER BY finished_at DESC LIMIT 1
-                        """)
-                .param("prefix", marketplace + "%")
-                .query(String.class)
-                .optional()
-                .orElse(null);
+
+        String lastOrders = lastJobSuccess(marketplace + ".OrdersPoll");
+        String lastFeed = lastJobSuccess(marketplace + ".FeedBuild");
+        String lastAny = lastJobSuccessPrefix(marketplace + "%");
 
         int total = jdbc.sql("SELECT count(*) FROM products WHERE status = 'ACTIVE'")
                 .query(Integer.class)
@@ -136,23 +149,36 @@ class IntegrationsService {
                 ? (failed > 0 ? failed + " помилка" : "пауза")
                 : (moderation.isEmpty() ? "працює" : moderation.size() + " помилка");
 
-        String when = lastSuccess == null ? "ще не запускалось" : "о " + lastSuccess;
+        List<Map<String, Object>> scheduleViews = schedules.schedulesForMarketplace(marketplace);
+        String ordersLabel = scheduleLabel(scheduleViews, "orders");
+        String feedLabel = scheduleLabel(scheduleViews, "feed");
+
         List<Flow> flows = List.of(
                 new Flow(
                         "Замовлення",
                         hasError && setting.pausedReason() != null ? "Пауза" : "Працює",
-                        "опитано " + when,
+                        lastOrders == null
+                                ? "опитано ще не запускалось · CRM: " + ordersLabel
+                                : "опитано о " + lastOrders,
                         null),
                 new Flow(
                         "Ціни і наявність",
                         failed > 0 ? "Помилка" : "Працює",
-                        failed > 0 ? "помилка outbox" : "надіслано " + when,
+                        failed > 0
+                                ? "помилка outbox"
+                                : (lastAny == null ? "надіслано ще не запускалось" : "надіслано о " + lastAny),
                         null),
-                new Flow("Фід товарів", "Працює", "імпорт " + when, null),
+                new Flow(
+                        "Фід товарів",
+                        "Працює",
+                        lastFeed == null
+                                ? "пересбор ще не запускався · CRM: " + feedLabel
+                                : "пересобрано о " + lastFeed + " · CRM: " + feedLabel,
+                        null),
                 new Flow(
                         "Модерація",
                         moderation.isEmpty() ? "Працює" : moderation.size() + " помилка",
-                        "оновлено " + when,
+                        lastFeed == null ? "оновлено ще невідомо" : "оновлено о " + lastFeed,
                         null));
 
         ErrorBanner banner = null;
@@ -164,11 +190,28 @@ class IntegrationsService {
 
         Map<String, Object> connection = new LinkedHashMap<>();
         connection.put("mode", setting.mode());
+        connection.put("maxMode", modes.maxMode().name());
+        connection.put("effectiveMode", modes.effectiveMode(marketplace).name());
+        connection.put("feedUrl", feeds.feedUrl(id));
         if (setting.credentialsHint() != null) {
             connection.put("tokenMasked", setting.credentialsHint());
         }
         connection.put(
-                "notes", List.of(lastSuccess == null ? "Немає успішних запусків" : "Останній успіх о " + lastSuccess));
+                "capabilities",
+                List.of(
+                        "Замовлення — опитування CRM",
+                        "Ціни і наявність через API / outbox",
+                        "Автооновлення фіду CRM: " + feedLabel));
+        connection.put(
+                "caption",
+                switch (marketplace) {
+                    case "EPICENTR" ->
+                        "Частоту скачування фіду змінює менеджер Epicentr у кабінеті. Тут — коли CRM пересобирає файл.";
+                    case "ROZETKA" ->
+                        "Rozetka забирає фід за своїм розкладом (~раз на годину). Тут — пересбор CRM і опитування замовлень.";
+                    default -> "Prom імпортує YML за розкладом у кабінеті. Тут — пересбор CRM і опитування замовлень.";
+                });
+        connection.put("schedules", scheduleViews);
 
         return new Marketplace(
                 id,
@@ -180,5 +223,37 @@ class IntegrationsService {
                 connection,
                 banner,
                 moderation);
+    }
+
+    private String lastJobSuccess(String jobName) {
+        return jdbc.sql("""
+                        SELECT to_char(finished_at AT TIME ZONE 'Europe/Kyiv', 'HH24:MI')
+                        FROM job_runs WHERE job_name = :name AND status = 'SUCCESS' AND finished_at IS NOT NULL
+                        ORDER BY finished_at DESC LIMIT 1
+                        """)
+                .param("name", jobName)
+                .query(String.class)
+                .optional()
+                .orElse(null);
+    }
+
+    private String lastJobSuccessPrefix(String prefix) {
+        return jdbc.sql("""
+                        SELECT to_char(finished_at AT TIME ZONE 'Europe/Kyiv', 'HH24:MI')
+                        FROM job_runs WHERE job_name LIKE :prefix AND status = 'SUCCESS' AND finished_at IS NOT NULL
+                        ORDER BY finished_at DESC LIMIT 1
+                        """)
+                .param("prefix", prefix)
+                .query(String.class)
+                .optional()
+                .orElse(null);
+    }
+
+    private static String scheduleLabel(List<Map<String, Object>> schedules, String flow) {
+        return schedules.stream()
+                .filter(s -> flow.equals(s.get("flow")))
+                .map(s -> String.valueOf(s.get("label")))
+                .findFirst()
+                .orElse("—");
     }
 }
