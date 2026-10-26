@@ -95,8 +95,11 @@
 | [x] | `POST /api/prices` | `pricing` | |
 | [x] | `PATCH /api/prices/{id}` | `pricing` | |
 | [x] | `DELETE /api/prices/{id}` | `pricing` | |
-| [x] | `GET /api/integrations` | `integrations` | данные из `integration_settings`, `job_runs`, `sync_outbox` |
+| [x] | `GET /api/integrations` | `integrations` | `connection`: mode/maxMode/feedUrl/schedules + flows из `job_runs` / outbox |
 | [x] | `POST /api/integrations/{id}/retry` | `integrations` | повтор `FAILED` строк outbox |
+| [x] | `PATCH /api/integrations/{id}/mode` | `integrations` | OWNER; потолок `INTEGRATIONS_MAX_MODE` |
+| [x] | `PUT /api/integrations/{id}/schedules/{flow}` | `integrations` | OWNER; flow=`orders`\|`feed`; INTERVAL/CALENDAR → Quartz |
+| [x] | `GET /feeds/{token}/{marketplace}.xml` | `feeds` | публичный YML; неверный токен → 404 |
 
 ## 7. Новые эндпоинты (нет в моке)
 
@@ -112,10 +115,8 @@
 | `POST /api/products/{sku}/images` | OWNER, MANAGER | загрузка фото (`multipart/form-data`) |
 | `PATCH /api/products/{sku}/images/order` | OWNER, MANAGER | порядок фото |
 | `DELETE /api/products/{sku}/images/{id}` | OWNER, MANAGER | удаление фото |
-| `PATCH /api/integrations/{marketplace}/mode` | OWNER | смена режима записи ([`08-marketplace-sync.md`](08-marketplace-sync.md) §2) |
-| `PUT /api/integrations/{marketplace}/credentials` | OWNER | сохранить ключ; в ответе только маска |
+| `PUT /api/integrations/{marketplace}/credentials` | OWNER | сохранить ключ; в ответе только маска (этап 9.4) |
 | `GET /api/integrations/{marketplace}/outbox` | OWNER, MANAGER | очередь и ошибки отправок |
 | `GET /api/integrations/{marketplace}/dry-run-report` | OWNER | что было бы отправлено в `DRY_RUN` |
-| `POST /api/jobs/{name}/trigger` | OWNER | запустить джобу вне расписания |
-| `GET /feeds/{token}/{marketplace}.xml` | по токену | фид для площадки |
+| `POST /api/jobs/{name}/trigger` | OWNER | запустить джобу вне расписания (уже в UI «Розклад CRM») |
 | `GET /healthz` | открыт | `200` / `503` без подробностей |

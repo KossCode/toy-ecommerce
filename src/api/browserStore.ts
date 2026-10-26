@@ -12,6 +12,8 @@ import type {
   CategoriesFile,
   Category,
   CreateOrderBody,
+  IntegrationSchedule,
+  IntegrationWriteMode,
   IntegrationsFile,
   Me,
   Order,
@@ -23,10 +25,45 @@ import type {
   PricesFile,
   Product,
   ProductHistoryItem,
+  ScheduleFlow,
+  ScheduleUpdateBody,
 } from './client'
 import { guessRuFromUa } from '@/lib/translate'
 
-const STORAGE_KEY = 'triomio-crm-browser-v6'
+const STORAGE_KEY = 'triomio-crm-browser-v7'
+
+const WRITE_MODES: IntegrationWriteMode[] = ['OFF', 'READ_ONLY', 'DRY_RUN', 'LIVE']
+
+function scheduleLabel(s: {
+  kind: string
+  enabled: boolean
+  everySeconds?: number
+  daysOfWeek?: number[]
+  hour?: number
+  minute?: number
+}): string {
+  if (!s.enabled) return 'вимкнено'
+  if (s.kind === 'INTERVAL') {
+    const sec = s.everySeconds ?? 90
+    if (sec % 3600 === 0) return `кожні ${sec / 3600} год`
+    if (sec % 60 === 0) return `кожні ${sec / 60} хв`
+    return `кожні ${sec} с`
+  }
+  const days = s.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]
+  const dayLabel =
+    days.length === 7
+      ? 'щодня'
+      : days.join(',') === '1,2,3,4,5'
+        ? 'Пн–Пт'
+        : days.map((d) => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'][d - 1]).join(', ')
+  const hh = String(s.hour ?? 0).padStart(2, '0')
+  const mm = String(s.minute ?? 0).padStart(2, '0')
+  return `${dayLabel} о ${hh}:${mm}`
+}
+
+function minSeconds(flow: ScheduleFlow) {
+  return flow === 'feed' ? 15 * 60 : 90
+}
 
 type Store = {
   products: Product[]
@@ -909,5 +946,92 @@ export const browserApi = {
       mp = found
     })
     return mp!
+  },
+
+  async setIntegrationMode(id: string, mode: IntegrationWriteMode) {
+    let result: { id: string; mode: string; effectiveMode: string; maxMode: string } | null = null
+    mutate((s) => {
+      const found = s.integrations.marketplaces.find((m) => m.id === id)
+      if (!found) throw new Error('Немає маркетплейси')
+      const maxMode = String(found.connection.maxMode ?? 'DRY_RUN') as IntegrationWriteMode
+      if (WRITE_MODES.indexOf(mode) > WRITE_MODES.indexOf(maxMode)) {
+        throw new Error(`Потолок режиму = ${maxMode}`)
+      }
+      found.connection.mode = mode
+      found.connection.effectiveMode =
+        WRITE_MODES.indexOf(mode) <= WRITE_MODES.indexOf(maxMode) ? mode : maxMode
+      result = {
+        id,
+        mode,
+        effectiveMode: String(found.connection.effectiveMode),
+        maxMode,
+      }
+    })
+    return result!
+  },
+
+  async putIntegrationSchedule(id: string, flow: ScheduleFlow, body: ScheduleUpdateBody) {
+    let mp: IntegrationsFile['marketplaces'][0] | null = null
+    mutate((s) => {
+      const found = s.integrations.marketplaces.find((m) => m.id === id)
+      if (!found) throw new Error('Немає маркетплейси')
+      const schedules = (found.connection.schedules ?? []) as IntegrationSchedule[]
+      const idx = schedules.findIndex((x) => x.flow === flow)
+      if (idx < 0) throw new Error('Розклад не знайдено')
+      const enabled = body.enabled ?? true
+      if (body.kind === 'INTERVAL') {
+        const every = body.everySeconds ?? minSeconds(flow)
+        if (every < minSeconds(flow)) {
+          throw new Error(`Мінімальний інтервал — ${minSeconds(flow)} с`)
+        }
+        schedules[idx] = {
+          ...schedules[idx],
+          kind: 'INTERVAL',
+          enabled,
+          everySeconds: every,
+          daysOfWeek: undefined,
+          hour: undefined,
+          minute: undefined,
+          label: scheduleLabel({ kind: 'INTERVAL', enabled, everySeconds: every }),
+        }
+      } else {
+        const days = body.daysOfWeek?.length ? body.daysOfWeek : [1, 2, 3, 4, 5, 6, 7]
+        const hour = body.hour ?? 0
+        const minute = body.minute ?? 0
+        schedules[idx] = {
+          ...schedules[idx],
+          kind: 'CALENDAR',
+          enabled,
+          daysOfWeek: days,
+          hour,
+          minute,
+          everySeconds: undefined,
+          label: scheduleLabel({ kind: 'CALENDAR', enabled, daysOfWeek: days, hour, minute }),
+        }
+      }
+      found.connection.schedules = schedules
+      const label = schedules[idx].label
+      if (flow === 'orders') {
+        const f = found.flows.find((x) => x.name === 'Замовлення')
+        if (f) f.when = `опитано (мок) · CRM: ${label}`
+      } else {
+        const f = found.flows.find((x) => x.name === 'Фід товарів')
+        if (f) f.when = `пересбор (мок) · CRM: ${label}`
+        const caps = found.connection.capabilities
+        if (Array.isArray(caps)) {
+          found.connection.capabilities = caps.map((c) =>
+            String(c).startsWith('Автооновлення фіду')
+              ? `Автооновлення фіду CRM: ${label}`
+              : c,
+          )
+        }
+      }
+      mp = found
+    })
+    return mp!
+  },
+
+  async triggerJob(name: string) {
+    return { ok: 'true', name }
   },
 }

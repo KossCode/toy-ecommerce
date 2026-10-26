@@ -18,3 +18,6 @@ dist
 
 # Local photo storage (profile local)
 .local-media/
+
+# Local marketplace feed XML (profile local)
+.local-feeds/

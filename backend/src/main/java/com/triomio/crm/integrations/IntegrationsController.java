@@ -5,6 +5,8 @@ import com.triomio.crm.integrations.IntegrationsService.IntegrationsFile;
 import com.triomio.crm.integrations.IntegrationsService.Marketplace;
 import com.triomio.crm.integrations.mode.IntegrationModeService;
 import com.triomio.crm.integrations.mode.WriteMode;
+import com.triomio.crm.integrations.schedule.JobScheduleService;
+import com.triomio.crm.shared.WireLabels;
 import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,10 +25,13 @@ class IntegrationsController {
 
     private final IntegrationsService integrations;
     private final IntegrationModeService modes;
+    private final JobScheduleService schedules;
 
-    IntegrationsController(IntegrationsService integrations, IntegrationModeService modes) {
+    IntegrationsController(
+            IntegrationsService integrations, IntegrationModeService modes, JobScheduleService schedules) {
         this.integrations = integrations;
         this.modes = modes;
+        this.schedules = schedules;
     }
 
     @GetMapping
@@ -49,9 +55,19 @@ class IntegrationsController {
                 "mode",
                 mode.name(),
                 "effectiveMode",
-                modes.effectiveMode(com.triomio.crm.shared.WireLabels.marketplaceCode(id))
-                        .name(),
+                modes.effectiveMode(WireLabels.marketplaceCode(id)).name(),
                 "maxMode",
                 modes.maxMode().name());
+    }
+
+    @PutMapping("/{id}/schedules/{flow}")
+    @PreAuthorize("hasRole('OWNER')")
+    Marketplace putSchedule(
+            @AuthenticationPrincipal CurrentUser user,
+            @PathVariable String id,
+            @PathVariable String flow,
+            @RequestBody Map<String, Object> body) {
+        schedules.update(user, id, flow, body);
+        return integrations.getOne(id);
     }
 }

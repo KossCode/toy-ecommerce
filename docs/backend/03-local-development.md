@@ -58,7 +58,9 @@ npm run dev:java
 
 Площадки без credentials при старте local принудительно в режиме `OFF`. Потолок `app.integrations.max-mode` / `INTEGRATIONS_MAX_MODE` по умолчанию `DRY_RUN`. Джобы Quartz крутятся по расписанию и пишут `job_runs`; HTTP к реальным API нет — только `MockMarketplaceClient` и строки в `sync_log`.
 
-Ручной запуск джобы (владелец): `POST /api/jobs/{name}/trigger` (например `OutboxDispatch`, `OrdersPoll.PROM`). Список: `GET /api/jobs`.
+Ручной запуск джобы (владелец): `POST /api/jobs/{name}/trigger` (например `OutboxDispatch`, `OrdersPoll.PROM`, `FeedBuild.PROM`). Список: `GET /api/jobs`.
+
+Фид локально: `APP_FEEDS_TOKEN` / `APP_PUBLIC_BASE_URL` в `.env.local` (см. `.env.local.example`). URL вида `http://localhost:8080/feeds/{token}/prom.xml`. Демо-SKU (`is_demo`) в фид не попадают — файл может быть пустым по offers, пока нет боевых товаров. Расписания orders/feed правятся в UI «Інтеграції» → «Розклад CRM» и сразу меняют Quartz.
 
 Сбросить базу:
 

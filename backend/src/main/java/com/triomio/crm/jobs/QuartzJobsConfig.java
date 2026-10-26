@@ -10,7 +10,10 @@ import org.springframework.boot.quartz.autoconfigure.SchedulerFactoryBeanCustomi
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Registers durable jobs + Kyiv-timezone schedules (docs/backend/07-jobs-quartz.md §3). */
+/**
+ * Registers durable JobDetails. System job triggers come from beans; owner-managed orders/feed triggers are applied
+ * from {@code job_schedules} via integrations schedule bootstrap (not Trigger beans here).
+ */
 @Configuration(proxyBeanMethods = false)
 class QuartzJobsConfig {
 
@@ -27,18 +30,8 @@ class QuartzJobsConfig {
     }
 
     @Bean
-    Trigger promOrdersPollTrigger(JobDetail promOrdersPollJobDetail) {
-        return simpleEverySeconds(promOrdersPollJobDetail, JobNames.ordersPoll("PROM"), 90);
-    }
-
-    @Bean
     JobDetail rozetkaOrdersPollJobDetail() {
         return ordersPollDetail("ROZETKA");
-    }
-
-    @Bean
-    Trigger rozetkaOrdersPollTrigger(JobDetail rozetkaOrdersPollJobDetail) {
-        return simpleEverySeconds(rozetkaOrdersPollJobDetail, JobNames.ordersPoll("ROZETKA"), 90);
     }
 
     @Bean
@@ -47,8 +40,18 @@ class QuartzJobsConfig {
     }
 
     @Bean
-    Trigger epicentrOrdersPollTrigger(JobDetail epicentrOrdersPollJobDetail) {
-        return simpleEverySeconds(epicentrOrdersPollJobDetail, JobNames.ordersPoll("EPICENTR"), 90);
+    JobDetail promFeedBuildJobDetail() {
+        return feedBuildDetail("PROM");
+    }
+
+    @Bean
+    JobDetail rozetkaFeedBuildJobDetail() {
+        return feedBuildDetail("ROZETKA");
+    }
+
+    @Bean
+    JobDetail epicentrFeedBuildJobDetail() {
+        return feedBuildDetail("EPICENTR");
     }
 
     @Bean
@@ -62,19 +65,6 @@ class QuartzJobsConfig {
     @Bean
     Trigger outboxDispatchTrigger(JobDetail outboxDispatchJobDetail) {
         return simpleEverySeconds(outboxDispatchJobDetail, JobNames.OUTBOX_DISPATCH, 15);
-    }
-
-    @Bean
-    JobDetail feedBuildJobDetail() {
-        return JobBuilder.newJob(FeedBuildJob.class)
-                .withIdentity(JobNames.FEED_BUILD)
-                .storeDurably()
-                .build();
-    }
-
-    @Bean
-    Trigger feedBuildTrigger(JobDetail feedBuildJobDetail) {
-        return cron(feedBuildJobDetail, JobNames.FEED_BUILD, "0 5 * * * ?");
     }
 
     @Bean
@@ -132,6 +122,14 @@ class QuartzJobsConfig {
     private static JobDetail ordersPollDetail(String marketplace) {
         return JobBuilder.newJob(OrdersPollJob.class)
                 .withIdentity(JobNames.ordersPoll(marketplace))
+                .usingJobData("marketplace", marketplace)
+                .storeDurably()
+                .build();
+    }
+
+    private static JobDetail feedBuildDetail(String marketplace) {
+        return JobBuilder.newJob(FeedBuildJob.class)
+                .withIdentity(JobNames.feedBuild(marketplace))
                 .usingJobData("marketplace", marketplace)
                 .storeDurably()
                 .build();

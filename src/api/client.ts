@@ -127,6 +127,21 @@ const httpApi = {
       method: 'POST',
       body: '{}',
     }),
+  setIntegrationMode: (id: string, mode: IntegrationWriteMode) =>
+    request<{ id: string; mode: string; effectiveMode: string; maxMode: string }>(
+      `/integrations/${id}/mode`,
+      { method: 'PATCH', body: JSON.stringify({ mode }) },
+    ),
+  putIntegrationSchedule: (id: string, flow: ScheduleFlow, body: ScheduleUpdateBody) =>
+    request<IntegrationsFile['marketplaces'][0]>(`/integrations/${id}/schedules/${flow}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  triggerJob: (name: string) =>
+    request<{ ok: string; name: string }>(`/jobs/${encodeURIComponent(name)}/trigger`, {
+      method: 'POST',
+      body: '{}',
+    }),
   getCategories: () => request<CategoriesFile>('/categories'),
   createCategory: (body: { name: string; parentId?: string | null }) =>
     request<Category>('/categories', { method: 'POST', body: JSON.stringify(body) }),
@@ -297,6 +312,47 @@ export type OverviewPayload = {
   lowStockSample: { sku: string; name: string; available: number } | null
 }
 
+export type IntegrationWriteMode = 'OFF' | 'READ_ONLY' | 'DRY_RUN' | 'LIVE'
+export type ScheduleFlow = 'orders' | 'feed'
+export type ScheduleKind = 'INTERVAL' | 'CALENDAR'
+
+export type IntegrationSchedule = {
+  jobKey: string
+  flow: ScheduleFlow
+  kind: ScheduleKind
+  enabled: boolean
+  label: string
+  triggerName: string
+  everySeconds?: number
+  daysOfWeek?: number[]
+  hour?: number
+  minute?: number
+}
+
+export type ScheduleUpdateBody = {
+  kind: ScheduleKind
+  enabled?: boolean
+  everySeconds?: number
+  daysOfWeek?: number[]
+  hour?: number
+  minute?: number
+}
+
+export type IntegrationConnection = {
+  mode?: IntegrationWriteMode | string
+  maxMode?: IntegrationWriteMode | string
+  effectiveMode?: IntegrationWriteMode | string
+  feedUrl?: string
+  tokenMasked?: string
+  login?: string
+  passwordMasked?: string
+  priceSync?: string
+  capabilities?: string[]
+  caption?: string
+  schedules?: IntegrationSchedule[]
+  [key: string]: unknown
+}
+
 export type IntegrationsFile = {
   marketplaces: {
     id: string
@@ -310,7 +366,7 @@ export type IntegrationsFile = {
       notReady: number
       reasons: { text: string; count: number }[]
     }
-    connection: Record<string, unknown>
+    connection: IntegrationConnection
     errorBanner: { title: string; nextTry: string } | null
     moderationErrors: { sku: string; name: string; error: string; when: string }[]
   }[]

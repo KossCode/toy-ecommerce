@@ -72,6 +72,7 @@
 | `sync_outbox` | `id`, `marketplace`, `kind` (`STOCK` / `PRICE` / `ORDER_STATUS`), `product_id` / `order_id`, `payload jsonb`, `dedupe_key`, `status` (`PENDING` / `IN_PROGRESS` / `DONE` / `DRY_RUN` / `BLOCKED` / `FAILED`), `attempts`, `next_attempt_at`, `last_error`, `created_at`, `processed_at` |
 | `sync_log` | `id`, `marketplace`, `operation`, `http_method`, `path`, `http_status`, `duration_ms`, `request_excerpt`, `response_excerpt`, `at` — без токенов и заголовков авторизации; хранится 30 дней |
 | `feed_builds` | `id`, `marketplace`, `started_at`, `finished_at`, `items_count`, `status`, `errors jsonb` |
+| `job_schedules` | `job_key` (PK, напр. `PROM.OrdersPoll`), `flow` (`orders` / `feed`), `marketplace`, `kind` (`INTERVAL` / `CALENDAR`), `payload jsonb`, `enabled`, `updated_at`, `updated_by` — источник правды для owner-managed Quartz triggers |
 | `job_runs` | `id`, `job_name`, `started_at`, `finished_at`, `status`, `error`; хранится 30 дней |
 | `qrtz_*` | схема Quartz для PostgreSQL (`tables_postgres.sql` из дистрибутива Quartz), создаётся миграцией |
 
