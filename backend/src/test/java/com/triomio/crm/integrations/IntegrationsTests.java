@@ -81,6 +81,24 @@ class IntegrationsTests {
     }
 
     @Test
+    void ownerCanSetIntervalWithDaysAndWindow() throws Exception {
+        CurrentUser owner = new CurrentUser(1L, "owner@test.local", "O", Role.OWNER, false);
+        mvc.perform(put("/api/integrations/prom/schedules/orders")
+                        .with(user(owner))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"kind":"INTERVAL","everySeconds":90,"enabled":true,
+                                 "daysOfWeek":[1,2,3,4,5],"windowStart":"08:00","windowEnd":"20:00"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.connection.schedules[?(@.flow == 'orders')].windowStart")
+                        .value(hasItem("08:00")))
+                .andExpect(jsonPath("$.connection.schedules[?(@.flow == 'orders')].label")
+                        .value(hasItem("кожні 90 с, Пн–Пт, 08:00–20:00")));
+    }
+
+    @Test
     void feedUrlServesBuiltXml() throws Exception {
         feedBuild.build("PROM");
         String token = feeds.token();

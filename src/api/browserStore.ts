@@ -34,6 +34,12 @@ const STORAGE_KEY = 'triomio-crm-browser-v7'
 
 const WRITE_MODES: IntegrationWriteMode[] = ['OFF', 'READ_ONLY', 'DRY_RUN', 'LIVE']
 
+function formatDayLabel(days: number[]): string {
+  if (days.length === 7) return 'щодня'
+  if (days.join(',') === '1,2,3,4,5') return 'Пн–Пт'
+  return days.map((d) => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'][d - 1]).join(', ')
+}
+
 function scheduleLabel(s: {
   kind: string
   enabled: boolean
@@ -41,21 +47,24 @@ function scheduleLabel(s: {
   daysOfWeek?: number[]
   hour?: number
   minute?: number
+  windowStart?: string | null
+  windowEnd?: string | null
 }): string {
   if (!s.enabled) return 'вимкнено'
+  const days = s.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]
+  const dayLabel = formatDayLabel(days)
   if (s.kind === 'INTERVAL') {
     const sec = s.everySeconds ?? 90
-    if (sec % 3600 === 0) return `кожні ${sec / 3600} год`
-    if (sec % 60 === 0) return `кожні ${sec / 60} хв`
-    return `кожні ${sec} с`
+    let every =
+      sec % 3600 === 0
+        ? `кожні ${sec / 3600} год`
+        : sec % 60 === 0
+          ? `кожні ${sec / 60} хв`
+          : `кожні ${sec} с`
+    if (days.length < 7) every += `, ${dayLabel}`
+    if (s.windowStart && s.windowEnd) every += `, ${s.windowStart}–${s.windowEnd}`
+    return every
   }
-  const days = s.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]
-  const dayLabel =
-    days.length === 7
-      ? 'щодня'
-      : days.join(',') === '1,2,3,4,5'
-        ? 'Пн–Пт'
-        : days.map((d) => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'][d - 1]).join(', ')
   const hh = String(s.hour ?? 0).padStart(2, '0')
   const mm = String(s.minute ?? 0).padStart(2, '0')
   return `${dayLabel} о ${hh}:${mm}`
@@ -979,23 +988,37 @@ export const browserApi = {
       const idx = schedules.findIndex((x) => x.flow === flow)
       if (idx < 0) throw new Error('Розклад не знайдено')
       const enabled = body.enabled ?? true
+      const days = body.daysOfWeek?.length ? body.daysOfWeek : [1, 2, 3, 4, 5, 6, 7]
       if (body.kind === 'INTERVAL') {
         const every = body.everySeconds ?? minSeconds(flow)
         if (every < minSeconds(flow)) {
           throw new Error(`Мінімальний інтервал — ${minSeconds(flow)} с`)
+        }
+        const windowStart = body.windowStart || undefined
+        const windowEnd = body.windowEnd || undefined
+        if ((windowStart && !windowEnd) || (!windowStart && windowEnd)) {
+          throw new Error('Вкажіть і початок, і кінець проміжку')
         }
         schedules[idx] = {
           ...schedules[idx],
           kind: 'INTERVAL',
           enabled,
           everySeconds: every,
-          daysOfWeek: undefined,
+          daysOfWeek: days,
           hour: undefined,
           minute: undefined,
-          label: scheduleLabel({ kind: 'INTERVAL', enabled, everySeconds: every }),
+          windowStart,
+          windowEnd,
+          label: scheduleLabel({
+            kind: 'INTERVAL',
+            enabled,
+            everySeconds: every,
+            daysOfWeek: days,
+            windowStart,
+            windowEnd,
+          }),
         }
       } else {
-        const days = body.daysOfWeek?.length ? body.daysOfWeek : [1, 2, 3, 4, 5, 6, 7]
         const hour = body.hour ?? 0
         const minute = body.minute ?? 0
         schedules[idx] = {
@@ -1006,6 +1029,8 @@ export const browserApi = {
           hour,
           minute,
           everySeconds: undefined,
+          windowStart: undefined,
+          windowEnd: undefined,
           label: scheduleLabel({ kind: 'CALENDAR', enabled, daysOfWeek: days, hour, minute }),
         }
       }

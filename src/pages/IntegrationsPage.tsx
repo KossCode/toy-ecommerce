@@ -25,6 +25,12 @@ function minSeconds(flow: ScheduleFlow) {
   return flow === 'feed' ? 15 * 60 : 90
 }
 
+function formatDaysUk(days: number[]): string {
+  if (days.length === 7) return 'щодня'
+  if (days.join(',') === '1,2,3,4,5') return 'Пн–Пт'
+  return days.map((d) => DAY_NAMES[d - 1]).join(', ')
+}
+
 function previewLabel(draft: {
   kind: ScheduleKind
   enabled: boolean
@@ -32,22 +38,37 @@ function previewLabel(draft: {
   daysOfWeek: number[]
   hour: number
   minute: number
+  windowStart?: string | null
+  windowEnd?: string | null
 }): string {
   if (!draft.enabled) return 'вимкнено'
+  const dayLabel = formatDaysUk(draft.daysOfWeek)
   if (draft.kind === 'INTERVAL') {
     const sec = draft.everySeconds
-    if (sec % 3600 === 0) return `кожні ${sec / 3600} год`
-    if (sec % 60 === 0) return `кожні ${sec / 60} хв`
-    return `кожні ${sec} с`
+    let every =
+      sec % 3600 === 0
+        ? `кожні ${sec / 3600} год`
+        : sec % 60 === 0
+          ? `кожні ${sec / 60} хв`
+          : `кожні ${sec} с`
+    if (draft.daysOfWeek.length < 7) every += `, ${dayLabel}`
+    if (draft.windowStart && draft.windowEnd) every += `, ${draft.windowStart}–${draft.windowEnd}`
+    return every
   }
-  const days = draft.daysOfWeek
-  const dayLabel =
-    days.length === 7
-      ? 'щодня'
-      : days.join(',') === '1,2,3,4,5'
-        ? 'Пн–Пт'
-        : days.map((d) => DAY_NAMES[d - 1]).join(', ')
   return `${dayLabel} о ${String(draft.hour).padStart(2, '0')}:${String(draft.minute).padStart(2, '0')}`
+}
+
+function hm(h: number, m: number) {
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function parseHm(raw: string | undefined): { h: number; m: number } | null {
+  if (!raw) return null
+  const [a, b] = raw.split(':')
+  const h = Number(a)
+  const m = Number(b)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null
+  return { h, m }
 }
 
 type ScheduleModalMode = 'edit' | 'add'
@@ -70,7 +91,9 @@ function ScheduleEditModal({
   const initialFlow = schedule?.flow ?? availableFlows[0] ?? 'orders'
   const [flow, setFlow] = useState<ScheduleFlow>(initialFlow)
   const minSec = minSeconds(flow)
-  const [kind, setKind] = useState<ScheduleKind>(schedule?.kind ?? (flow === 'feed' ? 'CALENDAR' : 'INTERVAL'))
+  const [kind, setKind] = useState<ScheduleKind>(
+    schedule?.kind ?? (flow === 'feed' ? 'CALENDAR' : 'INTERVAL'),
+  )
   const [unit, setUnit] = useState<'seconds' | 'minutes' | 'hours'>(() => {
     const s = schedule?.everySeconds ?? minSec
     if (s % 3600 === 0) return 'hours'
@@ -86,6 +109,13 @@ function ScheduleEditModal({
   const [days, setDays] = useState<number[]>(schedule?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7])
   const [hour, setHour] = useState(schedule?.hour ?? (flow === 'feed' ? 0 : 9))
   const [minute, setMinute] = useState(schedule?.minute ?? (flow === 'feed' ? 5 : 0))
+  const initialWindow = parseHm(schedule?.windowStart)
+  const initialWindowEnd = parseHm(schedule?.windowEnd)
+  const [useWindow, setUseWindow] = useState(Boolean(schedule?.windowStart && schedule?.windowEnd))
+  const [windowStartH, setWindowStartH] = useState(initialWindow?.h ?? 8)
+  const [windowStartM, setWindowStartM] = useState(initialWindow?.m ?? 0)
+  const [windowEndH, setWindowEndH] = useState(initialWindowEnd?.h ?? 20)
+  const [windowEndM, setWindowEndM] = useState(initialWindowEnd?.m ?? 0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -100,16 +130,21 @@ function ScheduleEditModal({
         setDays([1, 2, 3, 4, 5, 6, 7])
         setHour(0)
         setMinute(5)
+        setUseWindow(false)
       } else {
         setKind('INTERVAL')
         setUnit('seconds')
         setAmount(90)
+        setDays([1, 2, 3, 4, 5, 6, 7])
+        setUseWindow(false)
       }
     }
   }
 
   const everySeconds =
     unit === 'hours' ? amount * 3600 : unit === 'minutes' ? amount * 60 : amount
+  const windowStart = useWindow && kind === 'INTERVAL' ? hm(windowStartH, windowStartM) : null
+  const windowEnd = useWindow && kind === 'INTERVAL' ? hm(windowEndH, windowEndM) : null
 
   const draft = {
     kind,
@@ -118,21 +153,35 @@ function ScheduleEditModal({
     daysOfWeek: days,
     hour,
     minute,
+    windowStart,
+    windowEnd,
   }
 
   async function save() {
     setBusy(true)
     setError(null)
     try {
+      if (days.length === 0) throw new Error('Оберіть хоча б один день')
       if (kind === 'INTERVAL' && everySeconds < minSec) {
         throw new Error(`Мінімальний інтервал — ${minSec} с`)
       }
-      if (kind === 'CALENDAR' && days.length === 0) {
-        throw new Error('Оберіть хоча б один день')
+      if (kind === 'INTERVAL' && useWindow) {
+        const start = windowStartH * 60 + windowStartM
+        const end = windowEndH * 60 + windowEndM
+        if (end <= start) {
+          throw new Error('Кінець проміжку має бути пізніше за початок')
+        }
       }
       const body =
         kind === 'INTERVAL'
-          ? { kind, enabled: true, everySeconds }
+          ? {
+              kind,
+              enabled: true,
+              everySeconds,
+              daysOfWeek: days,
+              windowStart,
+              windowEnd,
+            }
           : { kind, enabled: true, daysOfWeek: days, hour, minute }
       const mp = await api.putIntegrationSchedule(marketplaceId, flow, body)
       onSaved(mp)
@@ -173,7 +222,7 @@ function ScheduleEditModal({
               {title}
             </h2>
             <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
-              Europe/Kyiv · попередній перегляд: {previewLabel(draft)}
+              Europe/Kyiv · {previewLabel(draft)}
             </p>
           </div>
           <button
@@ -205,65 +254,42 @@ function ScheduleEditModal({
           ) : null}
 
           <div>
-            <div className="mb-2 text-[var(--text-secondary)]">Тип</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="mb-2 text-[var(--text-secondary)]">Як часто</div>
+            <div className="mb-3 flex flex-wrap gap-2">
               <Button
                 variant={kind === 'INTERVAL' ? 'primary' : 'secondary'}
                 onClick={() => setKind('INTERVAL')}
               >
-                Інтервал
+                Кожні N
               </Button>
               <Button
                 variant={kind === 'CALENDAR' ? 'primary' : 'secondary'}
                 onClick={() => setKind('CALENDAR')}
               >
-                За календарем
+                Один раз на день
               </Button>
             </div>
-          </div>
-
-          {kind === 'INTERVAL' ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span>Кожні</span>
-              <Input
-                type="number"
-                min={1}
-                className="w-24"
-                value={amount}
-                onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
-              />
-              <Select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as 'seconds' | 'minutes' | 'hours')}
-              >
-                <option value="seconds">с</option>
-                <option value="minutes">хв</option>
-                <option value="hours">год</option>
-              </Select>
-              <span className="text-[var(--text-secondary)]">мін. {minSec} с</span>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {DAY_NAMES.map((name, i) => {
-                  const d = i + 1
-                  const on = days.includes(d)
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => toggleDay(d)}
-                      className={`rounded-md border px-2 py-1 ${
-                        on
-                          ? 'border-[var(--primary)] bg-[#e4f1ef] text-[var(--primary)]'
-                          : 'border-[var(--border)]'
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  )
-                })}
+            {kind === 'INTERVAL' ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Кожні</span>
+                <Input
+                  type="number"
+                  min={1}
+                  className="w-24"
+                  value={amount}
+                  onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
+                />
+                <Select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as 'seconds' | 'minutes' | 'hours')}
+                >
+                  <option value="seconds">с</option>
+                  <option value="minutes">хв</option>
+                  <option value="hours">год</option>
+                </Select>
+                <span className="text-[var(--text-secondary)]">мін. {minSec} с</span>
               </div>
+            ) : (
               <div className="flex flex-wrap items-center gap-2">
                 <span>о</span>
                 <Input
@@ -286,8 +312,96 @@ function ScheduleEditModal({
                   }
                 />
               </div>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-2 text-[var(--text-secondary)]">Дні тижня</div>
+            <div className="flex flex-wrap gap-2">
+              {DAY_NAMES.map((name, i) => {
+                const d = i + 1
+                const on = days.includes(d)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleDay(d)}
+                    className={`rounded-md border px-2 py-1 ${
+                      on
+                        ? 'border-[var(--primary)] bg-[#e4f1ef] text-[var(--primary)]'
+                        : 'border-[var(--border)]'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                )
+              })}
             </div>
-          )}
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+              Усі дні = без обмеження. Інакше лише вибрані.
+            </p>
+          </div>
+
+          {kind === 'INTERVAL' ? (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={useWindow}
+                  onChange={(e) => setUseWindow(e.target.checked)}
+                />
+                Лише в проміжку часу
+              </label>
+              {useWindow ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>з</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={23}
+                    className="w-16"
+                    value={windowStartH}
+                    onChange={(e) =>
+                      setWindowStartH(Math.min(23, Math.max(0, Number(e.target.value) || 0)))
+                    }
+                  />
+                  <span>:</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    className="w-16"
+                    value={windowStartM}
+                    onChange={(e) =>
+                      setWindowStartM(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
+                    }
+                  />
+                  <span>до</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={23}
+                    className="w-16"
+                    value={windowEndH}
+                    onChange={(e) =>
+                      setWindowEndH(Math.min(23, Math.max(0, Number(e.target.value) || 0)))
+                    }
+                  />
+                  <span>:</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    className="w-16"
+                    value={windowEndM}
+                    onChange={(e) =>
+                      setWindowEndM(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
+                    }
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {error ? <p className="text-[var(--error)]">{error}</p> : null}
         </div>
@@ -296,7 +410,10 @@ function ScheduleEditModal({
           <Button variant="secondary" disabled={busy} onClick={onClose}>
             Скасувати
           </Button>
-          <Button disabled={busy || (mode === 'add' && availableFlows.length === 0)} onClick={() => void save()}>
+          <Button
+            disabled={busy || (mode === 'add' && availableFlows.length === 0)}
+            onClick={() => void save()}
+          >
             Зберегти
           </Button>
         </div>
@@ -350,17 +467,21 @@ function ScheduleTable({
     setBusyKey(schedule.flow)
     setMsg(null)
     try {
+      const days = schedule.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]
       const body =
         schedule.kind === 'INTERVAL'
           ? {
               kind: schedule.kind,
               enabled: false,
               everySeconds: schedule.everySeconds ?? minSeconds(schedule.flow),
+              daysOfWeek: days,
+              windowStart: schedule.windowStart ?? null,
+              windowEnd: schedule.windowEnd ?? null,
             }
           : {
               kind: schedule.kind,
               enabled: false,
-              daysOfWeek: schedule.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7],
+              daysOfWeek: days,
               hour: schedule.hour ?? 0,
               minute: schedule.minute ?? 0,
             }
