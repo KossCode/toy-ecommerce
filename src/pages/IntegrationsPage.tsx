@@ -107,15 +107,12 @@ function ScheduleEditModal({
     return s
   })
   const [days, setDays] = useState<number[]>(schedule?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7])
-  const [hour, setHour] = useState(schedule?.hour ?? (flow === 'feed' ? 0 : 9))
-  const [minute, setMinute] = useState(schedule?.minute ?? (flow === 'feed' ? 5 : 0))
-  const initialWindow = parseHm(schedule?.windowStart)
-  const initialWindowEnd = parseHm(schedule?.windowEnd)
+  const [onceAt, setOnceAt] = useState(() =>
+    hm(schedule?.hour ?? (flow === 'feed' ? 0 : 9), schedule?.minute ?? (flow === 'feed' ? 5 : 0)),
+  )
   const [useWindow, setUseWindow] = useState(Boolean(schedule?.windowStart && schedule?.windowEnd))
-  const [windowStartH, setWindowStartH] = useState(initialWindow?.h ?? 8)
-  const [windowStartM, setWindowStartM] = useState(initialWindow?.m ?? 0)
-  const [windowEndH, setWindowEndH] = useState(initialWindowEnd?.h ?? 20)
-  const [windowEndM, setWindowEndM] = useState(initialWindowEnd?.m ?? 0)
+  const [windowStart, setWindowStart] = useState(schedule?.windowStart ?? '08:00')
+  const [windowEnd, setWindowEnd] = useState(schedule?.windowEnd ?? '20:00')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -128,8 +125,7 @@ function ScheduleEditModal({
       if (next === 'feed') {
         setKind('CALENDAR')
         setDays([1, 2, 3, 4, 5, 6, 7])
-        setHour(0)
-        setMinute(5)
+        setOnceAt('00:05')
         setUseWindow(false)
       } else {
         setKind('INTERVAL')
@@ -143,18 +139,19 @@ function ScheduleEditModal({
 
   const everySeconds =
     unit === 'hours' ? amount * 3600 : unit === 'minutes' ? amount * 60 : amount
-  const windowStart = useWindow && kind === 'INTERVAL' ? hm(windowStartH, windowStartM) : null
-  const windowEnd = useWindow && kind === 'INTERVAL' ? hm(windowEndH, windowEndM) : null
+  const once = parseHm(onceAt) ?? { h: 0, m: 0 }
+  const activeWindowStart = useWindow && kind === 'INTERVAL' ? windowStart : null
+  const activeWindowEnd = useWindow && kind === 'INTERVAL' ? windowEnd : null
 
   const draft = {
     kind,
     enabled: true,
     everySeconds,
     daysOfWeek: days,
-    hour,
-    minute,
-    windowStart,
-    windowEnd,
+    hour: once.h,
+    minute: once.m,
+    windowStart: activeWindowStart,
+    windowEnd: activeWindowEnd,
   }
 
   async function save() {
@@ -166,9 +163,10 @@ function ScheduleEditModal({
         throw new Error(`Мінімальний інтервал — ${minSec} с`)
       }
       if (kind === 'INTERVAL' && useWindow) {
-        const start = windowStartH * 60 + windowStartM
-        const end = windowEndH * 60 + windowEndM
-        if (end <= start) {
+        const start = parseHm(windowStart)
+        const end = parseHm(windowEnd)
+        if (!start || !end) throw new Error('Некоректний проміжок часу')
+        if (end.h * 60 + end.m <= start.h * 60 + start.m) {
           throw new Error('Кінець проміжку має бути пізніше за початок')
         }
       }
@@ -179,10 +177,10 @@ function ScheduleEditModal({
               enabled: true,
               everySeconds,
               daysOfWeek: days,
-              windowStart,
-              windowEnd,
+              windowStart: activeWindowStart,
+              windowEnd: activeWindowEnd,
             }
-          : { kind, enabled: true, daysOfWeek: days, hour, minute }
+          : { kind, enabled: true, daysOfWeek: days, hour: once.h, minute: once.m }
       const mp = await api.putIntegrationSchedule(marketplaceId, flow, body)
       onSaved(mp)
       onClose()
@@ -275,7 +273,7 @@ function ScheduleEditModal({
                 <Input
                   type="number"
                   min={1}
-                  className="w-24"
+                  className="!w-24"
                   value={amount}
                   onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
                 />
@@ -292,24 +290,11 @@ function ScheduleEditModal({
             ) : (
               <div className="flex flex-wrap items-center gap-2">
                 <span>о</span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={23}
-                  className="w-20"
-                  value={hour}
-                  onChange={(e) => setHour(Math.min(23, Math.max(0, Number(e.target.value) || 0)))}
-                />
-                <span>:</span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={59}
-                  className="w-20"
-                  value={minute}
-                  onChange={(e) =>
-                    setMinute(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
-                  }
+                <input
+                  type="time"
+                  value={onceAt}
+                  onChange={(e) => setOnceAt(e.target.value || '00:00')}
+                  className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
                 />
               </div>
             )}
@@ -353,51 +338,25 @@ function ScheduleEditModal({
                 Лише в проміжку часу
               </label>
               {useWindow ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>з</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={23}
-                    className="w-16"
-                    value={windowStartH}
-                    onChange={(e) =>
-                      setWindowStartH(Math.min(23, Math.max(0, Number(e.target.value) || 0)))
-                    }
-                  />
-                  <span>:</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={59}
-                    className="w-16"
-                    value={windowStartM}
-                    onChange={(e) =>
-                      setWindowStartM(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
-                    }
-                  />
-                  <span>до</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={23}
-                    className="w-16"
-                    value={windowEndH}
-                    onChange={(e) =>
-                      setWindowEndH(Math.min(23, Math.max(0, Number(e.target.value) || 0)))
-                    }
-                  />
-                  <span>:</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={59}
-                    className="w-16"
-                    value={windowEndM}
-                    onChange={(e) =>
-                      setWindowEndM(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
-                    }
-                  />
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2">
+                    <span className="text-[var(--text-secondary)]">з</span>
+                    <input
+                      type="time"
+                      value={windowStart}
+                      onChange={(e) => setWindowStart(e.target.value || '00:00')}
+                      className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="text-[var(--text-secondary)]">до</span>
+                    <input
+                      type="time"
+                      value={windowEnd}
+                      onChange={(e) => setWindowEnd(e.target.value || '00:00')}
+                      className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+                    />
+                  </label>
                 </div>
               ) : null}
             </div>
