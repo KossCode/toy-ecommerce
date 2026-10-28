@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { api, isBrowserMock, type Me } from '@/api/client'
 
 const primaryNav = [
   { to: '/', label: 'Огляд', end: true },
-  { to: '/orders', label: 'Замовлення', badge: 2 },
+  { to: '/orders', label: 'Замовлення' },
   { to: '/products', label: 'Товари' },
   { to: '/categories', label: 'Категорії' },
   { to: '/prices', label: 'Ціни' },
@@ -33,6 +33,7 @@ function NavItem({
     <NavLink
       to={to}
       end={end}
+      title={badge ? `${badge} нових — потрібно підтвердити` : undefined}
       className={({ isActive }) =>
         `relative flex items-center justify-between rounded-md px-3 py-2 text-sm transition ${
           isActive
@@ -53,7 +54,10 @@ function NavItem({
 
 export function CrmLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [me, setMe] = useState<Me | null>(null)
+  /** New orders awaiting confirm — same as Overview «Потрібно підтвердити». */
+  const [ordersBadge, setOrdersBadge] = useState(0)
 
   useEffect(() => {
     void api
@@ -68,6 +72,18 @@ export function CrmLayout() {
         /* 401 handler in client redirects to login */
       })
   }, [navigate])
+
+  useEffect(() => {
+    void api
+      .getOverview()
+      .then((data) => {
+        const n = Number(data.meta.overview.needConfirm)
+        setOrdersBadge(Number.isFinite(n) ? n : 0)
+      })
+      .catch(() => {
+        /* ignore — badge stays until next refresh */
+      })
+  }, [location.pathname])
 
   async function logout() {
     try {
@@ -90,7 +106,11 @@ export function CrmLayout() {
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-auto p-2">
           {primaryNav.map((item) => (
-            <NavItem key={item.to} {...item} />
+            <NavItem
+              key={item.to}
+              {...item}
+              badge={item.to === '/orders' ? ordersBadge || undefined : undefined}
+            />
           ))}
           <div className="my-2 border-t border-[var(--border)]" />
           {secondaryNav.map((item) => (

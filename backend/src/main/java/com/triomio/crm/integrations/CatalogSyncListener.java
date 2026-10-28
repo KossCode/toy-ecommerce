@@ -2,6 +2,7 @@ package com.triomio.crm.integrations;
 
 import com.triomio.crm.catalog.ProductChanged;
 import com.triomio.crm.inventory.StockChanged;
+import com.triomio.crm.media.ProductImagesChanged;
 import com.triomio.crm.pricing.PriceRulesChanged;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,12 @@ class CatalogSyncListener {
         if (event.priceAffecting() || event.catalogAffecting()) {
             dirty.markForProduct(event.productId());
         }
+    }
+
+    @EventListener
+    @Transactional(propagation = Propagation.MANDATORY)
+    void onImages(ProductImagesChanged event) {
+        dirty.markForProduct(event.productId());
     }
 
     @EventListener

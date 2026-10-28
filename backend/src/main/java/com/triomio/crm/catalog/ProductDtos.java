@@ -1,5 +1,6 @@
 package com.triomio.crm.catalog;
 
+import com.triomio.crm.media.ProductImageDtos.ImageView;
 import com.triomio.crm.pricing.PriceCalculator.MarketplacePrice;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ final class ProductDtos {
             @Nullable String series,
             @Nullable String seriesRu,
             boolean awaiting,
+            List<ImageView> images,
             @Nullable Map<String, MarketplacePrice> marketplacePrices) {}
 
     record HistoryItem(String at, String sku, String text, String who, String kind) {}

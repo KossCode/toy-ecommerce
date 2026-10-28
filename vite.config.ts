@@ -23,6 +23,11 @@ export default defineConfig({
         target: process.env.VITE_API_PROXY ?? 'http://localhost:8080',
         changeOrigin: true,
       },
+      // Local product photos (MediaServeController); Pages mock has no storage.
+      '/media': {
+        target: process.env.VITE_API_PROXY ?? 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 })

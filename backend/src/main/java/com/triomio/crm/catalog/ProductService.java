@@ -4,6 +4,7 @@ import com.triomio.crm.auth.CurrentUser;
 import com.triomio.crm.catalog.ProductDtos.HistoryItem;
 import com.triomio.crm.catalog.ProductDtos.ProductView;
 import com.triomio.crm.inventory.InventoryService;
+import com.triomio.crm.media.ProductImageService;
 import com.triomio.crm.pricing.PriceCalculator;
 import com.triomio.crm.shared.ApiProblemException;
 import com.triomio.crm.shared.WireLabels;
@@ -32,6 +33,7 @@ class ProductService {
     private final JdbcClient jdbc;
     private final InventoryService inventory;
     private final PriceCalculator prices;
+    private final ProductImageService productImages;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
@@ -39,11 +41,13 @@ class ProductService {
             JdbcClient jdbc,
             InventoryService inventory,
             PriceCalculator prices,
+            ProductImageService productImages,
             Clock clock,
             ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.inventory = inventory;
         this.prices = prices;
+        this.productImages = productImages;
         this.clock = clock;
         this.events = events;
     }
@@ -328,6 +332,7 @@ class ProductService {
                 row.seriesUk(),
                 row.seriesRu(),
                 row.awaiting(),
+                productImages.listForProductId(row.id()),
                 mp);
     }
 

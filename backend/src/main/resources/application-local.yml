@@ -27,6 +27,9 @@ app:
     public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
     # Local seed is is_demo; include so owners can inspect a real YML without live sync.
     include-demo: true
+  media:
+    dir: ${APP_MEDIA_DIR:./.local-media}
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
 
 logging:
   level:

@@ -8,27 +8,29 @@ import seedMeta from '../../data/meta.json'
 import seedHistory from '../../data/product-history.json'
 import seedCategories from '../../data/categories.json'
 import seedPrices from '../../data/prices.json'
-import type {
-  CategoriesFile,
-  Category,
-  CreateOrderBody,
-  IntegrationProductsPayload,
-  IntegrationSchedule,
-  IntegrationSyncProduct,
-  IntegrationWriteMode,
-  IntegrationsFile,
-  Me,
-  Order,
-  OrderDetail,
-  OrderListItem,
-  OverviewPayload,
-  PricePreview,
-  PriceRule,
-  PricesFile,
-  Product,
-  ProductHistoryItem,
-  ScheduleFlow,
-  ScheduleUpdateBody,
+import {
+  ApiError,
+  type CategoriesFile,
+  type Category,
+  type CreateOrderBody,
+  type IntegrationProductsPayload,
+  type IntegrationSchedule,
+  type IntegrationSyncProduct,
+  type IntegrationWriteMode,
+  type IntegrationsFile,
+  type Me,
+  type Order,
+  type OrderDetail,
+  type OrderListItem,
+  type OverviewPayload,
+  type PricePreview,
+  type PriceRule,
+  type PricesFile,
+  type Product,
+  type ProductHistoryItem,
+  type ProductImage,
+  type ScheduleFlow,
+  type ScheduleUpdateBody,
 } from './client'
 import { guessRuFromUa } from '@/lib/translate'
 
@@ -423,7 +425,11 @@ export const browserApi = {
   async getProduct(sku: string) {
     const product = store.products.find((p) => p.sku === sku)
     if (!product) throw new Error('Товар не знайдено')
-    return { ...product, marketplacePrices: marketplacePrices(product) }
+    return {
+      ...product,
+      images: product.images ?? [],
+      marketplacePrices: marketplacePrices(product),
+    }
   },
 
   async createProduct() {
@@ -468,6 +474,7 @@ export const browserApi = {
         materialRu: '',
         typeRu: '',
         seriesRu: '',
+        images: [],
       }
       s.products.unshift(product)
       s.history.unshift({
@@ -509,6 +516,67 @@ export const browserApi = {
 
   async getProductHistory(sku: string) {
     return store.history.filter((h) => h.sku === sku)
+  },
+
+  /** In-memory data URLs only — Pages has no media storage (use `npm run dev:java` for real uploads). */
+  async uploadProductImage(sku: string, file: File): Promise<ProductImage> {
+    if (!file.type.startsWith('image/')) {
+      throw new ApiError(400, 'Дозволені JPEG, PNG або WebP', 'UNSUPPORTED_IMAGE')
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new ApiError(400, 'Максимум 10 MB на фото', 'FILE_TOO_LARGE')
+    }
+    const dataUrl = await readFileAsDataUrl(file)
+    let created: ProductImage | null = null
+    mutate((s) => {
+      const p = s.products.find((x) => x.sku === sku)
+      if (!p) throw new Error('Товар не знайдено')
+      const images = [...(p.images ?? [])]
+      if (images.length >= 15) {
+        throw new ApiError(400, 'Не більше 15 фото на товар', 'TOO_MANY_IMAGES')
+      }
+      const next: ProductImage = {
+        id: Date.now() + images.length,
+        url: dataUrl,
+        position: images.length,
+        contentType: file.type || 'image/jpeg',
+        sizeBytes: file.size,
+      }
+      images.push(next)
+      p.images = images
+      p.updatedAt = nowIso()
+      created = next
+    })
+    return created!
+  },
+
+  async reorderProductImages(sku: string, orderedIds: number[]): Promise<ProductImage[]> {
+    let next: ProductImage[] = []
+    mutate((s) => {
+      const p = s.products.find((x) => x.sku === sku)
+      if (!p) throw new Error('Товар не знайдено')
+      const byId = new Map((p.images ?? []).map((img) => [img.id, img]))
+      if (orderedIds.length !== byId.size || orderedIds.some((id) => !byId.has(id))) {
+        throw new ApiError(400, 'Список id має збігатися з фото товару', 'INVALID_ORDER')
+      }
+      next = orderedIds.map((id, position) => ({ ...byId.get(id)!, position }))
+      p.images = next
+      p.updatedAt = nowIso()
+    })
+    return next
+  },
+
+  async deleteProductImage(sku: string, id: number): Promise<void> {
+    mutate((s) => {
+      const p = s.products.find((x) => x.sku === sku)
+      if (!p) throw new Error('Товар не знайдено')
+      const images = (p.images ?? []).filter((img) => img.id !== id)
+      if (images.length === (p.images ?? []).length) {
+        throw new ApiError(404, 'Фото не знайдено', 'IMAGE_NOT_FOUND')
+      }
+      p.images = images.map((img, position) => ({ ...img, position }))
+      p.updatedAt = nowIso()
+    })
   },
 
   async getOrders(): Promise<OrderListItem[]> {
@@ -1130,4 +1198,13 @@ export const browserApi = {
   async triggerJob(name: string) {
     return { ok: 'true', name }
   },
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Не вдалося прочитати файл'))
+    reader.readAsDataURL(file)
+  })
 }
