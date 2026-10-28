@@ -579,27 +579,27 @@ function SortTh({
   sortKey,
   sortDir,
   onSort,
-  align = 'left',
+  className = '',
 }: {
   label: string
   column: SyncSortKey
   sortKey: SyncSortKey
   sortDir: 'asc' | 'desc'
   onSort: (key: SyncSortKey) => void
-  align?: 'left' | 'right'
+  className?: string
 }) {
   const active = sortKey === column
   return (
-    <th className={`pb-2 font-medium ${align === 'right' ? 'text-right' : 'text-left'}`}>
+    <th className={`pb-2 text-left align-bottom font-medium ${className}`}>
       <button
         type="button"
-        className={`inline-flex items-center gap-1 ${
+        className={`inline-flex h-6 items-center gap-1 text-sm leading-none ${
           active ? 'text-[var(--text)]' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
         }`}
         onClick={() => onSort(column)}
       >
         {label}
-        <span className="text-xs" aria-hidden>
+        <span className="inline-block w-3 text-center text-[10px] leading-none" aria-hidden>
           {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
         </span>
       </button>
@@ -741,7 +741,14 @@ function SyncProductsPanel({
         </div>
       </div>
 
-      <table className="w-full text-sm">
+      <table className="w-full table-fixed text-sm">
+        <colgroup>
+          <col className="w-[18%]" />
+          <col className="w-[34%]" />
+          <col className="w-[14%]" />
+          <col className="w-[12%]" />
+          <col className="w-[22%]" />
+        </colgroup>
         <thead className="text-[var(--text-secondary)]">
           <tr className="border-b border-[var(--border)]">
             <SortTh label="SKU" column="sku" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
@@ -766,7 +773,9 @@ function SyncProductsPanel({
               sortDir={sortDir}
               onSort={onSort}
             />
-            <th className="pb-2 text-right font-medium">Дії</th>
+            <th className="pb-2 text-right align-bottom text-sm font-medium leading-none">
+              <span className="inline-flex h-6 items-center">Дії</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -858,30 +867,41 @@ function SyncProductRow({
 }) {
   return (
     <tr className="border-b border-[var(--border)] last:border-0">
-      <td className="py-2.5 font-mono text-xs">{product.sku}</td>
-      <td className="py-2.5">
-        <div className="font-medium">{product.name}</div>
+      <td className="py-3 align-middle font-mono text-xs leading-5">{product.sku}</td>
+      <td className="py-3 align-middle">
+        <div className="truncate font-medium leading-5" title={product.name}>
+          {product.name}
+        </div>
         {product.lastError ? (
-          <div className="text-xs text-[var(--error)]">{product.lastError}</div>
+          <div className="mt-0.5 truncate text-xs text-[var(--error)]" title={product.lastError}>
+            {product.lastError}
+          </div>
         ) : null}
       </td>
-      <td className="py-2.5">
+      <td className="py-3 align-middle">
         <StatusChip tone={chipTone(product.channelState)}>{product.channelState}</StatusChip>
       </td>
-      <td className="py-2.5 text-[var(--text-secondary)]">{product.lastSyncedAt ?? '—'}</td>
-      <td className="py-2.5 text-right">
-        <div className="flex flex-wrap justify-end gap-1">
+      <td className="py-3 align-middle whitespace-nowrap text-[var(--text-secondary)] leading-5">
+        {product.lastSyncedAt ?? '—'}
+      </td>
+      <td className="py-3 align-middle text-right">
+        <div className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <Link
-            className="text-sm text-[var(--primary)]"
+            className="text-sm leading-5 text-[var(--primary)] hover:underline"
             to={`/products/${product.sku}`}
             state={{ from: `/integrations/${marketplaceId}` }}
           >
             Відкрити
           </Link>
           {canEdit ? (
-            <Button variant="quiet" disabled={busy} onClick={onStop}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onStop}
+              className="text-sm leading-5 text-[var(--primary)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            >
               Зупинити синхронізацію
-            </Button>
+            </button>
           ) : null}
         </div>
       </td>
