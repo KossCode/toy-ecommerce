@@ -40,7 +40,10 @@ npm run dev:java
 
 Если `java -version` не 25: `export JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
 
-`npm run dev:java` задаёт `VITE_API_PROXY=http://localhost:8080`. Сборка Pages (`npm run build:pages`) по-прежнему использует браузерный мок (`VITE_USE_BROWSER_API=true`), без Java.
+`npm run dev:java` задаёт `VITE_API_PROXY=http://localhost:8080` и **не** включает мок — в Network будут запросы `/api/...` на Java.  
+Если запустить Vite с `VITE_USE_BROWSER_API=true` (или открыть GitHub Pages), запросов на бекенд **не будет**: UI пишет в `localStorage`. В шапке CRM тогда жёлтый баннер. Чеклист полного прохода FE↔BE: [`../qa/fe-be-parity-checklist.md`](../qa/fe-be-parity-checklist.md).
+
+Сборка Pages (`npm run build:pages`) всегда с `VITE_USE_BROWSER_API=true`, без Java.
 
 Без локальной базы: `./mvnw spring-boot:test-run` (Testcontainers, нужен Docker).
 

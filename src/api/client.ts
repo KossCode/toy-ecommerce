@@ -1,6 +1,8 @@
 import { browserApi } from './browserStore'
 
-const useBrowserApi = import.meta.env.VITE_USE_BROWSER_API === 'true'
+/** GitHub Pages / explicit mock — no Java API. Local `npm run dev` / Docker image use real HTTP. */
+export const isBrowserMock = import.meta.env.VITE_USE_BROWSER_API === 'true'
+const useBrowserApi = isBrowserMock
 
 export class ApiError extends Error {
   readonly status: number
