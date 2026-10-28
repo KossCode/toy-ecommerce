@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   api,
   WRITE_MODE_LABEL,
@@ -15,6 +15,9 @@ import {
 import { Button, Input, PageHeader, Panel, Select, StatusChip, chipTone } from '@/components/ui'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
+
+const PAGE_SIZES = [10, 25, 50] as const
+type SyncSortKey = 'sku' | 'name' | 'channelState' | 'lastSyncedAt'
 
 const WRITE_MODES: IntegrationWriteMode[] = ['OFF', 'READ_ONLY', 'DRY_RUN', 'LIVE']
 
@@ -570,6 +573,53 @@ function ScheduleTable({
   )
 }
 
+function SortTh({
+  label,
+  column,
+  sortKey,
+  sortDir,
+  onSort,
+  align = 'left',
+}: {
+  label: string
+  column: SyncSortKey
+  sortKey: SyncSortKey
+  sortDir: 'asc' | 'desc'
+  onSort: (key: SyncSortKey) => void
+  align?: 'left' | 'right'
+}) {
+  const active = sortKey === column
+  return (
+    <th className={`pb-2 font-medium ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1 ${
+          active ? 'text-[var(--text)]' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'
+        }`}
+        onClick={() => onSort(column)}
+      >
+        {label}
+        <span className="text-xs" aria-hidden>
+          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </button>
+    </th>
+  )
+}
+
+function syncSortValue(p: IntegrationSyncProduct, key: SyncSortKey): string {
+  switch (key) {
+    case 'sku':
+      return p.sku
+    case 'name':
+      return p.name
+    case 'channelState':
+      return p.channelState
+    case 'lastSyncedAt':
+      return p.lastSyncedAt ?? ''
+  }
+}
+
 function SyncProductsPanel({
   marketplaceId,
   ready,
@@ -585,6 +635,10 @@ function SyncProductsPanel({
   const [addOpen, setAddOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [msg, setMsg] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SyncSortKey>('sku')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10)
+  const [page, setPage] = useState(0)
 
   async function load() {
     try {
@@ -599,8 +653,27 @@ function SyncProductsPanel({
     setPayload(null)
     setSelected(new Set())
     setAddOpen(false)
+    setPage(0)
     void load()
   }, [marketplaceId])
+
+  const sorted = useMemo(() => {
+    if (!payload) return []
+    const rows = [...payload.products]
+    rows.sort((a, b) => {
+      const av = syncSortValue(a, sortKey)
+      const bv = syncSortValue(b, sortKey)
+      if (!av && bv) return 1
+      if (av && !bv) return -1
+      const cmp = av.localeCompare(bv, 'uk', { numeric: true, sensitivity: 'base' })
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return rows
+  }, [payload, sortKey, sortDir])
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize) || 1)
+  const safePage = Math.min(page, pageCount - 1)
+  const pageRows = sorted.slice(safePage * pageSize, safePage * pageSize + pageSize)
 
   async function setEnabled(items: { sku: string; enabled: boolean }[]) {
     setBusySku(items[0]?.sku ?? 'batch')
@@ -615,6 +688,15 @@ function SyncProductsPanel({
     } finally {
       setBusySku(null)
     }
+  }
+
+  function onSort(key: SyncSortKey) {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+    setPage(0)
   }
 
   if (error) return <p className="text-[var(--error)]">{error}</p>
@@ -634,20 +716,56 @@ function SyncProductsPanel({
             </>
           ) : null}
         </div>
-        {canEdit ? (
-          <Button disabled={payload.candidates.length === 0} onClick={() => setAddOpen(true)}>
-            Додати
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+            На сторінці
+            <Select
+              value={String(pageSize)}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number])
+                setPage(0)
+              }}
+            >
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
+          </label>
+          {canEdit ? (
+            <Button disabled={payload.candidates.length === 0} onClick={() => setAddOpen(true)}>
+              Додати
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <table className="w-full text-sm">
         <thead className="text-[var(--text-secondary)]">
           <tr className="border-b border-[var(--border)]">
-            <th className="pb-2 text-left font-medium">SKU</th>
-            <th className="pb-2 text-left font-medium">Назва</th>
-            <th className="pb-2 text-left font-medium">Стан</th>
-            <th className="pb-2 text-left font-medium">Ост. синхр.</th>
+            <SortTh label="SKU" column="sku" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+            <SortTh
+              label="Назва"
+              column="name"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortTh
+              label="Стан"
+              column="channelState"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
+            <SortTh
+              label="Ост. синхр."
+              column="lastSyncedAt"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={onSort}
+            />
             <th className="pb-2 text-right font-medium">Дії</th>
           </tr>
         </thead>
@@ -660,19 +778,50 @@ function SyncProductsPanel({
               </td>
             </tr>
           ) : (
-            payload.products.map((p) => (
+            pageRows.map((p) => (
               <SyncProductRow
                 key={p.sku}
                 product={p}
+                marketplaceId={marketplaceId}
                 canEdit={canEdit}
                 busy={busySku === p.sku}
-                onPause={() => void setEnabled([{ sku: p.sku, enabled: false }])}
-                onRemove={() => void setEnabled([{ sku: p.sku, enabled: false }])}
+                onStop={() => void setEnabled([{ sku: p.sku, enabled: false }])}
               />
             ))
           )}
         </tbody>
       </table>
+
+      {payload.products.length > 0 ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--text-secondary)]">
+          <span>
+            {sorted.length === 0
+              ? '0'
+              : `${safePage * pageSize + 1}–${Math.min((safePage + 1) * pageSize, sorted.length)}`}{' '}
+            з {sorted.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="quiet"
+              disabled={safePage <= 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              Назад
+            </Button>
+            <span>
+              {safePage + 1} / {pageCount}
+            </span>
+            <Button
+              variant="quiet"
+              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            >
+              Далі
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {msg ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{msg}</p> : null}
 
       {addOpen ? (
@@ -696,16 +845,16 @@ function SyncProductsPanel({
 
 function SyncProductRow({
   product,
+  marketplaceId,
   canEdit,
   busy,
-  onPause,
-  onRemove,
+  onStop,
 }: {
   product: IntegrationSyncProduct
+  marketplaceId: string
   canEdit: boolean
   busy: boolean
-  onPause: () => void
-  onRemove: () => void
+  onStop: () => void
 }) {
   return (
     <tr className="border-b border-[var(--border)] last:border-0">
@@ -722,18 +871,17 @@ function SyncProductRow({
       <td className="py-2.5 text-[var(--text-secondary)]">{product.lastSyncedAt ?? '—'}</td>
       <td className="py-2.5 text-right">
         <div className="flex flex-wrap justify-end gap-1">
-          <Link className="text-sm text-[var(--primary)]" to={`/products/${product.sku}`}>
+          <Link
+            className="text-sm text-[var(--primary)]"
+            to={`/products/${product.sku}`}
+            state={{ from: `/integrations/${marketplaceId}` }}
+          >
             Відкрити
           </Link>
           {canEdit ? (
-            <>
-              <Button variant="quiet" disabled={busy} onClick={onPause}>
-                Пауза
-              </Button>
-              <Button variant="quiet" disabled={busy} onClick={onRemove}>
-                Прибрати
-              </Button>
-            </>
+            <Button variant="quiet" disabled={busy} onClick={onStop}>
+              Зупинити синхронізацію
+            </Button>
           ) : null}
         </div>
       </td>
@@ -807,8 +955,9 @@ function AddSyncProductsModal({
 }
 
 export function IntegrationsPage() {
+  const { marketplaceId } = useParams()
+  const navigate = useNavigate()
   const [data, setData] = useState<IntegrationsFile | null>(null)
-  const [active, setActive] = useState('epicentr')
   const [error, setError] = useState<string | null>(null)
   const [me, setMe] = useState<Me | null>(null)
   const [modeMsg, setModeMsg] = useState<string | null>(null)
@@ -830,10 +979,24 @@ export function IntegrationsPage() {
       .catch(() => setMe(null))
   }, [])
 
+  useEffect(() => {
+    if (!data?.marketplaces.length) return
+    const ids = data.marketplaces.map((m) => m.id)
+    const first = ids[0]
+    if (!marketplaceId || !ids.includes(marketplaceId)) {
+      navigate(`/integrations/${first}`, { replace: true })
+    }
+  }, [data, marketplaceId, navigate])
+
   if (error) return <p className="text-[var(--error)]">{error}</p>
   if (!data) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
 
-  const mp = data.marketplaces.find((m) => m.id === active) ?? data.marketplaces[0]
+  const mp =
+    data.marketplaces.find((m) => m.id === marketplaceId) ?? data.marketplaces[0]
+  if (!marketplaceId || mp.id !== marketplaceId) {
+    return <p className="text-[var(--text-secondary)]">Завантаження…</p>
+  }
+
   const isOwner = me?.role === 'OWNER'
   const canEditSync = me?.role === 'OWNER' || me?.role === 'MANAGER'
   const schedules = (mp.connection.schedules ?? []) as IntegrationSchedule[]
@@ -871,8 +1034,8 @@ export function IntegrationsPage() {
             key={m.id}
             type="button"
             onClick={() => {
-              setActive(m.id)
               setModeMsg(null)
+              navigate(`/integrations/${m.id}`)
             }}
             className={`rounded-full border px-3 py-1.5 text-sm ${
               mp.id === m.id
@@ -1005,7 +1168,7 @@ export function IntegrationsPage() {
                       >
                         {modeLabel(m)}
                         {WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)
-                          ? ' (потрібен вищий ceiling)'
+                          ? ' (недоступно на цьому середовищі)'
                           : ''}
                       </option>
                     ))}
@@ -1013,10 +1176,6 @@ export function IntegrationsPage() {
                 ) : (
                   <span>{modeLabel(currentMode)}</span>
                 )}
-                <span className="text-xs text-[var(--text-secondary)]">
-                  ефективний {modeLabel(String(mp.connection.effectiveMode ?? currentMode))} · max{' '}
-                  {modeLabel(maxMode)}
-                </span>
               </dd>
             </div>
             {modeMsg ? <p className="text-xs text-[var(--text-secondary)]">{modeMsg}</p> : null}

@@ -33,6 +33,7 @@ export default function App() {
           <Route path="products" element={<ProductsPage />} />
           <Route path="products/:sku" element={<ProductPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
+          <Route path="integrations/:marketplaceId" element={<IntegrationsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="stock" element={<StockRedirect />} />
           <Route path="prices" element={<PricesPage />} />
