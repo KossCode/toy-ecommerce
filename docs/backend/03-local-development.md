@@ -60,7 +60,7 @@ npm run dev:java
 
 Ручной запуск джобы (владелец): `POST /api/jobs/{name}/trigger` (например `OutboxDispatch`, `OrdersPoll.PROM`, `FeedBuild.PROM`). Список: `GET /api/jobs`.
 
-Фид локально: `APP_FEEDS_TOKEN` / `APP_PUBLIC_BASE_URL` в `.env.local` (см. `.env.local.example`). URL вида `http://localhost:8080/feeds/{token}/prom.xml`. Демо-SKU (`is_demo`) в фид не попадают — файл может быть пустым по offers, пока нет боевых товаров. Расписания orders/feed правятся в UI «Інтеграції» → «Розклад CRM» и сразу меняют Quartz.
+Фид локально: `APP_FEEDS_TOKEN` / `APP_PUBLIC_BASE_URL` в `.env.local` (см. `.env.local.example`). URL вида `http://localhost:8080/feeds/{token}/prom.xml`. В профиле `local` `app.feeds.include-demo=true` — демо-SKU попадают в YML (цена через `PriceCalculator`, `available` из stock). В prod/default `include-demo=false`. После смены цены/остатка/карточки/правил фид помечается dirty и пересобирается с debounce ~60 с (ночной `FeedBuild` остаётся страховкой). Расписания orders/feed — UI «Інтеграції» → «Розклад CRM».
 
 Сбросить базу:
 

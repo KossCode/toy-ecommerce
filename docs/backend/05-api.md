@@ -99,6 +99,8 @@
 | [x] | `POST /api/integrations/{id}/retry` | `integrations` | повтор `FAILED` строк outbox |
 | [x] | `PATCH /api/integrations/{id}/mode` | `integrations` | OWNER; потолок `INTEGRATIONS_MAX_MODE` |
 | [x] | `PUT /api/integrations/{id}/schedules/{flow}` | `integrations` | OWNER; flow=`orders`\|`feed`; INTERVAL/CALENDAR → Quartz |
+| [x] | `GET /api/integrations/{id}/products` | `integrations` | список на синхронізації + candidates (ACTIVE без enabled) |
+| [x] | `PATCH /api/integrations/{id}/products` | `integrations` | OWNER/MANAGER; `{items:[{sku,enabled}]}` → `product_channels` + outbox/dirty |
 | [x] | `GET /feeds/{token}/{marketplace}.xml` | `feeds` | публичный YML; неверный токен → 404 |
 
 ## 7. Новые эндпоинты (нет в моке)

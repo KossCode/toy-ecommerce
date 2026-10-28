@@ -70,4 +70,16 @@ class IntegrationsController {
         schedules.update(user, id, flow, body);
         return integrations.getOne(id);
     }
+
+    @GetMapping("/{id}/products")
+    IntegrationsService.SyncProductsPayload listProducts(@PathVariable String id) {
+        return integrations.listProducts(id);
+    }
+
+    @PatchMapping("/{id}/products")
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
+    IntegrationsService.SyncProductsPayload patchProducts(
+            @PathVariable String id, @RequestBody Map<String, Object> body) {
+        return integrations.patchProducts(id, body);
+    }
 }

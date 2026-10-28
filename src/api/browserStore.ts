@@ -12,7 +12,9 @@ import type {
   CategoriesFile,
   Category,
   CreateOrderBody,
+  IntegrationProductsPayload,
   IntegrationSchedule,
+  IntegrationSyncProduct,
   IntegrationWriteMode,
   IntegrationsFile,
   Me,
@@ -281,6 +283,32 @@ const demoMe: Me = {
   fullName: 'Олена',
   role: 'OWNER',
   mustChangePassword: false,
+}
+
+function channelEnabled(label: string | undefined): boolean {
+  return Boolean(label && label !== '—' && label !== 'Вимкнено')
+}
+
+function buildSyncProducts(products: Product[], marketplaceId: string): IntegrationProductsPayload {
+  const key = marketplaceId as 'prom' | 'rozetka' | 'epicentr'
+  const productsOut: IntegrationSyncProduct[] = []
+  const candidates: IntegrationSyncProduct[] = []
+  for (const p of products) {
+    if (p.status !== 'Активний') continue
+    const label = p.channels?.[key]
+    const enabled = channelEnabled(label)
+    const row: IntegrationSyncProduct = {
+      sku: p.sku,
+      name: p.name,
+      enabled,
+      channelState: enabled ? (label === 'Активний' ? 'Активний' : String(label)) : 'Пауза',
+      lastSyncedAt: null,
+      lastError: null,
+    }
+    if (enabled) productsOut.push(row)
+    else candidates.push(row)
+  }
+  return { products: productsOut, candidates }
 }
 
 export const browserApi = {
@@ -682,6 +710,28 @@ export const browserApi = {
 
   async getIntegrations() {
     return store.integrations
+  },
+
+  async getIntegrationProducts(id: string): Promise<IntegrationProductsPayload> {
+    return buildSyncProducts(store.products, id)
+  },
+
+  async patchIntegrationProducts(
+    id: string,
+    items: { sku: string; enabled: boolean }[],
+  ): Promise<IntegrationProductsPayload> {
+    mutate((s) => {
+      const key = id as 'prom' | 'rozetka' | 'epicentr'
+      for (const item of items) {
+        const p = s.products.find((x) => x.sku === item.sku)
+        if (!p) throw new Error(`Товар ${item.sku} не знайдено`)
+        p.channels = {
+          ...p.channels,
+          [key]: item.enabled ? 'Активний' : 'Вимкнено',
+        }
+      }
+    })
+    return buildSyncProducts(store.products, id)
   },
 
   async getCategories() {

@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.feeds")
-public record FeedsProperties(Path dir, String token, String publicBaseUrl) {
+public record FeedsProperties(Path dir, String token, String publicBaseUrl, boolean includeDemo) {
 
     public FeedsProperties {
         if (dir == null) {

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -37,9 +38,11 @@ public class PricingService {
     public record PricePreview(int count, int jumps, List<PreviewExample> examples) {}
 
     private final JdbcClient jdbc;
+    private final ApplicationEventPublisher events;
 
-    PricingService(JdbcClient jdbc) {
+    PricingService(JdbcClient jdbc, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +132,7 @@ public class PricingService {
                 .param("rounding", draft.roundingCode())
                 .query(Long.class)
                 .single();
+        events.publishEvent(new PriceRulesChanged(draft.marketplaceCode()));
         return loadRules().stream()
                 .filter(r -> r.id().equals(String.valueOf(id)))
                 .findFirst()
@@ -160,17 +164,21 @@ public class PricingService {
                 .param("value", draft.value())
                 .param("rounding", draft.roundingCode())
                 .update();
+        events.publishEvent(new PriceRulesChanged(draft.marketplaceCode()));
         return loadRules().stream().filter(r -> r.id().equals(id)).findFirst().orElseThrow();
     }
 
     @Transactional
     public void delete(String id) {
-        int n = jdbc.sql("DELETE FROM price_rules WHERE id = :id")
-                .param("id", Long.parseLong(id))
-                .update();
-        if (n == 0) {
-            throw new ApiProblemException(HttpStatus.NOT_FOUND, "PRICE_RULE_NOT_FOUND", "Правило не знайдено");
-        }
+        long ruleId = Long.parseLong(id);
+        String mp = jdbc.sql("SELECT marketplace FROM price_rules WHERE id = :id")
+                .param("id", ruleId)
+                .query(String.class)
+                .optional()
+                .orElseThrow(() ->
+                        new ApiProblemException(HttpStatus.NOT_FOUND, "PRICE_RULE_NOT_FOUND", "Правило не знайдено"));
+        jdbc.sql("DELETE FROM price_rules WHERE id = :id").param("id", ruleId).update();
+        events.publishEvent(new PriceRulesChanged(mp));
     }
 
     private List<PriceRuleView> loadRules() {

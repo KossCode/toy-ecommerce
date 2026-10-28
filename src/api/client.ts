@@ -137,6 +137,13 @@ const httpApi = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+  getIntegrationProducts: (id: string) =>
+    request<IntegrationProductsPayload>(`/integrations/${id}/products`),
+  patchIntegrationProducts: (id: string, items: { sku: string; enabled: boolean }[]) =>
+    request<IntegrationProductsPayload>(`/integrations/${id}/products`, {
+      method: 'PATCH',
+      body: JSON.stringify({ items }),
+    }),
   triggerJob: (name: string) =>
     request<{ ok: string; name: string }>(`/jobs/${encodeURIComponent(name)}/trigger`, {
       method: 'POST',
@@ -313,8 +320,28 @@ export type OverviewPayload = {
 }
 
 export type IntegrationWriteMode = 'OFF' | 'READ_ONLY' | 'DRY_RUN' | 'LIVE'
+export const WRITE_MODE_LABEL: Record<IntegrationWriteMode, string> = {
+  OFF: 'Вимкнено',
+  READ_ONLY: 'Лише читання',
+  DRY_RUN: 'Перевірка без відправки',
+  LIVE: 'Бойовий режим',
+}
 export type ScheduleFlow = 'orders' | 'feed'
 export type ScheduleKind = 'INTERVAL' | 'CALENDAR'
+
+export type IntegrationSyncProduct = {
+  sku: string
+  name: string
+  enabled: boolean
+  channelState: string
+  lastSyncedAt: string | null
+  lastError: string | null
+}
+
+export type IntegrationProductsPayload = {
+  products: IntegrationSyncProduct[]
+  candidates: IntegrationSyncProduct[]
+}
 
 export type IntegrationSchedule = {
   jobKey: string
