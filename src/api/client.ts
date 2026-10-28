@@ -37,7 +37,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...(init?.headers as Record<string, string> | undefined),
   }
-  if (init?.body != null && !headers['Content-Type']) {
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData
+  if (init?.body != null && !headers['Content-Type'] && !isFormData) {
     headers['Content-Type'] = 'application/json'
   }
   if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
@@ -111,6 +112,21 @@ const httpApi = {
   patchProduct: (sku: string, body: Partial<Product>) =>
     request<Product>(`/products/${sku}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getProductHistory: (sku: string) => request<ProductHistoryItem[]>(`/products/${sku}/history`),
+  uploadProductImage: (sku: string, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return request<ProductImage>(`/products/${encodeURIComponent(sku)}/images`, {
+      method: 'POST',
+      body,
+    })
+  },
+  reorderProductImages: (sku: string, orderedIds: number[]) =>
+    request<ProductImage[]>(`/products/${encodeURIComponent(sku)}/images/order`, {
+      method: 'PATCH',
+      body: JSON.stringify({ orderedIds }),
+    }),
+  deleteProductImage: (sku: string, id: number) =>
+    request<void>(`/products/${encodeURIComponent(sku)}/images/${id}`, { method: 'DELETE' }),
   getOrders: () => request<OrderListItem[]>('/orders'),
   getOrder: (id: string) => request<OrderDetail>(`/orders/${id}`),
   createOrder: (body: CreateOrderBody) =>
@@ -188,6 +204,16 @@ export type MarketplacePrice = {
   rule: string
 }
 
+export type ProductImage = {
+  id: number
+  url: string
+  position: number
+  contentType: string
+  sizeBytes: number
+  width?: number | null
+  height?: number | null
+}
+
 export type Product = {
   sku: string
   name: string
@@ -230,11 +256,23 @@ export type Product = {
   series?: string
   seriesRu?: string
   awaiting?: boolean
+  images?: ProductImage[]
   marketplacePrices?: {
     rozetka: MarketplacePrice
     epicentr: MarketplacePrice
     prom: MarketplacePrice
   }
+}
+
+/** Prefer same-origin /media/... so Vite proxy works in local `dev:java`. */
+export function productImageSrc(url: string): string {
+  try {
+    const u = new URL(url, window.location.origin)
+    if (u.pathname.startsWith('/media/')) return u.pathname + u.search
+  } catch {
+    /* keep absolute */
+  }
+  return url
 }
 
 export type ProductHistoryItem = {

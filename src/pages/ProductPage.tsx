@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { api, type Category, type Product, type ProductHistoryItem } from '@/api/client'
+import {
+  api,
+  isBrowserMock,
+  productImageSrc,
+  type Category,
+  type Product,
+  type ProductHistoryItem,
+  type ProductImage,
+} from '@/api/client'
 import { navBackFrom } from '@/lib/navBack'
 import { StockEditDrawer } from '@/components/StockEditDrawer'
 import {
@@ -51,6 +59,9 @@ export function ProductPage() {
   const [crmCategories, setCrmCategories] = useState<Category[]>([])
   const [pickingCategory, setPickingCategory] = useState(false)
   const [stockOpen, setStockOpen] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const dirty = Object.keys(draft).length > 0
 
   async function load() {
@@ -116,6 +127,65 @@ export function ProductPage() {
       setDraft({})
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function addImage(file: File) {
+    if (!product) return
+    setPhotoBusy(true)
+    setPhotoError(null)
+    try {
+      const img = await api.uploadProductImage(product.sku, file)
+      setProduct((p) =>
+        p ? { ...p, images: [...(p.images ?? []), img] } : p,
+      )
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : 'Не вдалося завантажити')
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  async function removeImage(id: number) {
+    if (!product) return
+    setPhotoBusy(true)
+    setPhotoError(null)
+    try {
+      await api.deleteProductImage(product.sku, id)
+      setProduct((p) =>
+        p
+          ? {
+              ...p,
+              images: (p.images ?? [])
+                .filter((img) => img.id !== id)
+                .map((img, position) => ({ ...img, position })),
+            }
+          : p,
+      )
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : 'Не вдалося видалити')
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  async function moveImage(index: number, delta: number) {
+    if (!product) return
+    const images = [...(product.images ?? [])]
+    const target = index + delta
+    if (target < 0 || target >= images.length) return
+    const [item] = images.splice(index, 1)
+    images.splice(target, 0, item)
+    const orderedIds = images.map((img) => img.id)
+    setPhotoBusy(true)
+    setPhotoError(null)
+    try {
+      const next = await api.reorderProductImages(product.sku, orderedIds)
+      setProduct((p) => (p ? { ...p, images: next } : p))
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : 'Не вдалося змінити порядок')
+    } finally {
+      setPhotoBusy(false)
     }
   }
 
@@ -288,30 +358,95 @@ export function ProductPage() {
                 <div className="mb-2 text-sm text-[var(--text-secondary)]">
                   Фото <span className="text-[var(--error)]">*</span>
                 </div>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4].map((n) => (
+                <div className="flex flex-wrap gap-2">
+                  {(view.images ?? []).map((img, index) => (
                     <div
-                      key={n}
-                      className="relative flex h-20 w-20 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--bg)] text-xs text-[var(--text-secondary)]"
+                      key={img.id}
+                      className="group relative h-20 w-20 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--bg)]"
                     >
-                      {n === 1 ? (
-                        <span className="absolute left-1 top-1 rounded bg-white px-1 text-[10px]">
+                      <button
+                        type="button"
+                        className="h-full w-full cursor-zoom-in"
+                        title="Переглянути"
+                        onClick={() => setPreviewIndex(index)}
+                      >
+                        <img
+                          src={productImageSrc(img.url)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                      {index === 0 ? (
+                        <span className="pointer-events-none absolute left-1 top-1 rounded bg-white/90 px-1 text-[10px]">
                           Головне
                         </span>
                       ) : null}
-                      foto
+                      <div className="absolute inset-x-0 bottom-0 flex justify-between gap-0.5 bg-black/55 p-0.5 opacity-0 transition group-hover:opacity-100">
+                        <button
+                          type="button"
+                          disabled={photoBusy || index === 0}
+                          className="flex-1 rounded text-[10px] text-white disabled:opacity-40"
+                          title="Ліворуч"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void moveImage(index, -1)
+                          }}
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          disabled={photoBusy}
+                          className="flex-1 rounded text-[10px] text-white"
+                          title="Видалити"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void removeImage(img.id)
+                          }}
+                        >
+                          ✕
+                        </button>
+                        <button
+                          type="button"
+                          disabled={photoBusy || index >= (view.images?.length ?? 0) - 1}
+                          className="flex-1 rounded text-[10px] text-white disabled:opacity-40"
+                          title="Праворуч"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void moveImage(index, 1)
+                          }}
+                        >
+                          →
+                        </button>
+                      </div>
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    className="flex h-20 w-20 items-center justify-center rounded-md border border-dashed border-[var(--border)] text-xs text-[var(--primary)]"
-                  >
-                    Додати фото
-                  </button>
+                  {(view.images?.length ?? 0) < 15 ? (
+                    <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-md border border-dashed border-[var(--border)] text-xs text-[var(--primary)] hover:border-[var(--primary)]">
+                      {photoBusy ? '…' : 'Додати фото'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={photoBusy}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          e.target.value = ''
+                          if (file) void addImage(file)
+                        }}
+                      />
+                    </label>
+                  ) : null}
                 </div>
+                {photoError ? (
+                  <p className="mt-1 text-xs text-[var(--error)]">{photoError}</p>
+                ) : null}
                 <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                  Мін. 1 фото (білий фон). Rozetka до 15, Prom до 10, Epicentr — без фото товар не
-                  створиться.
+                  Мін. 1 фото (білий фон). JPEG/PNG/WebP до 10 MB. Rozetka до 15, Prom до 10.
+                  {isBrowserMock
+                    ? ' У демо Pages фото лише в браузері; локально — npm run dev:java.'
+                    : null}
                 </p>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -756,6 +891,15 @@ export function ProductPage() {
         </div>
       </div>
 
+      {previewIndex != null && (view.images?.length ?? 0) > 0 ? (
+        <PhotoLightbox
+          images={view.images ?? []}
+          index={Math.min(previewIndex, (view.images?.length ?? 1) - 1)}
+          onIndexChange={setPreviewIndex}
+          onClose={() => setPreviewIndex(null)}
+        />
+      ) : null}
+
       {pickingCategory ? (
         <CategoryPickerModal
           categories={crmCategories}
@@ -885,6 +1029,101 @@ function MarketplaceIssues({ checks }: { checks: FieldCheck[] }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+function PhotoLightbox({
+  images,
+  index,
+  onIndexChange,
+  onClose,
+}: {
+  images: ProductImage[]
+  index: number
+  onIndexChange: (index: number) => void
+  onClose: () => void
+}) {
+  const total = images.length
+  const current = images[index]
+  const canPrev = index > 0
+  const canNext = index < total - 1
+
+  useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft' && canPrev) {
+        e.preventDefault()
+        onIndexChange(index - 1)
+      } else if (e.key === 'ArrowRight' && canNext) {
+        e.preventDefault()
+        onIndexChange(index + 1)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [index, canPrev, canNext, onIndexChange])
+
+  if (!current) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col items-center gap-3"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Перегляд фото"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex w-full items-center justify-between text-sm text-white/90">
+          <span>
+            {index + 1} / {total}
+            {index === 0 ? ' · Головне' : ''}
+          </span>
+          <button
+            type="button"
+            className="rounded px-2 py-1 hover:bg-white/10"
+            onClick={onClose}
+            aria-label="Закрити"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="relative flex w-full items-center justify-center">
+          {canPrev ? (
+            <button
+              type="button"
+              className="absolute left-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-xl text-white hover:bg-black/70 sm:left-2"
+              aria-label="Попереднє фото"
+              onClick={() => onIndexChange(index - 1)}
+            >
+              ‹
+            </button>
+          ) : null}
+          <img
+            src={productImageSrc(current.url)}
+            alt=""
+            className="max-h-[75vh] max-w-full rounded-md object-contain shadow-lg"
+          />
+          {canNext ? (
+            <button
+              type="button"
+              className="absolute right-0 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-xl text-white hover:bg-black/70 sm:right-2"
+              aria-label="Наступне фото"
+              onClick={() => onIndexChange(index + 1)}
+            >
+              ›
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
   )
 }
 

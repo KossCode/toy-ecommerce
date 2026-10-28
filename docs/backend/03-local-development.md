@@ -65,6 +65,8 @@ npm run dev:java
 
 Фид локально: `APP_FEEDS_TOKEN` / `APP_PUBLIC_BASE_URL` в `.env.local` (см. `.env.local.example`). URL вида `http://localhost:8080/feeds/{token}/prom.xml`. В профиле `local` `app.feeds.include-demo=true` — демо-SKU попадают в YML (цена через `PriceCalculator`, `available` из stock). В prod/default `include-demo=false`. После смены цены/остатка/карточки/правил фид помечается dirty и пересобирается с debounce ~60 с (ночной `FeedBuild` остаётся страховкой). Расписания orders/feed — UI «Інтеграції» → «Розклад CRM».
 
+Фото товаров локально пишутся в `backend/.local-media/` (gitignored) и отдаются с `http://localhost:8080/media/products/...`. В Vite (`npm run dev:java`) проксируется и `/api`, и `/media`. На GitHub Pages реального хранилища нет — в browser-мок фото живут как data URL в `localStorage`. Prod позже — S3 (`09-media-s3.md`).
+
 Сбросить базу:
 
 ```bash

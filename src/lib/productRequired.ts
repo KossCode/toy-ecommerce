@@ -83,7 +83,6 @@ export const REQUIRED_FIELDS: RequiredFieldDef[] = [
 
 export type FieldFill = { id: RequiredFieldId; ok: boolean; hint?: string }
 
-/** Soft photo check for MVP mock (no real uploads yet). */
 export function checkRequiredFields(
   product: Pick<
     Product,
@@ -97,9 +96,10 @@ export function checkRequiredFields(
     | 'available'
     | 'total'
     | 'awaiting'
+    | 'images'
   > & { photoCount?: number },
 ): FieldFill[] {
-  const photoCount = product.photoCount ?? 1 // mock: UI always shows placeholders
+  const photoCount = product.photoCount ?? product.images?.length ?? 0
   return [
     { id: 'name', ok: Boolean(product.name?.trim()) },
     { id: 'nameRu', ok: Boolean(product.nameRu?.trim()) },
