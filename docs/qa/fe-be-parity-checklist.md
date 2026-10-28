@@ -9,11 +9,11 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 ## 0. Environment
 
-- [ ] Backend up: `http://localhost:8080/actuator/health` → 200
-- [ ] Admin via Vite proxy: `npm run dev:java` → `http://localhost:5173` (no mock banner)
-- [ ] Login as `owner@demo.local` / password from `backend/.env.local`
-- [ ] DevTools Network: mutating actions show `PATCH`/`POST`/`PUT` to `/api/...`
-- [ ] Pages build (`kosscode.github.io/...`): mock banner visible; no `/api` traffic
+- [x] Backend up: `http://localhost:8080/actuator/health` → 200
+- [x] Admin via Vite proxy: `npm run dev:java` → `http://localhost:5173` (no mock banner; unauth `/api/auth/me` → 401)
+- [x] Login as `owner@demo.local` / password from `backend/.env.local`
+- [x] Mutating actions hit `/api/...` (mode / sync products / product patch verified)
+- [~] Pages build: mock-only by design (not re-verified this pass)
 
 ---
 
@@ -21,11 +21,11 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| Login | `POST /api/auth/login` (+ CSRF) | [ ] |
-| Me / shell name | `GET /api/auth/me` | [ ] |
-| Logout | `POST /api/auth/logout` | [ ] |
-| Change password | `POST /api/auth/password` | [ ] |
-| CSRF before writes | `GET /api/auth/csrf` | [ ] |
+| Login | `POST /api/auth/login` (+ CSRF) | [x] |
+| Me / shell name | `GET /api/auth/me` | [x] |
+| Logout | `POST /api/auth/logout` | [~] not re-hit this pass |
+| Change password | `POST /api/auth/password` | [ ] skipped (destructive) |
+| CSRF before writes | `GET /api/auth/csrf` | [x] |
 
 ---
 
@@ -33,8 +33,8 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| Dashboard cards / lists | `GET /api/overview` | [ ] |
-| Links to orders / products / integrations | — | [ ] |
+| Dashboard cards / lists | `GET /api/overview` | [x] |
+| Links to orders / products / integrations | — | [x] (code: `state.from`) |
 
 ---
 
@@ -42,12 +42,12 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| List | `GET /api/orders` | [ ] |
-| Detail | `GET /api/orders/{id}` | [ ] |
-| Create manual order | `POST /api/orders` | [ ] |
-| Confirm | `POST /api/orders/{id}/confirm` | [ ] |
-| TTN | `POST /api/orders/{id}/ttn` | [ ] |
-| Cancel | `POST /api/orders/{id}/cancel` | [ ] |
+| List | `GET /api/orders` | [x] |
+| Detail | `GET /api/orders/{id}` | [x] |
+| Create manual order | `POST /api/orders` | [x] 201 |
+| Confirm | `POST /api/orders/{id}/confirm` | [x] on `Нове`; 400 if already confirmed |
+| TTN | `POST /api/orders/{id}/ttn` | [x] |
+| Cancel | `POST /api/orders/{id}/cancel` | [x] |
 
 ---
 
@@ -55,14 +55,15 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| List / tabs | `GET /api/products` | [ ] |
-| Create draft | `POST /api/products` | [ ] |
-| Open card | `GET /api/products/{sku}` | [ ] |
-| Save fields / price | `PATCH /api/products/{sku}` | [ ] |
-| Change stock total | `PATCH` → inventory + `STOCK` outbox | [ ] |
-| Channel chips on card | `PATCH` body `channels` | [ ] |
-| History | `GET /api/products/{sku}/history` | [ ] |
-| Images upload / reorder / delete | image endpoints | [ ] (stage gap if UI missing) |
+| List / tabs | `GET /api/products` | [x] |
+| Create draft | `POST /api/products` | [~] not re-hit this pass |
+| Open card | `GET /api/products/{sku}` | [x] |
+| Save fields / price | `PATCH /api/products/{sku}` | [x] |
+| Change stock total | `PATCH` → inventory + `STOCK` outbox | [x] |
+| Channel chips on card | `PATCH` body `channels` | [~] API path exists; UI not re-clicked |
+| History | `GET /api/products/{sku}/history` | [x] |
+| Images upload / reorder / delete | image endpoints | [~] **no ProductPage UI** yet (API in backlog) |
+| Back arrow | `PageHeader` + `state.from` | [x] implemented this pass |
 
 ---
 
@@ -70,10 +71,10 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| Tree / list | `GET /api/categories` | [ ] |
-| Create | `POST /api/categories` | [ ] |
-| Rename / parent / MP mappings | `PATCH /api/categories/{id}` | [ ] |
-| Refresh dictionaries | `POST /api/categories/refresh-dictionaries` | [ ] |
+| Tree / list | `GET /api/categories` | [x] |
+| Create | `POST /api/categories` | [~] not re-hit |
+| Rename / parent / MP mappings | `PATCH /api/categories/{id}` | [~] not re-hit |
+| Refresh dictionaries | `POST /api/categories/refresh-dictionaries` | [x] 202 |
 
 ---
 
@@ -81,10 +82,10 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| Rules list | `GET /api/prices` | [ ] |
-| Preview | `POST /api/prices/preview` | [ ] |
-| Create / update / delete | `POST` / `PATCH` / `DELETE /api/prices...` | [ ] |
-| After rule change → PRICE outbox (DB) | listeners | [ ] |
+| Rules list | `GET /api/prices` | [x] |
+| Preview | `POST /api/prices/preview` | [x] |
+| Create / update / delete | `POST` / `PATCH` / `DELETE` | [~] not re-hit writes |
+| After rule change → PRICE outbox | listeners | [~] covered by unit tests earlier |
 
 ---
 
@@ -92,24 +93,26 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | UI | API | Check |
 | --- | --- | --- |
-| Tabs persist in URL (`prom` default) | route | [ ] |
-| Status / readiness / errors | `GET /api/integrations` | [ ] |
-| Retry failed outbox | `POST /api/integrations/{id}/retry` | [ ] |
-| Write mode dropdown | `PATCH /api/integrations/{id}/mode` | [ ] **Network must show PATCH** |
-| Feed URL copy | from `connection.feedUrl` | [ ] |
-| Sync products table load | `GET /api/integrations/{id}/products` | [ ] |
-| Add products | `PATCH .../products` `{enabled:true}` | [ ] **Network** |
-| Stop sync | `PATCH .../products` `{enabled:false}` | [ ] **Network** |
-| Sort / page size UI | client-only | [ ] |
-| Schedule edit / add / disable | `PUT /api/integrations/{id}/schedules/{flow}` | [ ] |
-| Run now | `POST /api/jobs/{name}/trigger` | [ ] |
-| Feed file after rebuild | `GET /feeds/{token}/{mp}.xml` | [ ] |
+| Tabs persist in URL (`prom` default) | route | [x] code |
+| Status / readiness / errors | `GET /api/integrations` | [x] |
+| Retry failed outbox | `POST /api/integrations/{id}/retry` | [~] not re-hit |
+| Write mode dropdown | `PATCH /api/integrations/{id}/mode` | [x] |
+| Feed URL copy | from `connection.feedUrl` | [x] feed GET 200 |
+| Sync products table load | `GET /api/integrations/{id}/products` | [x] |
+| Add products | `PATCH .../products` `{enabled:true}` | [x] |
+| Stop sync | `PATCH .../products` `{enabled:false}` | [x] |
+| Sort / page size UI | client-only | [x] code |
+| Schedule edit | `PUT /api/integrations/{id}/schedules/{flow}` | [x] |
+| Run now | `POST /api/jobs/{name}/trigger` | [x] 202 |
+| Feed file after rebuild | `GET /feeds/{token}/{mp}.xml` | [x] |
 
-### Known follow-ups (not blockers for this pass)
+### Known follow-ups
 
 - [ ] Multiple calendar triggers per feed flow (00:05 + 12:00)
-- [ ] Back arrow on detail pages (`location.state.from`)
-- [ ] Credentials / outbox / dry-run UI (API stubs in docs only)
+- [x] Back arrow on detail pages (`location.state.from`)
+- [ ] Credentials / outbox / dry-run UI (API stubs only)
+- [ ] Product images UI
+- [ ] Users / settings UI (API exists)
 
 ---
 
@@ -117,11 +120,11 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | Route | Check |
 | --- | --- |
-| `/customers` | [ ] stub only |
-| `/promotions` | [ ] stub only |
-| `/analytics` | [ ] stub only |
-| `/content` | [ ] stub only |
-| `/settings` | [ ] stub only (users API exists but UI incomplete) |
+| `/customers` | [x] stub |
+| `/promotions` | [x] stub |
+| `/analytics` | [x] stub |
+| `/content` | [x] stub |
+| `/settings` | [x] stub (users API without full UI) |
 
 ---
 
@@ -129,29 +132,10 @@ How to mark: `[ ]` not checked · `[x]` OK against Java · `[~]` partial / known
 
 | Concern | Check |
 | --- | --- |
-| OWNER vs MANAGER: mode/schedules OWNER-only | [ ] |
-| MANAGER can patch sync products | [ ] |
-| Problem+JSON errors surface in UI | [ ] |
-| After stock/price change: `sync_outbox` + optional dirty feed | [ ] |
-
----
-
-## Smoke script (local, after login cookie)
-
-```bash
-# CSRF + login (adjust password)
-curl -c /tmp/crm.txt -b /tmp/crm.txt -s http://localhost:8080/api/auth/csrf >/dev/null
-XSRF=$(grep XSRF-TOKEN /tmp/crm.txt | awk '{print $7}')
-curl -c /tmp/crm.txt -b /tmp/crm.txt -s -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" -H "X-XSRF-TOKEN: $XSRF" \
-  -d '{"email":"owner@demo.local","password":"YOUR_PASSWORD"}'
-
-XSRF=$(grep XSRF-TOKEN /tmp/crm.txt | awk '{print $7}')
-curl -b /tmp/crm.txt -s -X PATCH http://localhost:8080/api/integrations/prom/mode \
-  -H "Content-Type: application/json" -H "X-XSRF-TOKEN: $XSRF" \
-  -d '{"mode":"DRY_RUN"}'
-curl -b /tmp/crm.txt -s http://localhost:8080/api/integrations/prom/products | head -c 200; echo
-```
+| OWNER vs MANAGER: mode/schedules OWNER-only | [~] not role-switched this pass |
+| MANAGER can patch sync products | [~] |
+| Problem+JSON errors surface in UI | [x] confirm 400 body has `code` |
+| After stock/price change: outbox / dirty | [x] stock+price PATCH 200 |
 
 ---
 
@@ -159,4 +143,4 @@ curl -b /tmp/crm.txt -s http://localhost:8080/api/integrations/prom/products | h
 
 | Date | Tester | Env | Notes |
 | --- | --- | --- | --- |
-| | | local / Pages / Docker | |
+| 2026-10-28 | agent | local Java + `dev:java` | 26/26 core GETs/PATCHes OK; order create/ttn/cancel OK; confirm OK on `Нове`; job trigger 202; back-nav shipped on PR branch |

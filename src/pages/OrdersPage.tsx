@@ -234,7 +234,11 @@ export function OrdersPage() {
                   />
                 </td>
                 <td className="px-3 py-2.5">
-                  <Link className="font-medium text-[var(--primary)]" to={`/orders/${o.id}`}>
+                  <Link
+                    className="font-medium text-[var(--primary)]"
+                    to={`/orders/${o.id}`}
+                    state={{ from: '/orders' }}
+                  >
                     {o.id}
                   </Link>
                   <div className="text-xs text-[var(--text-secondary)]">

@@ -96,7 +96,11 @@ export function OverviewPage() {
               {data.todo.map((row) => (
                 <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
                   <td className="py-2.5">
-                    <Link className="font-medium text-[var(--primary)]" to={`/orders/${row.id}`}>
+                    <Link
+                      className="font-medium text-[var(--primary)]"
+                      to={`/orders/${row.id}`}
+                      state={{ from: '/' }}
+                    >
                       {row.id}
                     </Link>
                   </td>
@@ -116,7 +120,7 @@ export function OverviewPage() {
                           await api.confirmOrder(row.id)
                           await load()
                         } else {
-                          navigate(`/orders/${row.id}`)
+                          navigate(`/orders/${row.id}`, { state: { from: '/' } })
                         }
                       }}
                     >
@@ -177,7 +181,11 @@ export function OverviewPage() {
           <Panel title="Закінчуються">
             {data.lowStockSample ? (
               <div className="text-sm">
-                <Link className="font-medium" to={`/products/${data.lowStockSample.sku}`}>
+                <Link
+                  className="font-medium"
+                  to={`/products/${data.lowStockSample.sku}`}
+                  state={{ from: '/' }}
+                >
                   {data.lowStockSample.name}
                 </Link>
                 <div className="text-[var(--text-secondary)]">

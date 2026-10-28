@@ -1148,7 +1148,11 @@ export function IntegrationsPage() {
                     <td className="py-2.5">{e.error}</td>
                     <td className="py-2.5 text-[var(--text-secondary)]">{e.when}</td>
                     <td className="py-2.5 text-right">
-                      <Link className="text-[var(--primary)]" to={`/products/${e.sku}`}>
+                      <Link
+                        className="text-[var(--primary)]"
+                        to={`/products/${e.sku}`}
+                        state={{ from: `/integrations/${mp.id}` }}
+                      >
                         Відкрити товар
                       </Link>
                     </td>
