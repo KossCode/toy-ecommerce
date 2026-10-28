@@ -327,6 +327,9 @@ export type IntegrationSchedule = {
   daysOfWeek?: number[]
   hour?: number
   minute?: number
+  /** HH:mm — only for INTERVAL when limited to a daily window */
+  windowStart?: string
+  windowEnd?: string
 }
 
 export type ScheduleUpdateBody = {
@@ -336,6 +339,8 @@ export type ScheduleUpdateBody = {
   daysOfWeek?: number[]
   hour?: number
   minute?: number
+  windowStart?: string | null
+  windowEnd?: string | null
 }
 
 export type IntegrationConnection = {

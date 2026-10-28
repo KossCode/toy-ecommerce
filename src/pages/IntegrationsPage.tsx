@@ -10,9 +10,26 @@ import {
   type ScheduleKind,
 } from '@/api/client'
 import { Button, Input, PageHeader, Panel, Select, StatusChip, chipTone } from '@/components/ui'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 const WRITE_MODES: IntegrationWriteMode[] = ['OFF', 'READ_ONLY', 'DRY_RUN', 'LIVE']
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'] as const
+const FLOW_LABEL: Record<ScheduleFlow, string> = {
+  orders: 'Опитування замовлень',
+  feed: 'Пересборка фіду',
+}
+const ALL_FLOWS: ScheduleFlow[] = ['orders', 'feed']
+
+function minSeconds(flow: ScheduleFlow) {
+  return flow === 'feed' ? 15 * 60 : 90
+}
+
+function formatDaysUk(days: number[]): string {
+  if (days.length === 7) return 'щодня'
+  if (days.join(',') === '1,2,3,4,5') return 'Пн–Пт'
+  return days.map((d) => DAY_NAMES[d - 1]).join(', ')
+}
 
 function previewLabel(draft: {
   kind: ScheduleKind
@@ -21,118 +38,154 @@ function previewLabel(draft: {
   daysOfWeek: number[]
   hour: number
   minute: number
+  windowStart?: string | null
+  windowEnd?: string | null
 }): string {
   if (!draft.enabled) return 'вимкнено'
+  const dayLabel = formatDaysUk(draft.daysOfWeek)
   if (draft.kind === 'INTERVAL') {
     const sec = draft.everySeconds
-    if (sec % 3600 === 0) return `кожні ${sec / 3600} год`
-    if (sec % 60 === 0) return `кожні ${sec / 60} хв`
-    return `кожні ${sec} с`
+    let every =
+      sec % 3600 === 0
+        ? `кожні ${sec / 3600} год`
+        : sec % 60 === 0
+          ? `кожні ${sec / 60} хв`
+          : `кожні ${sec} с`
+    if (draft.daysOfWeek.length < 7) every += `, ${dayLabel}`
+    if (draft.windowStart && draft.windowEnd) every += `, ${draft.windowStart}–${draft.windowEnd}`
+    return every
   }
-  const days = draft.daysOfWeek
-  const dayLabel =
-    days.length === 7
-      ? 'щодня'
-      : days.join(',') === '1,2,3,4,5'
-        ? 'Пн–Пт'
-        : days.map((d) => DAY_NAMES[d - 1]).join(', ')
   return `${dayLabel} о ${String(draft.hour).padStart(2, '0')}:${String(draft.minute).padStart(2, '0')}`
 }
 
-function ScheduleEditor({
+function hm(h: number, m: number) {
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function parseHm(raw: string | undefined): { h: number; m: number } | null {
+  if (!raw) return null
+  const [a, b] = raw.split(':')
+  const h = Number(a)
+  const m = Number(b)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null
+  return { h, m }
+}
+
+type ScheduleModalMode = 'edit' | 'add'
+
+function ScheduleEditModal({
   marketplaceId,
+  mode,
   schedule,
-  isOwner,
+  availableFlows,
+  onClose,
   onSaved,
 }: {
   marketplaceId: string
-  schedule: IntegrationSchedule
-  isOwner: boolean
+  mode: ScheduleModalMode
+  schedule: IntegrationSchedule | null
+  availableFlows: ScheduleFlow[]
+  onClose: () => void
   onSaved: (mp: IntegrationsFile['marketplaces'][0]) => void
 }) {
-  const minSec = schedule.flow === 'feed' ? 15 * 60 : 90
-  const [kind, setKind] = useState<ScheduleKind>(schedule.kind)
-  const [enabled, setEnabled] = useState(schedule.enabled)
+  const initialFlow = schedule?.flow ?? availableFlows[0] ?? 'orders'
+  const [flow, setFlow] = useState<ScheduleFlow>(initialFlow)
+  const minSec = minSeconds(flow)
+  const [kind, setKind] = useState<ScheduleKind>(
+    schedule?.kind ?? (flow === 'feed' ? 'CALENDAR' : 'INTERVAL'),
+  )
   const [unit, setUnit] = useState<'seconds' | 'minutes' | 'hours'>(() => {
-    const s = schedule.everySeconds ?? minSec
+    const s = schedule?.everySeconds ?? minSec
     if (s % 3600 === 0) return 'hours'
     if (s % 60 === 0) return 'minutes'
     return 'seconds'
   })
   const [amount, setAmount] = useState(() => {
-    const s = schedule.everySeconds ?? minSec
+    const s = schedule?.everySeconds ?? minSec
     if (s % 3600 === 0) return s / 3600
     if (s % 60 === 0) return s / 60
     return s
   })
-  const [days, setDays] = useState<number[]>(schedule.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7])
-  const [hour, setHour] = useState(schedule.hour ?? 0)
-  const [minute, setMinute] = useState(schedule.minute ?? 0)
+  const [days, setDays] = useState<number[]>(schedule?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7])
+  const [onceAt, setOnceAt] = useState(() =>
+    hm(schedule?.hour ?? (flow === 'feed' ? 0 : 9), schedule?.minute ?? (flow === 'feed' ? 5 : 0)),
+  )
+  const [useWindow, setUseWindow] = useState(Boolean(schedule?.windowStart && schedule?.windowEnd))
+  const [windowStart, setWindowStart] = useState(schedule?.windowStart ?? '08:00')
+  const [windowEnd, setWindowEnd] = useState(schedule?.windowEnd ?? '20:00')
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    setKind(schedule.kind)
-    setEnabled(schedule.enabled)
-    const s = schedule.everySeconds ?? minSec
-    if (s % 3600 === 0) {
-      setUnit('hours')
-      setAmount(s / 3600)
-    } else if (s % 60 === 0) {
-      setUnit('minutes')
-      setAmount(s / 60)
-    } else {
-      setUnit('seconds')
-      setAmount(s)
+  useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
+
+  function applyFlowDefaults(next: ScheduleFlow) {
+    setFlow(next)
+    if (mode === 'add') {
+      if (next === 'feed') {
+        setKind('CALENDAR')
+        setDays([1, 2, 3, 4, 5, 6, 7])
+        setOnceAt('00:05')
+        setUseWindow(false)
+      } else {
+        setKind('INTERVAL')
+        setUnit('seconds')
+        setAmount(90)
+        setDays([1, 2, 3, 4, 5, 6, 7])
+        setUseWindow(false)
+      }
     }
-    setDays(schedule.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7])
-    setHour(schedule.hour ?? 0)
-    setMinute(schedule.minute ?? 0)
-    setMsg(null)
-  }, [schedule, minSec])
+  }
 
   const everySeconds =
     unit === 'hours' ? amount * 3600 : unit === 'minutes' ? amount * 60 : amount
+  const once = parseHm(onceAt) ?? { h: 0, m: 0 }
+  const activeWindowStart = useWindow && kind === 'INTERVAL' ? windowStart : null
+  const activeWindowEnd = useWindow && kind === 'INTERVAL' ? windowEnd : null
 
   const draft = {
     kind,
-    enabled,
+    enabled: true,
     everySeconds,
     daysOfWeek: days,
-    hour,
-    minute,
+    hour: once.h,
+    minute: once.m,
+    windowStart: activeWindowStart,
+    windowEnd: activeWindowEnd,
   }
-
-  const title = schedule.flow === 'orders' ? 'Опитування замовлень' : 'Пересборка фіду'
 
   async function save() {
-    if (!isOwner) return
     setBusy(true)
-    setMsg(null)
+    setError(null)
     try {
+      if (days.length === 0) throw new Error('Оберіть хоча б один день')
+      if (kind === 'INTERVAL' && everySeconds < minSec) {
+        throw new Error(`Мінімальний інтервал — ${minSec} с`)
+      }
+      if (kind === 'INTERVAL' && useWindow) {
+        const start = parseHm(windowStart)
+        const end = parseHm(windowEnd)
+        if (!start || !end) throw new Error('Некоректний проміжок часу')
+        if (end.h * 60 + end.m <= start.h * 60 + start.m) {
+          throw new Error('Кінець проміжку має бути пізніше за початок')
+        }
+      }
       const body =
         kind === 'INTERVAL'
-          ? { kind, enabled, everySeconds }
-          : { kind, enabled, daysOfWeek: days, hour, minute }
-      const mp = await api.putIntegrationSchedule(marketplaceId, schedule.flow, body)
+          ? {
+              kind,
+              enabled: true,
+              everySeconds,
+              daysOfWeek: days,
+              windowStart: activeWindowStart,
+              windowEnd: activeWindowEnd,
+            }
+          : { kind, enabled: true, daysOfWeek: days, hour: once.h, minute: once.m }
+      const mp = await api.putIntegrationSchedule(marketplaceId, flow, body)
       onSaved(mp)
-      setMsg('Збережено')
+      onClose()
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Помилка збереження')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function runNow() {
-    if (!isOwner) return
-    setBusy(true)
-    setMsg(null)
-    try {
-      await api.triggerJob(schedule.triggerName)
-      setMsg('Запущено зараз')
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Не вдалося запустити')
+      setError(e instanceof Error ? e.message : 'Помилка збереження')
     } finally {
       setBusy(false)
     }
@@ -142,125 +195,370 @@ function ScheduleEditor({
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()))
   }
 
+  const title = mode === 'add' ? 'Додати розклад' : `Редагувати · ${FLOW_LABEL[flow]}`
+
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--border)] p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="font-medium">{title}</div>
-        <div className="text-sm text-[var(--text-secondary)]">{previewLabel(draft)}</div>
-      </div>
-
-      <label className="mb-3 flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={enabled}
-          disabled={!isOwner}
-          onChange={(e) => setEnabled(e.target.checked)}
-        />
-        Увімкнено
-      </label>
-
-      <div className="mb-3 flex flex-wrap gap-2">
-        <Button
-          variant={kind === 'INTERVAL' ? 'primary' : 'secondary'}
-          disabled={!isOwner}
-          onClick={() => setKind('INTERVAL')}
-        >
-          Інтервал
-        </Button>
-        <Button
-          variant={kind === 'CALENDAR' ? 'primary' : 'secondary'}
-          disabled={!isOwner}
-          onClick={() => setKind('CALENDAR')}
-        >
-          За календарем
-        </Button>
-      </div>
-
-      {kind === 'INTERVAL' ? (
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-          <span>Кожні</span>
-          <Input
-            type="number"
-            min={1}
-            className="w-24"
-            disabled={!isOwner}
-            value={amount}
-            onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
-          />
-          <Select
-            disabled={!isOwner}
-            value={unit}
-            onChange={(e) => setUnit(e.target.value as 'seconds' | 'minutes' | 'hours')}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/45 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+      onWheel={(e) => {
+        if (e.target === e.currentTarget) e.preventDefault()
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="schedule-edit-title"
+        data-modal-scroll
+        className="max-h-[min(92vh,720px)] w-full max-w-lg overflow-y-auto rounded-[var(--radius)] bg-white shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+          <div>
+            <h2 id="schedule-edit-title" className="text-lg font-semibold">
+              {title}
+            </h2>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
+              Europe/Kyiv · {previewLabel(draft)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded px-2 text-lg text-[var(--text-secondary)] hover:bg-[var(--bg)]"
+            onClick={onClose}
+            aria-label="Закрити"
           >
-            <option value="seconds">с</option>
-            <option value="minutes">хв</option>
-            <option value="hours">год</option>
-          </Select>
-          <span className="text-[var(--text-secondary)]">мін. {minSec} с</span>
+            ×
+          </button>
         </div>
-      ) : (
-        <div className="mb-3 space-y-2 text-sm">
-          <div className="flex flex-wrap gap-2">
-            {DAY_NAMES.map((name, i) => {
-              const d = i + 1
-              const on = days.includes(d)
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  disabled={!isOwner}
-                  onClick={() => toggleDay(d)}
-                  className={`rounded-md border px-2 py-1 ${
-                    on
-                      ? 'border-[var(--primary)] bg-[#e4f1ef] text-[var(--primary)]'
-                      : 'border-[var(--border)]'
-                  }`}
-                >
-                  {name}
-                </button>
-              )
-            })}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span>о</span>
-            <Input
-              type="number"
-              min={0}
-              max={23}
-              className="w-20"
-              disabled={!isOwner}
-              value={hour}
-              onChange={(e) => setHour(Math.min(23, Math.max(0, Number(e.target.value) || 0)))}
-            />
-            <span>:</span>
-            <Input
-              type="number"
-              min={0}
-              max={59}
-              className="w-20"
-              disabled={!isOwner}
-              value={minute}
-              onChange={(e) => setMinute(Math.min(59, Math.max(0, Number(e.target.value) || 0)))}
-            />
-            <span className="text-[var(--text-secondary)]">Europe/Kyiv</span>
-          </div>
-        </div>
-      )}
 
-      {isOwner ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button disabled={busy} onClick={() => void save()}>
+        <div className="space-y-4 px-5 py-4 text-sm">
+          {mode === 'add' ? (
+            <label className="block space-y-1">
+              <span className="text-[var(--text-secondary)]">Потік</span>
+              <Select
+                className="w-full"
+                value={flow}
+                onChange={(e) => applyFlowDefaults(e.target.value as ScheduleFlow)}
+              >
+                {availableFlows.map((f) => (
+                  <option key={f} value={f}>
+                    {FLOW_LABEL[f]}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          ) : null}
+
+          <div>
+            <div className="mb-2 text-[var(--text-secondary)]">Як часто</div>
+            <div className="mb-3 flex flex-wrap gap-2">
+              <Button
+                variant={kind === 'INTERVAL' ? 'primary' : 'secondary'}
+                onClick={() => setKind('INTERVAL')}
+              >
+                Кожні N
+              </Button>
+              <Button
+                variant={kind === 'CALENDAR' ? 'primary' : 'secondary'}
+                onClick={() => setKind('CALENDAR')}
+              >
+                Один раз на день
+              </Button>
+            </div>
+            {kind === 'INTERVAL' ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Кожні</span>
+                <Input
+                  type="number"
+                  min={1}
+                  className="!w-24"
+                  value={amount}
+                  onChange={(e) => setAmount(Math.max(1, Number(e.target.value) || 1))}
+                />
+                <Select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as 'seconds' | 'minutes' | 'hours')}
+                >
+                  <option value="seconds">с</option>
+                  <option value="minutes">хв</option>
+                  <option value="hours">год</option>
+                </Select>
+                <span className="text-[var(--text-secondary)]">мін. {minSec} с</span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>о</span>
+                <input
+                  type="time"
+                  value={onceAt}
+                  onChange={(e) => setOnceAt(e.target.value || '00:00')}
+                  className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-2 text-[var(--text-secondary)]">Дні тижня</div>
+            <div className="flex flex-wrap gap-2">
+              {DAY_NAMES.map((name, i) => {
+                const d = i + 1
+                const on = days.includes(d)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleDay(d)}
+                    className={`rounded-md border px-2 py-1 ${
+                      on
+                        ? 'border-[var(--primary)] bg-[#e4f1ef] text-[var(--primary)]'
+                        : 'border-[var(--border)]'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">
+              Усі дні = без обмеження. Інакше лише вибрані.
+            </p>
+          </div>
+
+          {kind === 'INTERVAL' ? (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={useWindow}
+                  onChange={(e) => setUseWindow(e.target.checked)}
+                />
+                Лише в проміжку часу
+              </label>
+              {useWindow ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2">
+                    <span className="text-[var(--text-secondary)]">з</span>
+                    <input
+                      type="time"
+                      value={windowStart}
+                      onChange={(e) => setWindowStart(e.target.value || '00:00')}
+                      className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <span className="text-[var(--text-secondary)]">до</span>
+                    <input
+                      type="time"
+                      value={windowEnd}
+                      onChange={(e) => setWindowEnd(e.target.value || '00:00')}
+                      className="h-9 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
+                    />
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {error ? <p className="text-[var(--error)]">{error}</p> : null}
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] px-5 py-4">
+          <Button variant="secondary" disabled={busy} onClick={onClose}>
+            Скасувати
+          </Button>
+          <Button
+            disabled={busy || (mode === 'add' && availableFlows.length === 0)}
+            onClick={() => void save()}
+          >
             Зберегти
           </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => void runNow()}>
-            Запустити зараз
-          </Button>
-          {msg ? <span className="text-sm text-[var(--text-secondary)]">{msg}</span> : null}
         </div>
-      ) : (
-        <p className="text-xs text-[var(--text-secondary)]">Змінювати розклад може лише власник.</p>
-      )}
+      </div>
     </div>
+  )
+}
+
+function ScheduleTable({
+  marketplaceId,
+  schedules,
+  isOwner,
+  onChanged,
+}: {
+  marketplaceId: string
+  schedules: IntegrationSchedule[]
+  isOwner: boolean
+  onChanged: (mp: IntegrationsFile['marketplaces'][0]) => void
+}) {
+  const [modal, setModal] = useState<
+    | { mode: 'edit'; schedule: IntegrationSchedule }
+    | { mode: 'add' }
+    | null
+  >(null)
+  const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const enabledRows = schedules.filter((s) => s.enabled)
+  const disabledFlows = ALL_FLOWS.filter((f) => {
+    const row = schedules.find((s) => s.flow === f)
+    return !row || !row.enabled
+  })
+
+  async function runNow(schedule: IntegrationSchedule) {
+    if (!isOwner) return
+    setBusyKey(schedule.flow)
+    setMsg(null)
+    try {
+      await api.triggerJob(schedule.triggerName)
+      setMsg(`Запущено: ${FLOW_LABEL[schedule.flow]}`)
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Не вдалося запустити')
+    } finally {
+      setBusyKey(null)
+    }
+  }
+
+  async function remove(schedule: IntegrationSchedule) {
+    if (!isOwner) return
+    if (!window.confirm(`Вимкнути «${FLOW_LABEL[schedule.flow]}»?`)) return
+    setBusyKey(schedule.flow)
+    setMsg(null)
+    try {
+      const days = schedule.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]
+      const body =
+        schedule.kind === 'INTERVAL'
+          ? {
+              kind: schedule.kind,
+              enabled: false,
+              everySeconds: schedule.everySeconds ?? minSeconds(schedule.flow),
+              daysOfWeek: days,
+              windowStart: schedule.windowStart ?? null,
+              windowEnd: schedule.windowEnd ?? null,
+            }
+          : {
+              kind: schedule.kind,
+              enabled: false,
+              daysOfWeek: days,
+              hour: schedule.hour ?? 0,
+              minute: schedule.minute ?? 0,
+            }
+      const mp = await api.putIntegrationSchedule(marketplaceId, schedule.flow, body)
+      onChanged(mp)
+      setMsg('Розклад вимкнено')
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setBusyKey(null)
+    }
+  }
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-[var(--text-secondary)]">
+          Коли CRM опитує замовлення і пересобирає файл фіду. Частоту скачування фіду задає кабінет
+          площадки — тут її не змінюємо.
+        </p>
+        {isOwner ? (
+          <Button
+            disabled={disabledFlows.length === 0}
+            onClick={() => setModal({ mode: 'add' })}
+            title={
+              disabledFlows.length === 0
+                ? 'Обидва потоки вже в розкладі'
+                : 'Додати вимкнений потік'
+            }
+          >
+            Додати
+          </Button>
+        ) : null}
+      </div>
+
+      <table className="w-full text-sm">
+        <thead className="text-[var(--text-secondary)]">
+          <tr className="border-b border-[var(--border)]">
+            <th className="pb-2 text-left font-medium">Потік</th>
+            <th className="pb-2 text-left font-medium">Розклад</th>
+            <th className="pb-2 text-left font-medium">Стан</th>
+            <th className="pb-2 text-right font-medium">Дії</th>
+          </tr>
+        </thead>
+        <tbody>
+          {enabledRows.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="py-6 text-center text-[var(--text-secondary)]">
+                Немає увімкнених розкладів.
+                {isOwner && disabledFlows.length > 0 ? ' Натисніть «Додати».' : null}
+              </td>
+            </tr>
+          ) : (
+            enabledRows.map((s) => (
+              <tr key={s.flow} className="border-b border-[var(--border)] last:border-0">
+                <td className="py-2.5 font-medium">{FLOW_LABEL[s.flow]}</td>
+                <td className="py-2.5 text-[var(--text-secondary)]">{s.label}</td>
+                <td className="py-2.5">
+                  <StatusChip tone="success">Увімкнено</StatusChip>
+                </td>
+                <td className="py-2.5 text-right">
+                  {isOwner ? (
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <Button
+                        variant="quiet"
+                        disabled={busyKey === s.flow}
+                        onClick={() => setModal({ mode: 'edit', schedule: s })}
+                      >
+                        Змінити
+                      </Button>
+                      <Button
+                        variant="quiet"
+                        disabled={busyKey === s.flow}
+                        onClick={() => void runNow(s)}
+                      >
+                        Запустити
+                      </Button>
+                      <Button
+                        variant="quiet"
+                        disabled={busyKey === s.flow}
+                        onClick={() => void remove(s)}
+                      >
+                        Видалити
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-[var(--text-secondary)]">лише перегляд</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+
+      {msg ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{msg}</p> : null}
+
+      {modal?.mode === 'edit' ? (
+        <ScheduleEditModal
+          marketplaceId={marketplaceId}
+          mode="edit"
+          schedule={modal.schedule}
+          availableFlows={[]}
+          onClose={() => setModal(null)}
+          onSaved={onChanged}
+        />
+      ) : null}
+      {modal?.mode === 'add' ? (
+        <ScheduleEditModal
+          marketplaceId={marketplaceId}
+          mode="add"
+          schedule={null}
+          availableFlows={disabledFlows}
+          onClose={() => setModal(null)}
+          onSaved={onChanged}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -282,7 +580,10 @@ export function IntegrationsPage() {
 
   useEffect(() => {
     void load()
-    void api.me().then(setMe).catch(() => setMe(null))
+    void api
+      .me()
+      .then(setMe)
+      .catch(() => setMe(null))
   }, [])
 
   if (error) return <p className="text-[var(--error)]">{error}</p>
@@ -463,9 +764,15 @@ export function IntegrationsPage() {
                     onChange={(e) => void changeMode(e.target.value as IntegrationWriteMode)}
                   >
                     {WRITE_MODES.map((m) => (
-                      <option key={m} value={m} disabled={WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)}>
+                      <option
+                        key={m}
+                        value={m}
+                        disabled={WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)}
+                      >
                         {m}
-                        {WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode) ? ' (потрібен вищий ceiling)' : ''}
+                        {WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)
+                          ? ' (потрібен вищий ceiling)'
+                          : ''}
                       </option>
                     ))}
                   </Select>
@@ -477,9 +784,7 @@ export function IntegrationsPage() {
                 </span>
               </dd>
             </div>
-            {modeMsg ? (
-              <p className="text-xs text-[var(--text-secondary)]">{modeMsg}</p>
-            ) : null}
+            {modeMsg ? <p className="text-xs text-[var(--text-secondary)]">{modeMsg}</p> : null}
             {mp.connection.tokenMasked ? (
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-[var(--text-secondary)]">Токен API</dt>
@@ -548,25 +853,12 @@ export function IntegrationsPage() {
 
       <div className="mb-4">
         <Panel title="Розклад CRM">
-          <p className="mb-3 text-sm text-[var(--text-secondary)]">
-            Коли CRM опитує замовлення і пересобирає файл фіду. Частоту скачування фіду задає кабінет
-            площадки — тут її не змінюємо.
-          </p>
-          <div className="grid gap-3 lg:grid-cols-2">
-            {(['orders', 'feed'] as ScheduleFlow[]).map((flow) => {
-              const schedule = schedules.find((s) => s.flow === flow)
-              if (!schedule) return null
-              return (
-                <ScheduleEditor
-                  key={`${mp.id}-${flow}`}
-                  marketplaceId={mp.id}
-                  schedule={schedule}
-                  isOwner={!!isOwner}
-                  onSaved={replaceMarketplace}
-                />
-              )
-            })}
-          </div>
+          <ScheduleTable
+            marketplaceId={mp.id}
+            schedules={schedules}
+            isOwner={!!isOwner}
+            onChanged={replaceMarketplace}
+          />
         </Panel>
       </div>
 

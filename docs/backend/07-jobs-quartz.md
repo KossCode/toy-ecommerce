@@ -53,7 +53,7 @@ server:
 ## 4. Управление
 
 - Запуск вне расписания — `POST /api/jobs/{name}/trigger` (только владелец), под капотом `Scheduler.triggerJob`. Имена: `OrdersPoll.PROM`, `FeedBuild.ROZETKA`, `OutboxDispatch`, …
-- Расписание опроса заказов и пересборки фида — таблица `job_schedules` (источник правды). `PUT /api/integrations/{id}/schedules/{orders|feed}` пишет JSON и делает `rescheduleJob`. Системные джобы (`OutboxDispatch`, `ConfirmDeadline`, …) остаются Trigger-бинами в коде.
+- Расписание опроса заказов и пересборки фида — таблица `job_schedules` (источник правды). `PUT /api/integrations/{id}/schedules/{orders|feed}` пишет JSON и делает `rescheduleJob`. Payload: `INTERVAL` (everySeconds + опционально daysOfWeek + windowStart/windowEnd) или `CALENDAR` (раз в день о hour:minute + daysOfWeek). Ограничения дней/окна — Quartz Calendar на SimpleTrigger. Системные джобы (`OutboxDispatch`, …) остаются Trigger-бинами в коде.
 - Пауза площадки — не пауза джобы, а режим `OFF` в `integration_settings`: джобы продолжают работать, но для этой площадки ничего не делают. Так одно действие останавливает и опрос, и отправку.
 - На странице «Інтеграції»: блок «Підключення» (режим записи, URL фіду + «Копіювати») і «Розклад CRM» (інтервал / календар Europe/Kyiv, «Запустити зараз»). Частоту скачивания фіду в кабінеті площадки тут не змінюємо.
 
