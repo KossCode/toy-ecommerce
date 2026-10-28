@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   api,
+  WRITE_MODE_LABEL,
+  type IntegrationProductsPayload,
   type IntegrationSchedule,
+  type IntegrationSyncProduct,
   type IntegrationWriteMode,
   type IntegrationsFile,
   type Me,
@@ -14,6 +17,11 @@ import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 const WRITE_MODES: IntegrationWriteMode[] = ['OFF', 'READ_ONLY', 'DRY_RUN', 'LIVE']
+
+function modeLabel(mode: string): string {
+  return WRITE_MODE_LABEL[mode as IntegrationWriteMode] ?? mode
+}
+
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'] as const
 const FLOW_LABEL: Record<ScheduleFlow, string> = {
   orders: 'Опитування замовлень',
@@ -562,6 +570,242 @@ function ScheduleTable({
   )
 }
 
+function SyncProductsPanel({
+  marketplaceId,
+  ready,
+  canEdit,
+}: {
+  marketplaceId: string
+  ready: IntegrationsFile['marketplaces'][0]['ready']
+  canEdit: boolean
+}) {
+  const [payload, setPayload] = useState<IntegrationProductsPayload | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busySku, setBusySku] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [msg, setMsg] = useState<string | null>(null)
+
+  async function load() {
+    try {
+      setPayload(await api.getIntegrationProducts(marketplaceId))
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+    }
+  }
+
+  useEffect(() => {
+    setPayload(null)
+    setSelected(new Set())
+    setAddOpen(false)
+    void load()
+  }, [marketplaceId])
+
+  async function setEnabled(items: { sku: string; enabled: boolean }[]) {
+    setBusySku(items[0]?.sku ?? 'batch')
+    setMsg(null)
+    try {
+      setPayload(await api.patchIntegrationProducts(marketplaceId, items))
+      setMsg(items.every((i) => i.enabled) ? 'Додано до синхронізації' : 'Оновлено')
+      setAddOpen(false)
+      setSelected(new Set())
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setBusySku(null)
+    }
+  }
+
+  if (error) return <p className="text-[var(--error)]">{error}</p>
+  if (!payload) return <p className="text-[var(--text-secondary)]">Завантаження…</p>
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm text-[var(--text-secondary)]">
+          На синхронізації {payload.products.length} · готові {ready.ready} з {ready.total}
+          {ready.notReady > 0 ? (
+            <>
+              {' · '}
+              <Link className="text-[var(--primary)]" to="/products?tab=notReady">
+                не готові {ready.notReady}
+              </Link>
+            </>
+          ) : null}
+        </div>
+        {canEdit ? (
+          <Button disabled={payload.candidates.length === 0} onClick={() => setAddOpen(true)}>
+            Додати
+          </Button>
+        ) : null}
+      </div>
+
+      <table className="w-full text-sm">
+        <thead className="text-[var(--text-secondary)]">
+          <tr className="border-b border-[var(--border)]">
+            <th className="pb-2 text-left font-medium">SKU</th>
+            <th className="pb-2 text-left font-medium">Назва</th>
+            <th className="pb-2 text-left font-medium">Стан</th>
+            <th className="pb-2 text-left font-medium">Ост. синхр.</th>
+            <th className="pb-2 text-right font-medium">Дії</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payload.products.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="py-6 text-center text-[var(--text-secondary)]">
+                Немає товарів на синхронізації.
+                {canEdit && payload.candidates.length > 0 ? ' Натисніть «Додати».' : null}
+              </td>
+            </tr>
+          ) : (
+            payload.products.map((p) => (
+              <SyncProductRow
+                key={p.sku}
+                product={p}
+                canEdit={canEdit}
+                busy={busySku === p.sku}
+                onPause={() => void setEnabled([{ sku: p.sku, enabled: false }])}
+                onRemove={() => void setEnabled([{ sku: p.sku, enabled: false }])}
+              />
+            ))
+          )}
+        </tbody>
+      </table>
+      {msg ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{msg}</p> : null}
+
+      {addOpen ? (
+        <AddSyncProductsModal
+          candidates={payload.candidates}
+          selected={selected}
+          setSelected={setSelected}
+          busy={busySku === 'batch'}
+          onClose={() => {
+            setAddOpen(false)
+            setSelected(new Set())
+          }}
+          onConfirm={() =>
+            void setEnabled([...selected].map((sku) => ({ sku, enabled: true })))
+          }
+        />
+      ) : null}
+    </>
+  )
+}
+
+function SyncProductRow({
+  product,
+  canEdit,
+  busy,
+  onPause,
+  onRemove,
+}: {
+  product: IntegrationSyncProduct
+  canEdit: boolean
+  busy: boolean
+  onPause: () => void
+  onRemove: () => void
+}) {
+  return (
+    <tr className="border-b border-[var(--border)] last:border-0">
+      <td className="py-2.5 font-mono text-xs">{product.sku}</td>
+      <td className="py-2.5">
+        <div className="font-medium">{product.name}</div>
+        {product.lastError ? (
+          <div className="text-xs text-[var(--error)]">{product.lastError}</div>
+        ) : null}
+      </td>
+      <td className="py-2.5">
+        <StatusChip tone={chipTone(product.channelState)}>{product.channelState}</StatusChip>
+      </td>
+      <td className="py-2.5 text-[var(--text-secondary)]">{product.lastSyncedAt ?? '—'}</td>
+      <td className="py-2.5 text-right">
+        <div className="flex flex-wrap justify-end gap-1">
+          <Link className="text-sm text-[var(--primary)]" to={`/products/${product.sku}`}>
+            Відкрити
+          </Link>
+          {canEdit ? (
+            <>
+              <Button variant="quiet" disabled={busy} onClick={onPause}>
+                Пауза
+              </Button>
+              <Button variant="quiet" disabled={busy} onClick={onRemove}>
+                Прибрати
+              </Button>
+            </>
+          ) : null}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+function AddSyncProductsModal({
+  candidates,
+  selected,
+  setSelected,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  candidates: IntegrationSyncProduct[]
+  selected: Set<string>
+  setSelected: (next: Set<string>) => void
+  busy: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  useEscapeKey(true, onClose)
+  useBodyScrollLock(true)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[80vh] w-full max-w-lg overflow-auto rounded-[var(--radius)] bg-white p-5 shadow-lg">
+        <h2 className="mb-1 text-lg font-semibold">Додати товари</h2>
+        <p className="mb-4 text-sm text-[var(--text-secondary)]">
+          Активні товари без увімкненого каналу на цій площадці.
+        </p>
+        <ul className="mb-4 max-h-64 space-y-2 overflow-auto">
+          {candidates.map((c) => {
+            const on = selected.has(c.sku)
+            return (
+              <li key={c.sku}>
+                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => {
+                      const next = new Set(selected)
+                      if (on) next.delete(c.sku)
+                      else next.add(c.sku)
+                      setSelected(next)
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">{c.name}</span>
+                    <span className="ml-2 font-mono text-xs text-[var(--text-secondary)]">
+                      {c.sku}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+        <div className="flex justify-end gap-2">
+          <Button variant="quiet" onClick={onClose}>
+            Скасувати
+          </Button>
+          <Button disabled={busy || selected.size === 0} onClick={onConfirm}>
+            Увімкнути ({selected.size})
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function IntegrationsPage() {
   const [data, setData] = useState<IntegrationsFile | null>(null)
   const [active, setActive] = useState('epicentr')
@@ -591,6 +835,7 @@ export function IntegrationsPage() {
 
   const mp = data.marketplaces.find((m) => m.id === active) ?? data.marketplaces[0]
   const isOwner = me?.role === 'OWNER'
+  const canEditSync = me?.role === 'OWNER' || me?.role === 'MANAGER'
   const schedules = (mp.connection.schedules ?? []) as IntegrationSchedule[]
   const maxMode = String(mp.connection.maxMode ?? 'DRY_RUN') as IntegrationWriteMode
   const currentMode = String(mp.connection.mode ?? 'READ_ONLY') as IntegrationWriteMode
@@ -649,23 +894,6 @@ export function IntegrationsPage() {
         ))}
       </div>
 
-      {mp.errorBanner ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--error)]/30 bg-[#fdecea] px-4 py-3">
-          <div>
-            <div className="font-medium text-[var(--error)]">{mp.errorBanner.title}</div>
-            <div className="text-sm text-[var(--text-secondary)]">{mp.errorBanner.nextTry}</div>
-          </div>
-          <Button
-            onClick={async () => {
-              await api.retryIntegration(mp.id)
-              await load()
-            }}
-          >
-            Повторити зараз
-          </Button>
-        </div>
-      ) : null}
-
       <div className="mb-4">
         <Panel title="Стан">
           <table className="w-full text-sm">
@@ -697,6 +925,23 @@ export function IntegrationsPage() {
           </table>
         </Panel>
       </div>
+
+      {mp.errorBanner ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--error)]/30 bg-[#fdecea] px-4 py-3">
+          <div>
+            <div className="font-medium text-[var(--error)]">{mp.errorBanner.title}</div>
+            <div className="text-sm text-[var(--text-secondary)]">{mp.errorBanner.nextTry}</div>
+          </div>
+          <Button
+            onClick={async () => {
+              await api.retryIntegration(mp.id)
+              await load()
+            }}
+          >
+            Повторити зараз
+          </Button>
+        </div>
+      ) : null}
 
       {mp.moderationErrors.length > 0 ? (
         <div className="mb-4">
@@ -735,24 +980,13 @@ export function IntegrationsPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 grid gap-4 lg:grid-cols-2">
-        <Panel title="Готовність товарів">
-          <div className="text-sm">
-            Готові {mp.ready.ready} з {mp.ready.total}
-          </div>
-          <Link className="mt-1 inline-block text-sm text-[var(--primary)]" to="/products?tab=notReady">
-            Не готові {mp.ready.notReady}
-          </Link>
-          <ul className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
-            {mp.ready.reasons.map((r) => (
-              <li key={r.text}>
-                {r.text} — {r.count}{' '}
-                {r.count === 1 ? 'товар' : r.count < 5 ? 'товари' : 'товарів'}
-              </li>
-            ))}
-          </ul>
+      <div className="mb-4">
+        <Panel title="Товари на синхронізації">
+          <SyncProductsPanel marketplaceId={mp.id} ready={mp.ready} canEdit={!!canEditSync} />
         </Panel>
+      </div>
 
+      <div className="mb-4">
         <Panel title="Підключення">
           <dl className="space-y-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -769,7 +1003,7 @@ export function IntegrationsPage() {
                         value={m}
                         disabled={WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)}
                       >
-                        {m}
+                        {modeLabel(m)}
                         {WRITE_MODES.indexOf(m) > WRITE_MODES.indexOf(maxMode)
                           ? ' (потрібен вищий ceiling)'
                           : ''}
@@ -777,10 +1011,11 @@ export function IntegrationsPage() {
                     ))}
                   </Select>
                 ) : (
-                  <span>{currentMode}</span>
+                  <span>{modeLabel(currentMode)}</span>
                 )}
                 <span className="text-xs text-[var(--text-secondary)]">
-                  ефективний {String(mp.connection.effectiveMode ?? currentMode)} · max {maxMode}
+                  ефективний {modeLabel(String(mp.connection.effectiveMode ?? currentMode))} · max{' '}
+                  {modeLabel(maxMode)}
                 </span>
               </dd>
             </div>
@@ -866,7 +1101,9 @@ export function IntegrationsPage() {
         <summary className="cursor-pointer text-[var(--text-secondary)]">
           Показати технічні деталі
         </summary>
-        <p className="mt-2 text-[var(--text-secondary)]">Журнал запитів — згорнуто за замовчуванням.</p>
+        <p className="mt-2 text-[var(--text-secondary)]">
+          API mode: {currentMode} · max {maxMode} · feed rebuild debounce ~60 с після змін каталогу.
+        </p>
       </details>
     </div>
   )

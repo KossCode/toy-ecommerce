@@ -51,6 +51,9 @@ public class FeedBuildService {
                             UPDATE feed_builds SET status = 'SUCCESS', finished_at = now(), items_count = :n
                             WHERE id = :id
                             """).param("n", items).param("id", id).update();
+            jdbc.sql("DELETE FROM settings WHERE key = :key")
+                    .param("key", "feeds.dirty." + marketplace)
+                    .update();
         } catch (IOException | RuntimeException ex) {
             jdbc.sql("""
                             UPDATE feed_builds SET status = 'FAILED', finished_at = now(),

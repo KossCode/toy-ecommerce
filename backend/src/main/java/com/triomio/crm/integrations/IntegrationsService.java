@@ -1,5 +1,6 @@
 package com.triomio.crm.integrations;
 
+import com.triomio.crm.catalog.ProductChanged;
 import com.triomio.crm.feeds.FeedsProperties;
 import com.triomio.crm.integrations.mode.IntegrationModeService;
 import com.triomio.crm.integrations.schedule.JobScheduleService;
@@ -10,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -43,17 +45,36 @@ class IntegrationsService {
 
     record IntegrationsFile(List<Marketplace> marketplaces) {}
 
+    record SyncProduct(
+            String sku,
+            String name,
+            boolean enabled,
+            String channelState,
+            @Nullable String lastSyncedAt,
+            @Nullable String lastError) {}
+
+    record SyncProductsPayload(List<SyncProduct> products, List<SyncProduct> candidates) {}
+
     private final JdbcClient jdbc;
     private final FeedsProperties feeds;
     private final JobScheduleService schedules;
     private final IntegrationModeService modes;
+    private final ApplicationEventPublisher events;
+    private final FeedDirtyService dirty;
 
     IntegrationsService(
-            JdbcClient jdbc, FeedsProperties feeds, JobScheduleService schedules, IntegrationModeService modes) {
+            JdbcClient jdbc,
+            FeedsProperties feeds,
+            JobScheduleService schedules,
+            IntegrationModeService modes,
+            ApplicationEventPublisher events,
+            FeedDirtyService dirty) {
         this.jdbc = jdbc;
         this.feeds = feeds;
         this.schedules = schedules;
         this.modes = modes;
+        this.events = events;
+        this.dirty = dirty;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +106,147 @@ class IntegrationsService {
             throw new ApiProblemException(HttpStatus.NOT_FOUND, "INTEGRATION_NOT_FOUND", "Площадку не знайдено");
         }
         return build(mp);
+    }
+
+    @Transactional(readOnly = true)
+    SyncProductsPayload listProducts(String id) {
+        String mp = requireMarketplace(id);
+        List<SyncProduct> synced = jdbc.sql("""
+                        SELECT p.sku, coalesce(p.name_uk, p.sku) AS name, c.enabled,
+                               c.moderation_status, c.last_error,
+                               to_char(c.last_synced_at AT TIME ZONE 'Europe/Kyiv', 'DD.MM HH24:MI') AS synced
+                        FROM product_channels c
+                        JOIN products p ON p.id = c.product_id
+                        WHERE c.marketplace = :mp AND c.enabled
+                        ORDER BY p.sku
+                        """)
+                .param("mp", mp)
+                .query((rs, i) -> toSyncProduct(
+                        rs.getString("sku"),
+                        rs.getString("name"),
+                        rs.getBoolean("enabled"),
+                        rs.getString("moderation_status"),
+                        rs.getString("last_error"),
+                        rs.getString("synced")))
+                .list();
+        List<SyncProduct> candidates = jdbc.sql("""
+                        SELECT p.sku, coalesce(p.name_uk, p.sku) AS name, c.enabled,
+                               c.moderation_status, c.last_error,
+                               to_char(c.last_synced_at AT TIME ZONE 'Europe/Kyiv', 'DD.MM HH24:MI') AS synced
+                        FROM products p
+                        JOIN product_channels c ON c.product_id = p.id AND c.marketplace = :mp
+                        WHERE p.status = 'ACTIVE' AND NOT c.enabled
+                        ORDER BY p.sku
+                        LIMIT 500
+                        """)
+                .param("mp", mp)
+                .query((rs, i) -> toSyncProduct(
+                        rs.getString("sku"),
+                        rs.getString("name"),
+                        rs.getBoolean("enabled"),
+                        rs.getString("moderation_status"),
+                        rs.getString("last_error"),
+                        rs.getString("synced")))
+                .list();
+        return new SyncProductsPayload(synced, candidates);
+    }
+
+    @Transactional
+    SyncProductsPayload patchProducts(String id, Map<String, Object> body) {
+        String mp = requireMarketplace(id);
+        Object raw = body.get("items");
+        if (!(raw instanceof List<?> items) || items.isEmpty()) {
+            throw new ApiProblemException(HttpStatus.BAD_REQUEST, "INVALID_BODY", "Потрібен масив items");
+        }
+        for (Object item : items) {
+            if (!(item instanceof Map<?, ?> row)) {
+                continue;
+            }
+            String sku = String.valueOf(row.get("sku"));
+            boolean enabled = Boolean.TRUE.equals(row.get("enabled"));
+            Long productId = jdbc.sql("SELECT id FROM products WHERE sku = :sku")
+                    .param("sku", sku)
+                    .query(Long.class)
+                    .optional()
+                    .orElse(null);
+            if (productId == null) {
+                throw new ApiProblemException(
+                        HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Товар " + sku + " не знайдено");
+            }
+            int n = jdbc.sql("""
+                            UPDATE product_channels SET enabled = :en
+                            WHERE product_id = :id AND marketplace = :mp
+                            """)
+                    .param("en", enabled)
+                    .param("id", productId)
+                    .param("mp", mp)
+                    .update();
+            if (n == 0) {
+                throw new ApiProblemException(
+                        HttpStatus.NOT_FOUND, "CHANNEL_NOT_FOUND", "Канал " + sku + " / " + mp + " не знайдено");
+            }
+            if (enabled) {
+                enqueueStock(productId, mp);
+                events.publishEvent(new ProductChanged(productId, true, true));
+            } else {
+                dirty.mark(mp);
+            }
+        }
+        return listProducts(id);
+    }
+
+    private void enqueueStock(long productId, String marketplace) {
+        Integer available = jdbc.sql("""
+                        SELECT s.available FROM stock s
+                        JOIN products p ON p.id = s.product_id
+                        WHERE p.id = :id AND p.status = 'ACTIVE' AND NOT p.is_demo
+                        """)
+                .param("id", productId)
+                .query(Integer.class)
+                .optional()
+                .orElse(null);
+        if (available == null) {
+            return;
+        }
+        jdbc.sql("""
+                        INSERT INTO sync_outbox (marketplace, kind, product_id, payload, dedupe_key)
+                        VALUES (:mp, 'STOCK', :pid, jsonb_build_object('available', :available),
+                                :mp || ':STOCK:' || :pid)
+                        ON CONFLICT (dedupe_key) WHERE status = 'PENDING'
+                        DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()
+                        """)
+                .param("mp", marketplace)
+                .param("pid", productId)
+                .param("available", available)
+                .update();
+    }
+
+    private static SyncProduct toSyncProduct(
+            String sku,
+            String name,
+            boolean enabled,
+            @Nullable String moderation,
+            @Nullable String lastError,
+            @Nullable String synced) {
+        String state;
+        if (lastError != null && !lastError.isBlank()) {
+            state = "Помилка";
+        } else if (!enabled) {
+            state = "Пауза";
+        } else if (moderation != null && !moderation.isBlank() && !"Активний".equals(moderation)) {
+            state = moderation;
+        } else {
+            state = "Активний";
+        }
+        return new SyncProduct(sku, name, enabled, state, synced, lastError);
+    }
+
+    private static String requireMarketplace(String id) {
+        String mp = WireLabels.marketplaceCode(id);
+        if (!List.of("PROM", "ROZETKA", "EPICENTR").contains(mp)) {
+            throw new ApiProblemException(HttpStatus.NOT_FOUND, "INTEGRATION_NOT_FOUND", "Площадку не знайдено");
+        }
+        return mp;
     }
 
     private Marketplace build(String marketplace) {

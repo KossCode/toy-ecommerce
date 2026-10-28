@@ -72,6 +72,8 @@ app:
     dir: ${APP_FEEDS_DIR:./.local-feeds}
     token: ${APP_FEEDS_TOKEN:local-dev-feeds-token}
     public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
+    include-demo: ${APP_FEEDS_INCLUDE_DEMO:false}
+    dirty-poll-ms: ${APP_FEEDS_DIRTY_POLL_MS:15000}
 
 springdoc:
   api-docs:

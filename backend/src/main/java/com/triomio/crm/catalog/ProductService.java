@@ -13,9 +13,11 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -25,17 +27,25 @@ import org.springframework.transaction.annotation.Transactional;
 class ProductService {
 
     private static final Pattern TM_SKU = Pattern.compile("^TM-(\\d+)$");
+    private static final Set<String> STOCK_ONLY_KEYS = Set.of("total", "awaiting");
 
     private final JdbcClient jdbc;
     private final InventoryService inventory;
     private final PriceCalculator prices;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    ProductService(JdbcClient jdbc, InventoryService inventory, PriceCalculator prices, Clock clock) {
+    ProductService(
+            JdbcClient jdbc,
+            InventoryService inventory,
+            PriceCalculator prices,
+            Clock clock,
+            ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.inventory = inventory;
         this.prices = prices;
         this.clock = clock;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -207,6 +217,14 @@ class ProductService {
                         .param("mod", moderation)
                         .update();
             }
+        }
+        boolean stockOnly = !body.isEmpty() && STOCK_ONLY_KEYS.containsAll(body.keySet());
+        if (!stockOnly) {
+            boolean priceAffecting = body.containsKey("price")
+                    || body.containsKey("oldPrice")
+                    || body.containsKey("category")
+                    || body.containsKey("channels");
+            events.publishEvent(new ProductChanged(row.id(), priceAffecting, true));
         }
         return loadOne(sku, true);
     }
