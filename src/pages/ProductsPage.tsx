@@ -403,6 +403,7 @@ export function ProductsPage() {
                   <Link
                     className="block font-medium text-[var(--primary)] hover:underline"
                     to={`/products/${encodeURIComponent(p.sku)}`}
+                    state={{ from: '/products' }}
                   >
                     {(p.name ?? '').trim() ? p.name : 'Без назви'}
                     <span className="mt-0.5 block text-xs font-normal text-[var(--text-secondary)] no-underline">
@@ -446,6 +447,7 @@ export function ProductsPage() {
                 <td className="px-3 py-2.5" title={channelSummary(p)}>
                   <Link
                     to={`/products/${encodeURIComponent(p.sku)}`}
+                    state={{ from: '/products' }}
                     className="inline-flex"
                     onClick={(e) => e.stopPropagation()}
                   >

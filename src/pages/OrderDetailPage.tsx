@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { api, type OrderDetail } from '@/api/client'
 import { Button, PageHeader, Panel, StatusChip, chipTone } from '@/components/ui'
+import { navBackFrom } from '@/lib/navBack'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { formatDateLong, formatDateTime, money } from '@/lib/format'
 
 export function OrderDetailPage() {
   const { id = '' } = useParams()
+  const location = useLocation()
+  const back = navBackFrom(location.state, '/orders')
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -49,13 +52,9 @@ export function OrderDetailPage() {
 
   return (
     <div>
-      <div className="mb-2 text-sm text-[var(--text-secondary)]">
-        <Link to="/orders" className="text-[var(--primary)]">
-          Замовлення
-        </Link>{' '}
-        / {order.id}
-      </div>
       <PageHeader
+        backTo={back.to}
+        backLabel={back.label}
         title={order.id}
         meta={
           <span className="inline-flex flex-wrap items-center gap-2">
@@ -121,7 +120,11 @@ export function OrderDetailPage() {
                   return (
                     <tr key={item.sku} className="border-b border-[var(--border)] last:border-0">
                       <td className="py-2.5">
-                        <Link className="font-medium text-[var(--primary)]" to={`/products/${item.sku}`}>
+                        <Link
+                          className="font-medium text-[var(--primary)]"
+                          to={`/products/${item.sku}`}
+                          state={{ from: `/orders/${order.id}` }}
+                        >
                           {item.name}
                         </Link>
                         <div className="text-xs text-[var(--text-secondary)]">{item.sku}</div>

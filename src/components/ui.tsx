@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
+import { Link } from 'react-router-dom'
 
 export function StatusChip({
   children,
@@ -110,18 +111,36 @@ export function PageHeader({
   title,
   meta,
   actions,
+  backTo,
+  backLabel = 'Назад',
 }: {
   title: string
   meta?: ReactNode
   actions?: ReactNode
+  /** Internal path to return to (e.g. `/integrations/prom`). */
+  backTo?: string
+  backLabel?: string
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {meta ? <div className="mt-1 text-sm text-[var(--text-secondary)]">{meta}</div> : null}
+    <div className="mb-5">
+      {backTo ? (
+        <Link
+          to={backTo}
+          className="mb-2 inline-flex items-center gap-1.5 text-sm text-[var(--primary)] hover:underline"
+        >
+          <span aria-hidden className="text-base leading-none">
+            ←
+          </span>
+          {backLabel}
+        </Link>
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          {meta ? <div className="mt-1 text-sm text-[var(--text-secondary)]">{meta}</div> : null}
+        </div>
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   )
 }

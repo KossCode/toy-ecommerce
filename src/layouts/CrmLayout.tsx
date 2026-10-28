@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { api, type Me } from '@/api/client'
+import { api, isBrowserMock, type Me } from '@/api/client'
 
 const primaryNav = [
   { to: '/', label: 'Огляд', end: true },
@@ -120,6 +120,12 @@ export function CrmLayout() {
           </div>
         </header>
         <main className="flex-1 p-6">
+          {isBrowserMock ? (
+            <div className="mb-4 rounded-[var(--radius)] border border-[var(--warning)]/40 bg-[#fff8e8] px-4 py-2 text-sm text-[var(--text)]">
+              Браузерний мок (без Java API) — зміни лише в localStorage. Для реальної синхронізації:{' '}
+              <code className="text-xs">npm run dev:java</code> + бекенд на :8080.
+            </div>
+          ) : null}
           <Outlet />
         </main>
       </div>

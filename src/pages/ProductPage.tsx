@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { api, type Category, type Product, type ProductHistoryItem } from '@/api/client'
+import { navBackFrom } from '@/lib/navBack'
 import { StockEditDrawer } from '@/components/StockEditDrawer'
 import {
   Button,
@@ -34,6 +35,8 @@ type LangTab = 'ua' | 'ru'
 
 export function ProductPage() {
   const { sku: skuParam = '' } = useParams()
+  const location = useLocation()
+  const back = navBackFrom(location.state, '/products')
   const sku = decodeURIComponent(skuParam)
   const [product, setProduct] = useState<Product | null>(null)
   const [draft, setDraft] = useState<Partial<Product>>({})
@@ -164,13 +167,9 @@ export function ProductPage() {
 
   return (
     <div>
-      <div className="mb-2 text-sm text-[var(--text-secondary)]">
-        <Link to="/products" className="text-[var(--primary)]">
-          Товари
-        </Link>{' '}
-        / {product.sku}
-      </div>
       <PageHeader
+        backTo={back.to}
+        backLabel={back.label}
         title={view.name || 'Без назви'}
         meta={
           <span className="inline-flex flex-wrap items-center gap-2">

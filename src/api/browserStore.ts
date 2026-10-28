@@ -311,6 +311,25 @@ function buildSyncProducts(products: Product[], marketplaceId: string): Integrat
   return { products: productsOut, candidates }
 }
 
+function refreshIntegrationReady(s: Store) {
+  const active = s.products.filter((p) => p.status === 'Активний')
+  for (const mp of s.integrations.marketplaces) {
+    const key = mp.id as 'prom' | 'rozetka' | 'epicentr'
+    const ready = active.filter((p) => channelEnabled(p.channels?.[key])).length
+    const total = active.length
+    const notReady = Math.max(0, total - ready)
+    mp.ready = {
+      ready,
+      total,
+      notReady,
+      reasons:
+        notReady > 0
+          ? [{ text: 'Не увімкнено на площадці', count: notReady }]
+          : [],
+    }
+  }
+}
+
 export const browserApi = {
   async login(_email: string, _password: string) {
     return demoMe
@@ -709,6 +728,7 @@ export const browserApi = {
   },
 
   async getIntegrations() {
+    refreshIntegrationReady(store)
     return store.integrations
   },
 
@@ -730,6 +750,7 @@ export const browserApi = {
           [key]: item.enabled ? 'Активний' : 'Вимкнено',
         }
       }
+      refreshIntegrationReady(s)
     })
     return buildSyncProducts(store.products, id)
   },
