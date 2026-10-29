@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   api,
+  type Me,
   type PricePreview,
   type PriceRule,
   type PricesFile,
@@ -66,6 +67,7 @@ function draftPayload(draft: Draft, excludeId?: string) {
 
 export function PricesPage() {
   const [data, setData] = useState<PricesFile | null>(null)
+  const [me, setMe] = useState<Me | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [productsLoaded, setProductsLoaded] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -76,6 +78,7 @@ export function PricesPage() {
   const [saving, setSaving] = useState(false)
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'all'
+  const isOwner = me?.role === 'OWNER'
 
   async function loadRules() {
     setData(await api.getPrices())
@@ -88,7 +91,7 @@ export function PricesPage() {
   }
 
   useEffect(() => {
-    void loadRules()
+    void Promise.all([loadRules(), api.me().then(setMe)])
   }, [])
 
   useEffect(() => {
@@ -179,8 +182,16 @@ export function PricesPage() {
       <PageHeader
         title="Ціни"
         meta={`${data.meta.ruleCount} правил`}
-        actions={<Button onClick={openCreate}>Додати правило</Button>}
+        actions={
+          isOwner ? <Button onClick={openCreate}>Додати правило</Button> : undefined
+        }
       />
+
+      {!isOwner && me ? (
+        <p className="mb-3 text-sm text-[var(--text-secondary)]">
+          Перегляд правил. Змінювати може лише OWNER.
+        </p>
+      ) : null}
 
       <ListFilters
         tabs={(
@@ -199,7 +210,11 @@ export function PricesPage() {
             {t.label}
           </FilterTab>
         ))}
-        footer="Діє найточніше правило: товар → категорія → за замовчуванням. Клік по рядку — редагування з попереднім переглядом."
+        footer={
+          isOwner
+            ? 'Діє найточніше правило: товар → категорія → за замовчуванням. Клік по рядку — редагування з попереднім переглядом.'
+            : 'Діє найточніше правило: товар → категорія → за замовчуванням.'
+        }
       />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
@@ -221,10 +236,10 @@ export function PricesPage() {
                 return (
                   <tr
                     key={r.id}
-                    className={`cursor-pointer border-t border-[var(--border)] ${
-                      active ? 'bg-[#e4f1ef]' : 'hover:bg-[var(--bg)]'
-                    }`}
-                    onClick={() => openEdit(r)}
+                    className={`border-t border-[var(--border)] ${
+                      isOwner ? 'cursor-pointer' : ''
+                    } ${active ? 'bg-[#e4f1ef]' : isOwner ? 'hover:bg-[var(--bg)]' : ''}`}
+                    onClick={isOwner ? () => openEdit(r) : undefined}
                   >
                     <td className="px-3 py-2.5">{r.marketplaceLabel}</td>
                     <td className="px-3 py-2.5">
@@ -235,19 +250,21 @@ export function PricesPage() {
                     <td className="px-3 py-2.5">{r.roundingLabel}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums">{r.productCount}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <div className="inline-flex gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="quiet" onClick={() => openEdit(r)}>
-                          Змінити
-                        </Button>
-                        <Button
-                          variant="quiet"
-                          className="text-[var(--error)]"
-                          disabled={saving}
-                          onClick={() => void remove(r.id)}
-                        >
-                          Видалити
-                        </Button>
-                      </div>
+                      {isOwner ? (
+                        <div className="inline-flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="quiet" onClick={() => openEdit(r)}>
+                            Змінити
+                          </Button>
+                          <Button
+                            variant="quiet"
+                            className="text-[var(--error)]"
+                            disabled={saving}
+                            onClick={() => void remove(r.id)}
+                          >
+                            Видалити
+                          </Button>
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 )

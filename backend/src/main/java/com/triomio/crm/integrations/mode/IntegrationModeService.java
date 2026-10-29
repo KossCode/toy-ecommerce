@@ -2,6 +2,7 @@ package com.triomio.crm.integrations.mode;
 
 import com.triomio.crm.auth.CurrentUser;
 import com.triomio.crm.auth.Role;
+import com.triomio.crm.integrations.credentials.CredentialsService;
 import com.triomio.crm.shared.ApiProblemException;
 import com.triomio.crm.shared.WireLabels;
 import org.springframework.http.HttpStatus;
@@ -14,10 +15,12 @@ public class IntegrationModeService {
 
     private final JdbcClient jdbc;
     private final IntegrationsProperties properties;
+    private final CredentialsService credentials;
 
-    public IntegrationModeService(JdbcClient jdbc, IntegrationsProperties properties) {
+    public IntegrationModeService(JdbcClient jdbc, IntegrationsProperties properties, CredentialsService credentials) {
         this.jdbc = jdbc;
         this.properties = properties;
+        this.credentials = credentials;
     }
 
     /** min(DB mode, INTEGRATIONS_MAX_MODE / app.integrations.max-mode). */
@@ -58,6 +61,10 @@ public class IntegrationModeService {
                     "MODE_CEILING",
                     "Потолок INTEGRATIONS_MAX_MODE = " + properties.maxMode()
                             + "; підняти LIVE можна лише через .env і перезапуск");
+        }
+        if (requested == WriteMode.LIVE && !credentials.hasCiphertext(marketplace)) {
+            throw new ApiProblemException(
+                    HttpStatus.CONFLICT, "CREDENTIALS_REQUIRED", "Спочатку збережіть ключі API в «Інтеграціях»");
         }
         jdbc.sql("""
                         UPDATE integration_settings

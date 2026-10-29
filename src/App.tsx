@@ -8,6 +8,7 @@ import { ProductPage } from '@/pages/ProductPage'
 import { IntegrationsPage } from '@/pages/IntegrationsPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { PricesPage } from '@/pages/PricesPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { StubPage } from '@/pages/StubPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { ChangePasswordPage } from '@/pages/ChangePasswordPage'
@@ -41,7 +42,7 @@ export default function App() {
           <Route path="promotions" element={<StubPage title="Акції" />} />
           <Route path="analytics" element={<StubPage title="Аналітика" />} />
           <Route path="content" element={<StubPage title="Контент" />} />
-          <Route path="settings" element={<StubPage title="Налаштування" />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

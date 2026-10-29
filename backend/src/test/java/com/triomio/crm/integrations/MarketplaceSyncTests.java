@@ -105,9 +105,20 @@ class MarketplaceSyncTests {
     void feedXmlUsesCalculatedPriceAndIncludeDemo() throws Exception {
         String sku = TestProducts.uniqueSku();
         long id = TestProducts.insert(jdbc, sku, "ACTIVE", true, 3, 0);
-        jdbc.sql("UPDATE products SET base_price = 200, name_uk = 'Demo feed' WHERE id = :id")
-                .param("id", id)
-                .update();
+        long brandId = jdbc.sql("INSERT INTO brands (name) VALUES (:name) RETURNING id")
+                .param("name", "FeedBrand-" + sku)
+                .query(Long.class)
+                .single();
+        jdbc.sql("""
+                        UPDATE products SET base_price = 200, name_uk = 'Demo feed',
+                          description_uk = 'Опис <b>CDATA</b>', brand_id = :brand
+                        WHERE id = :id
+                        """).param("id", id).param("brand", brandId).update();
+        String storageKey = "test/" + sku + "/1.jpg";
+        jdbc.sql("""
+                        INSERT INTO product_images (product_id, storage_key, position, content_type, size_bytes)
+                        VALUES (:id, :key, 0, 'image/jpeg', 1024)
+                        """).param("id", id).param("key", storageKey).update();
         TestProducts.enableChannel(jdbc, id, "EPICENTR", true);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -117,6 +128,11 @@ class MarketplaceSyncTests {
         assertThat(xml).contains(sku);
         assertThat(xml).contains("<price>200");
         assertThat(xml).contains("available=\"true\"");
+        assertThat(xml).contains("<quantity_in_stock>3</quantity_in_stock>");
+        assertThat(xml).contains("<description><![CDATA[Опис <b>CDATA</b>]]></description>");
+        assertThat(xml).contains("<picture>");
+        assertThat(xml).contains(storageKey);
+        assertThat(xml).contains("<vendor>");
     }
 
     @Test

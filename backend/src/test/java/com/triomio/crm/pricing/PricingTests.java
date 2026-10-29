@@ -66,4 +66,19 @@ class PricingTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ok").value(true));
     }
+
+    @Test
+    void managerCanReadButNotWritePrices() throws Exception {
+        CurrentUser manager = new CurrentUser(2L, "mgr@test.local", "M", Role.MANAGER, false);
+        mvc.perform(get("/api/prices").with(user(manager))).andExpect(status().isOk());
+
+        mvc.perform(
+                        post("/api/prices")
+                                .with(user(manager))
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"marketplace\":\"prom\",\"scope\":\"default\",\"kind\":\"percent\",\"value\":10,\"rounding\":\"none\"}"))
+                .andExpect(status().isForbidden());
+    }
 }

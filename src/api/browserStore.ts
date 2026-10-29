@@ -26,6 +26,7 @@ import {
   type PricePreview,
   type PriceRule,
   type PricesFile,
+  type CrmUser,
   type Product,
   type ProductHistoryItem,
   type ProductImage,
@@ -91,6 +92,27 @@ type Store = {
 function nowIso() {
   return new Date().toISOString().slice(0, 19)
 }
+
+let mockUsers: CrmUser[] = [
+  {
+    id: 1,
+    email: 'owner@demo.local',
+    fullName: 'Демо Власник',
+    role: 'OWNER',
+    active: true,
+    mustChangePassword: false,
+    lastLoginAt: nowIso(),
+  },
+  {
+    id: 2,
+    email: 'manager@demo.local',
+    fullName: 'Демо Менеджер',
+    role: 'MANAGER',
+    active: true,
+    mustChangePassword: false,
+    lastLoginAt: nowIso(),
+  },
+]
 
 function formatDeadline(minutes: number | null) {
   if (minutes == null) return null
@@ -1105,6 +1127,9 @@ export const browserApi = {
       if (WRITE_MODES.indexOf(mode) > WRITE_MODES.indexOf(maxMode)) {
         throw new Error(`Потолок режиму = ${maxMode}`)
       }
+      if (mode === 'LIVE' && !found.connection.tokenMasked && !found.connection.passwordMasked) {
+        throw new ApiError(409, 'Спочатку збережіть ключі API в «Інтеграціях»', 'CREDENTIALS_REQUIRED')
+      }
       found.connection.mode = mode
       found.connection.effectiveMode =
         WRITE_MODES.indexOf(mode) <= WRITE_MODES.indexOf(maxMode) ? mode : maxMode
@@ -1116,6 +1141,125 @@ export const browserApi = {
       }
     })
     return result!
+  },
+
+  async putIntegrationCredentials(
+    id: string,
+    body: { token?: string; login?: string; password?: string },
+  ) {
+    let out: {
+      tokenMasked?: string
+      passwordMasked?: string
+      login?: string
+      credentialsUpdatedAt?: string
+    } = {}
+    mutate((s) => {
+      const found = s.integrations.marketplaces.find((m) => m.id === id)
+      if (!found) throw new Error('Немає маркетплейси')
+      const secret = (body.token ?? body.password ?? '').trim()
+      if (!secret) throw new ApiError(400, 'Вкажіть ключ', 'TOKEN_REQUIRED')
+      const hint = '••••' + secret.slice(-4)
+      const at = new Date().toISOString()
+      if (id === 'prom') {
+        found.connection.tokenMasked = hint
+        out = { tokenMasked: hint, credentialsUpdatedAt: at }
+      } else {
+        found.connection.login = body.login?.trim() || found.connection.login
+        found.connection.passwordMasked = hint
+        out = {
+          login: String(found.connection.login ?? ''),
+          passwordMasked: hint,
+          credentialsUpdatedAt: at,
+        }
+      }
+      found.connection.credentialsUpdatedAt = at
+    })
+    return out
+  },
+
+  async getIntegrationOutbox(_id: string) {
+    const sku = store.products[0]?.sku ?? 'TM-10018'
+    return {
+      items: [
+        {
+          id: 1,
+          kind: 'STOCK',
+          status: 'FAILED',
+          attempts: 3,
+          sku,
+          orderId: null,
+          lastError: 'Демо: mock помилка відправки',
+          nextAttemptAt: nowIso(),
+          updatedAt: nowIso(),
+        },
+        {
+          id: 2,
+          kind: 'PRICE',
+          status: 'PENDING',
+          attempts: 0,
+          sku,
+          orderId: null,
+          lastError: null,
+          nextAttemptAt: nowIso(),
+          updatedAt: nowIso(),
+        },
+        {
+          id: 3,
+          kind: 'ORDER_STATUS',
+          status: 'BLOCKED',
+          attempts: 1,
+          sku: null,
+          orderId: 'ORD-DEMO-1',
+          lastError: 'Демо: різка зміна ціни / пауза',
+          nextAttemptAt: null,
+          updatedAt: nowIso(),
+        },
+      ],
+    }
+  },
+
+  async getUsers() {
+    return mockUsers
+  },
+
+  async createUser(body: { email: string; fullName: string; role: 'OWNER' | 'MANAGER' }) {
+    const user = {
+      id: Date.now(),
+      email: body.email.trim().toLowerCase(),
+      fullName: body.fullName.trim(),
+      role: body.role,
+      active: true,
+      mustChangePassword: true,
+      lastLoginAt: null as string | null,
+    }
+    mockUsers = [...mockUsers, user]
+    return { user, temporaryPassword: 'Temp-Pass-Demo12' }
+  },
+
+  async patchUser(
+    id: number,
+    body: { fullName?: string; role?: 'OWNER' | 'MANAGER'; active?: boolean },
+  ) {
+    mockUsers = mockUsers.map((u) =>
+      u.id === id
+        ? {
+            ...u,
+            fullName: body.fullName ?? u.fullName,
+            role: body.role ?? u.role,
+            active: body.active ?? u.active,
+          }
+        : u,
+    )
+    const user = mockUsers.find((u) => u.id === id)
+    if (!user) throw new Error('Користувача не знайдено')
+    return user
+  },
+
+  async resetUserPassword(id: number) {
+    const user = mockUsers.find((u) => u.id === id)
+    if (!user) throw new Error('Користувача не знайдено')
+    user.mustChangePassword = true
+    return { user, temporaryPassword: 'Reset-Pass-Demo12' }
   },
 
   async putIntegrationSchedule(id: string, flow: ScheduleFlow, body: ScheduleUpdateBody) {

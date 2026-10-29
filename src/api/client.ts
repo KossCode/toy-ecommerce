@@ -162,6 +162,36 @@ const httpApi = {
       method: 'PATCH',
       body: JSON.stringify({ items }),
     }),
+  putIntegrationCredentials: (
+    id: string,
+    body: { token?: string; login?: string; password?: string },
+  ) =>
+    request<{
+      tokenMasked?: string
+      passwordMasked?: string
+      login?: string
+      credentialsUpdatedAt?: string
+    }>(`/integrations/${id}/credentials`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  getIntegrationOutbox: (id: string) =>
+    request<IntegrationOutboxPayload>(`/integrations/${id}/outbox`),
+  getUsers: () => request<CrmUser[]>('/users'),
+  createUser: (body: { email: string; fullName: string; role: 'OWNER' | 'MANAGER' }) =>
+    request<{ user: CrmUser; temporaryPassword: string }>('/users', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  patchUser: (
+    id: number,
+    body: { fullName?: string; role?: 'OWNER' | 'MANAGER'; active?: boolean },
+  ) => request<CrmUser>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  resetUserPassword: (id: number) =>
+    request<{ user: CrmUser; temporaryPassword: string }>(`/users/${id}/reset-password`, {
+      method: 'POST',
+      body: '{}',
+    }),
   triggerJob: (name: string) =>
     request<{ ok: string; name: string }>(`/jobs/${encodeURIComponent(name)}/trigger`, {
       method: 'POST',
@@ -418,11 +448,38 @@ export type IntegrationConnection = {
   tokenMasked?: string
   login?: string
   passwordMasked?: string
+  credentialsUpdatedAt?: string
   priceSync?: string
   capabilities?: string[]
   caption?: string
   schedules?: IntegrationSchedule[]
   [key: string]: unknown
+}
+
+export type IntegrationOutboxItem = {
+  id: number
+  kind: string
+  status: string
+  attempts: number
+  sku: string | null
+  orderId: string | null
+  lastError: string | null
+  nextAttemptAt: string | null
+  updatedAt: string
+}
+
+export type IntegrationOutboxPayload = {
+  items: IntegrationOutboxItem[]
+}
+
+export type CrmUser = {
+  id: number
+  email: string
+  fullName: string
+  role: 'OWNER' | 'MANAGER'
+  active: boolean
+  mustChangePassword: boolean
+  lastLoginAt: string | null
 }
 
 export type IntegrationsFile = {

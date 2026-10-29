@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   api,
   WRITE_MODE_LABEL,
+  type IntegrationOutboxItem,
   type IntegrationProductsPayload,
   type IntegrationSchedule,
   type IntegrationSyncProduct,
@@ -974,6 +975,108 @@ function AddSyncProductsModal({
   )
 }
 
+function OutboxPanel({ marketplaceId }: { marketplaceId: string }) {
+  const [items, setItems] = useState<IntegrationOutboxItem[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    try {
+      const payload = await api.getIntegrationOutbox(marketplaceId)
+      setItems(payload.items)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+      setItems([])
+    }
+  }
+
+  useEffect(() => {
+    setItems(null)
+    void load()
+  }, [marketplaceId])
+
+  async function retryFailed() {
+    setBusy(true)
+    try {
+      await api.retryIntegration(marketplaceId)
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (items === null && !error) {
+    return <p className="text-sm text-[var(--text-secondary)]">Завантаження…</p>
+  }
+
+  return (
+    <div>
+      {error ? <p className="mb-2 text-sm text-[var(--error)]">{error}</p> : null}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-[var(--text-secondary)]">
+          Активні та помилкові записи черги (без DONE).
+        </p>
+        <Button variant="quiet" disabled={busy} onClick={() => void retryFailed()}>
+          Повторити помилки
+        </Button>
+      </div>
+      {!items?.length ? (
+        <p className="text-sm text-[var(--text-secondary)]">Черга порожня.</p>
+      ) : (
+        <div className="overflow-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="text-[var(--text-secondary)]">
+              <tr className="border-b border-[var(--border)]">
+                <th className="pb-2 font-medium">ID</th>
+                <th className="pb-2 font-medium">Тип</th>
+                <th className="pb-2 font-medium">SKU / замовлення</th>
+                <th className="pb-2 font-medium">Статус</th>
+                <th className="pb-2 font-medium">Спроби</th>
+                <th className="pb-2 font-medium">Помилка</th>
+                <th className="pb-2 font-medium">Оновлено</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row) => (
+                <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
+                  <td className="py-2 tabular-nums">{row.id}</td>
+                  <td className="py-2">{row.kind}</td>
+                  <td className="py-2">
+                    {row.sku ?? row.orderId ?? '—'}
+                  </td>
+                  <td className="py-2">
+                    <StatusChip
+                      tone={
+                        row.status === 'FAILED' || row.status === 'BLOCKED'
+                          ? 'error'
+                          : row.status === 'IN_PROGRESS'
+                            ? 'warning'
+                            : 'neutral'
+                      }
+                    >
+                      {row.status}
+                    </StatusChip>
+                  </td>
+                  <td className="py-2 tabular-nums">{row.attempts}</td>
+                  <td className="max-w-[220px] truncate py-2 text-[var(--text-secondary)]" title={row.lastError ?? ''}>
+                    {row.lastError ?? '—'}
+                  </td>
+                  <td className="py-2 text-[var(--text-secondary)]">
+                    {row.updatedAt.replace('T', ' ').slice(0, 16)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function IntegrationsPage() {
   const { marketplaceId } = useParams()
   const navigate = useNavigate()
@@ -981,6 +1084,12 @@ export function IntegrationsPage() {
   const [error, setError] = useState<string | null>(null)
   const [me, setMe] = useState<Me | null>(null)
   const [modeMsg, setModeMsg] = useState<string | null>(null)
+  const [credOpen, setCredOpen] = useState(false)
+  const [credToken, setCredToken] = useState('')
+  const [credLogin, setCredLogin] = useState('')
+  const [credPassword, setCredPassword] = useState('')
+  const [credBusy, setCredBusy] = useState(false)
+  const [credMsg, setCredMsg] = useState<string | null>(null)
 
   async function load() {
     try {
@@ -998,6 +1107,15 @@ export function IntegrationsPage() {
       .then(setMe)
       .catch(() => setMe(null))
   }, [])
+
+  useEffect(() => {
+    setCredOpen(false)
+    setCredToken('')
+    setCredLogin('')
+    setCredPassword('')
+    setCredMsg(null)
+    setModeMsg(null)
+  }, [marketplaceId])
 
   useEffect(() => {
     if (!data?.marketplaces.length) return
@@ -1034,6 +1152,32 @@ export function IntegrationsPage() {
       setModeMsg(e instanceof Error ? e.message : 'Помилка')
     }
   }
+
+  async function saveCredentials() {
+    if (!isOwner) return
+    setCredBusy(true)
+    setCredMsg(null)
+    try {
+      const body =
+        mp.id === 'prom'
+          ? { token: credToken }
+          : { login: credLogin, password: credPassword }
+      await api.putIntegrationCredentials(mp.id, body)
+      setCredOpen(false)
+      setCredToken('')
+      setCredLogin('')
+      setCredPassword('')
+      await load()
+      setCredMsg('Ключі збережено')
+    } catch (e) {
+      setCredMsg(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setCredBusy(false)
+    }
+  }
+
+  const usesToken = mp.id === 'prom'
+  const hasCreds = Boolean(mp.connection.tokenMasked || mp.connection.passwordMasked)
 
   function replaceMarketplace(next: IntegrationsFile['marketplaces'][0]) {
     setData((prev) => {
@@ -1203,34 +1347,97 @@ export function IntegrationsPage() {
               </dd>
             </div>
             {modeMsg ? <p className="text-xs text-[var(--text-secondary)]">{modeMsg}</p> : null}
-            {mp.connection.tokenMasked ? (
-              <div className="flex items-center justify-between gap-2">
-                <dt className="text-[var(--text-secondary)]">Токен API</dt>
-                <dd>
-                  {String(mp.connection.tokenMasked)}{' '}
-                  <Button variant="quiet" disabled>
-                    Замінити
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <dt className="text-[var(--text-secondary)]">
+                {usesToken ? 'Токен API' : 'Ключі API'}
+              </dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                {usesToken && mp.connection.tokenMasked ? (
+                  <span>{String(mp.connection.tokenMasked)}</span>
+                ) : null}
+                {!usesToken && mp.connection.login ? (
+                  <span className="text-[var(--text-secondary)]">
+                    {String(mp.connection.login)}
+                  </span>
+                ) : null}
+                {!usesToken && mp.connection.passwordMasked ? (
+                  <span>{String(mp.connection.passwordMasked)}</span>
+                ) : null}
+                {!hasCreds ? (
+                  <span className="text-[var(--text-secondary)]">не задано</span>
+                ) : null}
+                {isOwner ? (
+                  <Button
+                    variant="quiet"
+                    onClick={() => {
+                      setCredOpen((v) => !v)
+                      setCredMsg(null)
+                    }}
+                  >
+                    {hasCreds ? 'Замінити' : 'Додати'}
                   </Button>
-                </dd>
-              </div>
+                ) : null}
+              </dd>
+            </div>
+            {mp.connection.credentialsUpdatedAt ? (
+              <p className="text-xs text-[var(--text-secondary)]">
+                Оновлено: {String(mp.connection.credentialsUpdatedAt)}
+              </p>
             ) : null}
-            {mp.connection.login ? (
-              <div className="flex justify-between gap-2">
-                <dt className="text-[var(--text-secondary)]">Логін</dt>
-                <dd>{String(mp.connection.login)}</dd>
-              </div>
-            ) : null}
-            {mp.connection.passwordMasked ? (
-              <div className="flex items-center justify-between gap-2">
-                <dt className="text-[var(--text-secondary)]">Пароль</dt>
-                <dd>
-                  {String(mp.connection.passwordMasked)}{' '}
-                  <Button variant="quiet" disabled>
-                    Змінити
+            {credOpen && isOwner ? (
+              <div className="mt-2 space-y-2 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] p-3">
+                {usesToken ? (
+                  <label className="block text-sm">
+                    <span className="text-[var(--text-secondary)]">Токен</span>
+                    <Input
+                      className="mt-1"
+                      type="password"
+                      autoComplete="off"
+                      value={credToken}
+                      onChange={(e) => setCredToken(e.target.value)}
+                      placeholder="токен з кабінету Prom"
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <label className="block text-sm">
+                      <span className="text-[var(--text-secondary)]">Логін</span>
+                      <Input
+                        className="mt-1"
+                        value={credLogin}
+                        onChange={(e) => setCredLogin(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-[var(--text-secondary)]">Пароль</span>
+                      <Input
+                        className="mt-1"
+                        type="password"
+                        value={credPassword}
+                        onChange={(e) => setCredPassword(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </label>
+                  </>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button variant="quiet" onClick={() => setCredOpen(false)}>
+                    Скасувати
                   </Button>
-                </dd>
+                  <Button
+                    disabled={
+                      credBusy ||
+                      (usesToken ? !credToken.trim() : !credLogin.trim() || !credPassword.trim())
+                    }
+                    onClick={() => void saveCredentials()}
+                  >
+                    Зберегти
+                  </Button>
+                </div>
               </div>
             ) : null}
+            {credMsg ? <p className="text-xs text-[var(--text-secondary)]">{credMsg}</p> : null}
             {mp.connection.feedUrl ? (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <dt className="text-[var(--text-secondary)]">Посилання на фід</dt>
@@ -1277,6 +1484,12 @@ export function IntegrationsPage() {
             isOwner={!!isOwner}
             onChanged={replaceMarketplace}
           />
+        </Panel>
+      </div>
+
+      <div className="mb-4">
+        <Panel title="Черга outbox">
+          <OutboxPanel marketplaceId={mp.id} />
         </Panel>
       </div>
 
