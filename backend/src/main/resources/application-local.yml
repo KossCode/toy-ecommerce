@@ -30,6 +30,9 @@ app:
   media:
     dir: ${APP_MEDIA_DIR:./.local-media}
     public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
+  # Leave blank to use CredentialsCrypto local-profile fallback; override with APP_CRYPTO_MASTER_KEY.
+  crypto:
+    master-key: ${APP_CRYPTO_MASTER_KEY:}
 
 logging:
   level:

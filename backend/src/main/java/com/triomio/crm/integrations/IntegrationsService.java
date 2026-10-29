@@ -2,6 +2,7 @@ package com.triomio.crm.integrations;
 
 import com.triomio.crm.catalog.ProductChanged;
 import com.triomio.crm.feeds.FeedsProperties;
+import com.triomio.crm.integrations.credentials.CredentialsService;
 import com.triomio.crm.integrations.mode.IntegrationModeService;
 import com.triomio.crm.integrations.schedule.JobScheduleService;
 import com.triomio.crm.shared.ApiProblemException;
@@ -59,6 +60,7 @@ class IntegrationsService {
     private final FeedsProperties feeds;
     private final JobScheduleService schedules;
     private final IntegrationModeService modes;
+    private final CredentialsService credentials;
     private final ApplicationEventPublisher events;
     private final FeedDirtyService dirty;
 
@@ -67,12 +69,14 @@ class IntegrationsService {
             FeedsProperties feeds,
             JobScheduleService schedules,
             IntegrationModeService modes,
+            CredentialsService credentials,
             ApplicationEventPublisher events,
             FeedDirtyService dirty) {
         this.jdbc = jdbc;
         this.feeds = feeds;
         this.schedules = schedules;
         this.modes = modes;
+        this.credentials = credentials;
         this.events = events;
         this.dirty = dirty;
     }
@@ -256,16 +260,12 @@ class IntegrationsService {
             case "ROZETKA" -> "Rozetka";
             default -> "Epicentr";
         };
-        record Setting(
-                String mode,
-                @Nullable String pausedReason,
-                @Nullable String credentialsHint) {}
-        Setting setting = jdbc.sql(
-                        "SELECT mode, paused_reason, credentials_hint FROM integration_settings WHERE marketplace = :mp")
+        record Setting(String mode, @Nullable String pausedReason) {}
+        Setting setting = jdbc.sql("SELECT mode, paused_reason FROM integration_settings WHERE marketplace = :mp")
                 .param("mp", marketplace)
                 .query(Setting.class)
                 .optional()
-                .orElse(new Setting("READ_ONLY", null, null));
+                .orElse(new Setting("READ_ONLY", null));
 
         int failed = jdbc.sql("SELECT count(*) FROM sync_outbox WHERE marketplace = :mp AND status = 'FAILED'")
                 .param("mp", marketplace)
@@ -355,9 +355,7 @@ class IntegrationsService {
         connection.put("maxMode", modes.maxMode().name());
         connection.put("effectiveMode", modes.effectiveMode(marketplace).name());
         connection.put("feedUrl", feeds.feedUrl(id));
-        if (setting.credentialsHint() != null) {
-            connection.put("tokenMasked", setting.credentialsHint());
-        }
+        credentials.putConnectionFields(marketplace, connection);
         connection.put(
                 "capabilities",
                 List.of(

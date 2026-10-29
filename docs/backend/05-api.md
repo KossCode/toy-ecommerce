@@ -101,6 +101,8 @@
 | [x] | `PUT /api/integrations/{id}/schedules/{flow}` | `integrations` | OWNER; flow=`orders`\|`feed`; INTERVAL/CALENDAR → Quartz |
 | [x] | `GET /api/integrations/{id}/products` | `integrations` | список на синхронізації + candidates (ACTIVE без enabled) |
 | [x] | `PATCH /api/integrations/{id}/products` | `integrations` | OWNER/MANAGER; `{items:[{sku,enabled}]}` → `product_channels` + outbox/dirty |
+| [x] | `PUT /api/integrations/{id}/credentials` | `integrations` | OWNER; AES ciphertext + маска в connection |
+| [x] | `GET /api/integrations/{id}/outbox` | `integrations` | OWNER/MANAGER; активні/FAILED рядки черги |
 | [x] | `GET /feeds/{token}/{marketplace}.xml` | `feeds` | публичный YML; неверный токен → 404 |
 
 ## 7. Новые эндпоинты (нет в моке)
@@ -117,8 +119,6 @@
 | `POST /api/products/{sku}/images` | OWNER, MANAGER | загрузка фото (`multipart/form-data`) |
 | `PATCH /api/products/{sku}/images/order` | OWNER, MANAGER | порядок фото |
 | `DELETE /api/products/{sku}/images/{id}` | OWNER, MANAGER | удаление фото |
-| `PUT /api/integrations/{marketplace}/credentials` | OWNER | сохранить ключ; в ответе только маска (этап 9.4) |
-| `GET /api/integrations/{marketplace}/outbox` | OWNER, MANAGER | очередь и ошибки отправок |
 | `GET /api/integrations/{marketplace}/dry-run-report` | OWNER | что было бы отправлено в `DRY_RUN` |
 | `POST /api/jobs/{name}/trigger` | OWNER | запустить джобу вне расписания (уже в UI «Розклад CRM») |
 | `GET /healthz` | открыт | `200` / `503` без подробностей |

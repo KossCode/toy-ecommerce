@@ -334,14 +334,16 @@ flowchart LR
   - Ошибки повторяются с нарастающей задержкой; после лимита попыток — статус `FAILED` и оповещение.
   - В `DRY_RUN` формируется и логируется тело запроса, но HTTP-вызовов нет (локально — `MockMarketplaceClient`; WireMock для live-клиентов — этап 10).
   - Предохранитель «массовое обнуление» и проверка резкого изменения цены ставят площадку на паузу / блокируют строку.
-- [ ] **9.4 Ключи площадок.**
-  - Хранятся зашифрованными; в дампе базы нет открытых токенов.
-  - API возвращает только маску; ключи не попадают в логи.
-- [ ] **9.5 Фиды.** (частично: URL + YML с ценой/остатком + dirty debounce + sync list; полный param mapping — позже)
+- [x] **9.4 Ключи площадок.**
+  - AES-256-GCM (`APP_CRYPTO_MASTER_KEY`); в БД только ciphertext + hint-маска.
+  - `PUT /api/integrations/{id}/credentials` — OWNER; GET connection — маска / login+passwordMasked, без plaintext.
+  - LIVE без ciphertext → `CREDENTIALS_REQUIRED`; UI «Замінити» на вкладке підключення.
+- [ ] **9.5 Фиды.** (частично закрыто; полный param mapping / live import check — позже)
   - [x] Фид доступен по URL с секретным токеном; неверный токен → 404.
   - [x] В фид — `ACTIVE` + enabled channel; цена через `PriceCalculator`; local `include-demo`.
   - [x] Dirty-флаг + debounce ~60 с; PRICE outbox при смене цены/правил; UI «Товари на синхронізації».
-  - [ ] Фид Prom проходит проверку на тестовом товаре / полный YML.
+  - [x] YML: description CDATA, vendor, до 10 picture, categories stub + categoryId/portal_category_id, quantity_in_stock, barcode.
+  - [ ] Полный `param` mapping и проверка импорта на live/test кабинете Prom.
 - [ ] **9.6 Оповещения о новых заказах и сроках подтверждения.** Блокируется вопросом 4 в разделе 6.
   - Новый заказ и заказ Epicentr, у которого до дедлайна меньше 30 минут, дают оповещение в выбранный канал.
 

@@ -81,6 +81,9 @@ app:
   media:
     dir: ${APP_MEDIA_DIR:./.local-media}
     public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
+  crypto:
+    # Base64 of 32 raw bytes. Required to save marketplace credentials (SSM in prod).
+    master-key: ${APP_CRYPTO_MASTER_KEY:}
 
 springdoc:
   api-docs:

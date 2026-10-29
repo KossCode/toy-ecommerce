@@ -3,6 +3,7 @@ package com.triomio.crm.integrations;
 import com.triomio.crm.auth.CurrentUser;
 import com.triomio.crm.integrations.IntegrationsService.IntegrationsFile;
 import com.triomio.crm.integrations.IntegrationsService.Marketplace;
+import com.triomio.crm.integrations.credentials.CredentialsService;
 import com.triomio.crm.integrations.mode.IntegrationModeService;
 import com.triomio.crm.integrations.mode.WriteMode;
 import com.triomio.crm.integrations.schedule.JobScheduleService;
@@ -26,12 +27,20 @@ class IntegrationsController {
     private final IntegrationsService integrations;
     private final IntegrationModeService modes;
     private final JobScheduleService schedules;
+    private final CredentialsService credentials;
+    private final OutboxQueryService outbox;
 
     IntegrationsController(
-            IntegrationsService integrations, IntegrationModeService modes, JobScheduleService schedules) {
+            IntegrationsService integrations,
+            IntegrationModeService modes,
+            JobScheduleService schedules,
+            CredentialsService credentials,
+            OutboxQueryService outbox) {
         this.integrations = integrations;
         this.modes = modes;
         this.schedules = schedules;
+        this.credentials = credentials;
+        this.outbox = outbox;
     }
 
     @GetMapping
@@ -60,6 +69,13 @@ class IntegrationsController {
                 modes.maxMode().name());
     }
 
+    @PutMapping("/{id}/credentials")
+    @PreAuthorize("hasRole('OWNER')")
+    Map<String, Object> putCredentials(
+            @AuthenticationPrincipal CurrentUser user, @PathVariable String id, @RequestBody Map<String, Object> body) {
+        return credentials.save(user, id, body);
+    }
+
     @PutMapping("/{id}/schedules/{flow}")
     @PreAuthorize("hasRole('OWNER')")
     Marketplace putSchedule(
@@ -74,6 +90,12 @@ class IntegrationsController {
     @GetMapping("/{id}/products")
     IntegrationsService.SyncProductsPayload listProducts(@PathVariable String id) {
         return integrations.listProducts(id);
+    }
+
+    @GetMapping("/{id}/outbox")
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
+    OutboxQueryService.OutboxPayload listOutbox(@PathVariable String id) {
+        return outbox.list(id);
     }
 
     @PatchMapping("/{id}/products")
